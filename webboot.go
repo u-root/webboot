@@ -8,12 +8,10 @@ import (
 )
 
 var (
-	debug    = func(string, ...interface{}) {}
-	verbose  = flag.Bool("v", true, "verbose debugging output")
-	commands = [][]string{
-		{"date"},
-		{"go", "run", "github.com/u-root/u-root/."},
-	}
+	debug   = func(string, ...interface{}) {}
+	verbose = flag.Bool("v", true, "verbose debugging output")
+	uroot   = flag.String("u", "", "options for u-root")
+	cmds    = flag.String("c", "core", "u-root commands to build into the image")
 )
 
 func init() {
@@ -24,6 +22,11 @@ func init() {
 }
 
 func main() {
+	var commands = [][]string{
+		{"date"},
+		{"go", "get", "-u", "github.com/u-root/u-root"},
+		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds},
+	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
 		c := exec.Command(cmd[0], cmd[1:]...)

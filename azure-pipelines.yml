@@ -11,7 +11,7 @@ pool:
 
 variables:
   GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.11' # Go installation path
+  GOROOT: '/usr/local/go1.12' # Go installation path
   GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
 
@@ -28,11 +28,11 @@ steps:
 
 - script: |
     go version
-    go get -v -t -d ./...
-    if [ -f Gopkg.toml ]; then
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        dep ensure
-    fi
-    go run -v .
-  workingDirectory: '$(modulePath)'
+    pwd
+    echo $(build.repository.name)
+    go get github.com/u-root/webboot
+    go run github.com/u-root/webboot
+    go run github.com/u-root/webboot -c=all
+    go run github.com/u-root/webboot -u=-build=bb
+    go run github.com/u-root/webboot -c=all -u=-build=bb
   displayName: 'Get dependencies, then build'
