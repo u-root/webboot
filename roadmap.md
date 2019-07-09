@@ -1,16 +1,26 @@
 # Roadmap
 
-Initial build incorporating NERF
+Initial build incorporating u-root
 
-Boot into webboot image
+## Next steps are by hand the first time
 
 successfully download an iso
 
-kexec it
+mount it and extract the kernel
 
-preserve the iso across the reboot so the kernel can use it
+kexec it just to see how kexec works
+
+preserve the iso across the reboot so the kernel can see and use it
 
 full boot
+
+## now we write the program to do the stuff we did by hand
+
+Write the extra commands needed to implement webboot functionality
+
+Boot into webboot image
+
+## stretch goals
 
 add signing support
 
