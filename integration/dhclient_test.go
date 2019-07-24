@@ -1,4 +1,4 @@
-// Copyright 2018 the u-root Authors. All rights reserved
+// Copyright 2019 the u-root Authors. All rights reserved
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -51,11 +51,11 @@ func TestDhclient(t *testing.T) {
 		Cmds: []string{
 			"github.com/u-root/u-root/cmds/core/ip",
 			"github.com/u-root/u-root/cmds/core/init",
-			"github.com/u-root/u-root/cmds/core/dhclient",
+			"github.com/u-root/webboot/integration/testcmd/dhclient",
 			"github.com/u-root/u-root/cmds/core/shutdown",
 		},
 		Uinit: []string{
-			"dhclient -ipv6=false -v",
+			"dhclient",
 			"ip a",
 			"sleep 5",
 			"shutdown -h",
