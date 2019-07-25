@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Copyright 2019 the u-root Authors. All rights reserved
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -76,6 +77,17 @@ func TestKexecMount(t *testing.T) {
 	if err := genISO(t); err != nil {
 		t.Error(err)
 	}
+=======
+package integration
+
+import (
+	"testing"
+)
+
+// TestMountKexec runs an init which mounts a filesystem and kexecs a kernel.
+func TestKexecMount(t *testing.T) {
+	// TODO: support arm
+>>>>>>> WIP for :Webboot mountISO
 	if TestArch() != "amd64" {
 		t.Skipf("test not supported on %s", TestArch())
 	}
@@ -86,6 +98,7 @@ func TestKexecMount(t *testing.T) {
 			"github.com/u-root/webboot/integration/testcmd/mountkexec/uinit",
 			"github.com/u-root/u-root/cmds/core/init",
 			"github.com/u-root/u-root/cmds/core/ls",
+<<<<<<< HEAD
 		}, Files: []string{
 			"/tmp/tempdata.iso:testIso",
 		},
@@ -107,6 +120,24 @@ func TestKexecMount(t *testing.T) {
 		if err := q.Expect(results.expect); err != nil {
 			t.Error(err)
 		}
+=======
+		},
+	})
+	defer cleanup()
+
+	if err := q.Expect("error making mount directory:mkdir : no such file or directory"); err != nil {
+		t.Error(err)
+	}
+	if err := q.Expect("error setting loop device:open non-existent file: no such file or directory"); err != nil {
+		t.Error(err)
+	}
+
+	if err := q.Expect("initramfs.cpio"); err != nil {
+		t.Error(err)
+	}
+	if err := q.Expect("kernel"); err != nil {
+		t.Error(err)
+>>>>>>> WIP for :Webboot mountISO
 	}
 
 }
