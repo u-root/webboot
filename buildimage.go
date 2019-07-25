@@ -12,6 +12,7 @@ var (
 	verbose = flag.Bool("v", true, "verbose debugging output")
 	uroot   = flag.String("u", "", "options for u-root")
 	cmds    = flag.String("c", "core", "u-root commands to build into the image")
+	wcmds   = flag.String("w", "github.com/u-root/webboot/webboot/.", "webboot commands to build into the image")
 )
 
 func init() {
@@ -25,7 +26,7 @@ func main() {
 	var commands = [][]string{
 		{"date"},
 		{"go", "get", "-u", "github.com/u-root/u-root"},
-		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds},
+		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds, *wcmds},
 	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
