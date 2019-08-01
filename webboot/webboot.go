@@ -54,4 +54,10 @@ func main() {
 	if err := mountkexec.MountISO(osname, *mountDir); err != nil {
 		log.Fatalf("error in mountISO:%v", err)
 	}
+
+	webboot.CommandLine(osSystems[osname], *cmd)
+
+	if err := mountkexec.KexecISO(osSystems[osname], *mountDir); err != nil {
+		log.Fatalf("failed to kexec:%v", err)
+	}
 }

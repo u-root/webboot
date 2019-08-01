@@ -29,7 +29,7 @@ func main() {
 	var commands = [][]string{
 		{"date"},
 		{"go", "get", "-u", "github.com/u-root/u-root"},
-		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds, *wcmds},
+		{"go", "run", "github.com/u-root/u-root/.", "-files", "webboot/TinyCorePure64-current.iso:TinyCorePure64-current.iso", *uroot, *cmds, *wcmds},
 	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
