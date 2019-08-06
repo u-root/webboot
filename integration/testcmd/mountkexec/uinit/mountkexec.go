@@ -36,6 +36,5 @@ func main() {
 			log.Printf("%v", string(o))
 		}
 	}
-	// sh.Run("elvish")
 	unix.Reboot(unix.LINUX_REBOOT_CMD_POWER_OFF)
 }

@@ -11,7 +11,6 @@ import (
 	"flag"
 	"log"
 
-	"github.com/u-root/webboot/pkg/dhclient"
 	"github.com/u-root/webboot/pkg/mountkexec"
 	"github.com/u-root/webboot/pkg/webboot"
 )
@@ -26,8 +25,8 @@ var (
 	ipv4      = flag.Bool("ipv4", true, "use IPV4")
 	ipv6      = flag.Bool("ipv6", true, "use IPV6")
 	osSystems = map[string]webboot.Distro{
-		"TinyCore": webboot.Distro{"/boot/vmlinuz64 ", "/boot/initrd", "--reuse-cmdline", "https:louis.com"},
-		"Ubuntu":   webboot.Distro{"/boot/vmlinuz ", "/boot/init", "--reuse-cmdline", "https:louis.com"},
+		"TinyCorePure64-current.iso": webboot.Distro{"/boot/vmlinuz64", "/boot/corepure64.gz", "--reuse-cmdline", "https:louis.com"},
+		"Ubuntu":                     webboot.Distro{"/boot/vmlinuz ", "/boot/init", "--reuse-cmdline", "https:louis.com"},
 	}
 )
 
@@ -35,7 +34,7 @@ func main() {
 
 	flag.Parse()
 
-	dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+	// dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
 	if len(flag.Args()) < 1 {
 		log.Fatal("error:pass in an operating system")

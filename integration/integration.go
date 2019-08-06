@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -34,13 +33,11 @@ const logDir = "serial"
 
 const template = `
 package main
-
 import (
 	"log"
 	"os"
 	"os/exec"
 )
-
 func main() {
 	for _, cmds := range %#v {
 		cmd := exec.Command(cmds[0], cmds[1:]...)
@@ -225,26 +222,6 @@ func QEMUTest(t *testing.T, o *Options) (*qemu.VM, func()) {
 	}
 }
 
-//  CdromIso is a Device that exposes an iso as a /dev/sda1
-// readonly iso partition in the VM.
-type CdromIso struct {
-	isofile string
-}
-
-// Cmdline implements Device.
-func (rod CdromIso) Cmdline() []string {
-	if len(rod.isofile) == 0 {
-		return nil
-	}
-
-	// Expose the temp directory to QEMU as /dev/sda1
-	return []string{
-		"-cdrom", rod.isofile,
-		// "-device", "ich9-ahci,id=ahci",
-		// "-device", "ide-drive,drive=tmpdir,bus=ahci.0",
-	}
-}
-
 // QEMU builds the u-root environment and prepares QEMU options given the test
 // options and environment variables.
 //
@@ -374,10 +351,6 @@ func QEMU(o *Options) (*qemu.Options, string, error) {
 		kernelArgs = "console=ttyAMA0"
 	}
 
-	if o, err := exec.Command("genisoimage", "-o", "/tmp/testdata.iso", tmpDir).CombinedOutput(); err != nil {
-		log.Fatalf("genisoimage failed: %s, error %v", string(o), err)
-	}
-
 	return &qemu.Options{
 		Initramfs:    outputFile,
 		Kernel:       kernel,
@@ -388,7 +361,6 @@ func QEMU(o *Options) (*qemu.Options, string, error) {
 			qemu.ReadOnlyDirectory{Dir: tmpDir},
 			qemu.VirtioRandom{},
 			o.Network,
-			CdromIso{isofile: "/tmp/testdata.iso"},
 		},
 	}, tmpDir, nil
 }

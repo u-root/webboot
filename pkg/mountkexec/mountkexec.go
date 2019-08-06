@@ -8,14 +8,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/u-root/webboot/pkg/webboot"
-
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/kexec"
 	"github.com/u-root/u-root/pkg/loop"
 	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/u-root/pkg/multiboot"
 	"github.com/u-root/u-root/pkg/uio"
+	"github.com/u-root/webboot/pkg/webboot"
 	"golang.org/x/sys/unix"
 )
 

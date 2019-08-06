@@ -14,7 +14,7 @@ type Distro struct {
 	DownloadLink string
 }
 
-//CommandLine processes the command line arguments to webboot
+// CommandLine processes the command line arguments to webboot
 func CommandLine(distro Distro, commandln string) {
 	distro.Cmdline = commandln
 	if distro.Cmdline == "reuse-cmdline" {
