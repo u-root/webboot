@@ -8,8 +8,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/u-root/u-root/pkg/boot"
+	"github.com/u-root/u-root/pkg/kexec"
 	"github.com/u-root/u-root/pkg/loop"
 	"github.com/u-root/u-root/pkg/mount"
+	"github.com/u-root/u-root/pkg/multiboot"
+	"github.com/u-root/u-root/pkg/uio"
+	"github.com/u-root/webboot/pkg/webboot"
 	"golang.org/x/sys/unix"
 )
 
@@ -29,6 +34,30 @@ func MountISO(isoPath, mountDir string) error {
 	flags |= unix.MS_RDONLY
 	if err = mount.Mount(loopDevice, mountDir, "iso9660", "", flags); err != nil {
 		return fmt.Errorf("error mounting ISO:%v", err)
+	}
+	return nil
+}
+
+// KexecISO boots up a new kernel and initramfs
+func KexecISO(opp *webboot.Distro, path string) error {
+	var image boot.OSImage
+	if err := multiboot.Probe(path + opp.Kernel); err == nil {
+		image = &boot.MultibootImage{
+			Path:    opp.Kernel,
+			Cmdline: opp.Cmdline,
+		}
+	} else {
+		image = &boot.LinuxImage{
+			Kernel:  uio.NewLazyFile(path + opp.Kernel),
+			Initrd:  uio.NewLazyFile(path + opp.Initrd),
+			Cmdline: opp.Cmdline,
+		}
+	}
+	if err := image.Load(true); err != nil {
+		return fmt.Errorf("error failed to kexec into new kernel:%v", err)
+	}
+	if err := kexec.Reboot(); err != nil {
+		return fmt.Errorf("error failed to Reboot into new kernel:%v", err)
 	}
 	return nil
 }

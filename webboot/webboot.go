@@ -25,9 +25,9 @@ var (
 	verbose   = flag.Bool("verbose", false, "Verbose output")
 	ipv4      = flag.Bool("ipv4", true, "use IPV4")
 	ipv6      = flag.Bool("ipv6", true, "use IPV6")
-	osSystems = map[string]webboot.Distro{
-		"TinyCore": webboot.Distro{"/boot/vmlinuz64 ", "/boot/initrd", "--reuse-cmdline", "https:louis.com"},
-		"Ubuntu":   webboot.Distro{"/boot/vmlinuz ", "/boot/init", "--reuse-cmdline", "https:louis.com"},
+	osSystems = map[string]*webboot.Distro{
+		"tinycore": &webboot.Distro{"/boot/vmlinuz64", "/boot/corepure64.gz", "console=tty1", "https:louis.com"},
+		"TestISO":  &webboot.Distro{"/kernel", "/initiso.cpi", "console=ttyS0 console=tty0", "https:louis.com"},
 	}
 )
 
@@ -50,8 +50,19 @@ func main() {
 		}
 		log.Fatalf("exit")
 	}
-
+	//Mount the downloaded ISO
 	if err := mountkexec.MountISO(osname, *mountDir); err != nil {
 		log.Fatalf("error in mountISO:%v", err)
+	}
+	//Process the commandline input of the distro
+	if cmdline, err := webboot.CommandLine(osSystems[osname].Cmdline, *cmd); err != nil {
+		log.Fatalf("error in webbootCommandline:%v", err)
+	} else {
+		osSystems[osname].Cmdline = cmdline
+	}
+
+	//Kexec into the new distro
+	if err := mountkexec.KexecISO(osSystems[osname], *mountDir); err != nil {
+		log.Fatalf("error in kexecISO:%v", err)
 	}
 }
