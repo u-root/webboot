@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/u-root/webboot/pkg/tlog"
-
 	"github.com/u-root/u-root/pkg/cp"
 	"github.com/u-root/u-root/pkg/golang"
 	"github.com/u-root/u-root/pkg/uroot"
 	"github.com/u-root/u-root/pkg/uroot/builder"
 	"github.com/u-root/u-root/pkg/uroot/initramfs"
+	"github.com/u-root/webboot/pkg/tlog"
 )
 
 // genISO generates an iso containing a kernel and initramfs to be used for testing mount and kexec
@@ -40,7 +39,11 @@ func genISO(t *testing.T) (err error) {
 		return err
 	}
 
-	cmds := []string{"github.com/u-root/u-root/cmds/*"}
+	cmds := []string{
+		"github.com/u-root/u-root/cmds/core/init",
+		"github.com/u-root/webboot/integration/testcmd/kexecmount/uinit",
+	}
+
 	env := golang.Default()
 	env.CgoEnabled = false
 	env.GOARCH = TestArch()
@@ -57,6 +60,7 @@ func genISO(t *testing.T) (err error) {
 		TempDir:      tmpDir,
 		BaseArchive:  uroot.DefaultRamfs.Reader(),
 		OutputFile:   w,
+		InitCmd:      "init",
 		DefaultShell: "elvish",
 	}
 
@@ -83,16 +87,17 @@ func TestKexecMount(t *testing.T) {
 	// Create the CPIO and start QEMU.
 	q, cleanup := QEMUTest(t, &Options{
 		Cmds: []string{
-			"github.com/u-root/webboot/integration/testcmd/mountkexec/uinit",
 			"github.com/u-root/u-root/cmds/core/init",
 			"github.com/u-root/u-root/cmds/core/ls",
+			"github.com/u-root/webboot/integration/testcmd/mountkexec/uinit",
 		}, Files: []string{
 			"/tmp/tempdata.iso:testIso",
 		},
 	})
+
 	defer cleanup()
 	// Loop through the expected results and compare with qemu's output
-	var results = []struct {
+	results := []struct {
 		expect string
 	}{
 		{"Empty Directory Name"},
@@ -101,6 +106,10 @@ func TestKexecMount(t *testing.T) {
 		{"error setting loop device:open non-existentfile: no such file or directory"},
 		{"GoodTest"},
 		{"kernel"},
+		{"TestingKernel"},
+		{"KEXECCOUNTER=0"},
+		{"kexec_core: Starting new kernel"},
+		{"KEXECCOUNTER=1"},
 	}
 
 	for _, results := range results {

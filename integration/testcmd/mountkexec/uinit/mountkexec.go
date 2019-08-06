@@ -8,7 +8,9 @@ import (
 	"log"
 	"os/exec"
 
+	"github.com/u-root/u-root/pkg/cmdline"
 	"github.com/u-root/webboot/pkg/mountkexec"
+	"github.com/u-root/webboot/pkg/webboot"
 	"golang.org/x/sys/unix"
 )
 
@@ -21,7 +23,7 @@ func main() {
 	}{
 		{"Empty Directory Name", "testIso", "", "error making mount directory:mkdir : no such file or directory"},
 		{"Non-existent Iso", "non-existentfile", "/tmp/mountDir", "error setting loop device:open non-existentfile: no such file or directory"},
-		{"GoodTest", "testIso", "/tmp/mountDir", ""},
+		{"GoodTest", "testIso", "/tmp/mountDir/", ""},
 	}
 
 	for _, test := range tests {
@@ -29,7 +31,7 @@ func main() {
 		if err := mountkexec.MountISO(test.iso, test.dir); err != nil {
 			log.Print(err)
 		} else {
-			o, err := exec.Command("ls", "/tmp/mountDir").CombinedOutput()
+			o, err := exec.Command("ls", "/tmp/mountDir/").CombinedOutput()
 			if err != nil {
 				log.Fatalf("ls failed: error %v", err)
 			}
@@ -37,5 +39,23 @@ func main() {
 		}
 	}
 
-	unix.Reboot(unix.LINUX_REBOOT_CMD_POWER_OFF)
+	log.Printf("TestingKernel")
+	//TestDistro to be kexeced.
+	distro := &webboot.Distro{"kernel", "initiso.cpi", "console=ttyS0", "https:louis.com"}
+	kexecCounter, ok := cmdline.Flag("kexeccounter")
+	if !ok {
+		kexecCounter = "0"
+	}
+	log.Printf("KEXECCOUNTER=%s\n", kexecCounter)
+	if kexecCounter == "0" {
+		//Pass kexeccounter to new kernel through commandline.
+		distro.Cmdline += " kexeccounter=1"
+
+		if err := mountkexec.KexecISO(distro, "/tmp/mountDir/"); err != nil {
+			log.Print(err)
+		}
+	} else {
+		unix.Reboot(unix.LINUX_REBOOT_CMD_POWER_OFF)
+	}
+
 }
