@@ -12,3 +12,8 @@
 *.out
 
 *~
+
+# ignore kernels we build here, and firmware we download.
+linux
+linux-firmware
+

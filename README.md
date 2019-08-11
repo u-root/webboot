@@ -23,3 +23,30 @@ Tip:Dont use the -nographic option on qemu when booting u-root in qemu.
 ### Roadmap : Systems to be added
 - Ubuntu
 - ArchLinux
+
+### Building a kernel for webboot
+
+webboot uses a standard kernel which should be fairly portable. This
+kernel is also based on a Long Term Stable (LTS) release. It has
+worked on every chromebook we've tried.
+
+This kernel is built using a config originally from NiChromeOS (github.com/NiChrome/NiChrome).
+Because we are building a standard boot stick formatted with vfat, we don't have the weird
+space constraints of NiChrome, so we expect this to diverge over time.
+
+Nevertheless, to keep it all simple, we build it as a non-modular kernel with the wifi
+firmware built in. We no longer build the initrd into the kernel, however; that's not needed.
+
+To build, first, be sure you're in a directory you want to be in!
+You can actually do the work right here in webboot; the .gitignore
+will ignore the two directories you create.
+
+```
+git clone --depth 1 -b v4.12.7 git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git linux
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/linux-firmware.git
+cp config-4.12.7 linux/.config
+(cd linux && make bzImage)
+go run .
+lzma -f /tmp/initramfs.linux_amd64.cpio
+/usr/bin/qemu-system-x86_64 -machine q35   -m 2048   -kernel linux/arch/x86/boot/bzImage  -initrd /tmp/initramfs.linux_amd64.cpio.lzma  -append consle=tty0
+```
