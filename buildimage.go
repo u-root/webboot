@@ -16,6 +16,7 @@ var (
 	uroot   = flag.String("u", "", "options for u-root")
 	cmds    = flag.String("c", "core", "u-root commands to build into the image")
 	wcmds   = flag.String("w", "github.com/u-root/webboot/webboot/.", "webboot commands to build into the image")
+	ncmds   = flag.String("n", "github.com/u-root/NiChrome/cmds/wifi", "NiChrome commands to build into the image")
 )
 
 func init() {
@@ -29,7 +30,8 @@ func main() {
 	var commands = [][]string{
 		{"date"},
 		{"go", "get", "-u", "github.com/u-root/u-root"},
-		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds, *wcmds},
+		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
+		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds, *wcmds, *ncmds},
 	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
