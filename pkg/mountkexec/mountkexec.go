@@ -48,7 +48,7 @@ func KexecISO(opp *webboot.Distro, path string) error {
 		}
 	} else {
 		image = &boot.LinuxImage{
-			Kernel:  uio.NewLazyFile(path + opp.Kernel),
+			Kernel:  uio.NewLazyFile(opp.Kernel),
 			Initrd:  uio.NewLazyFile(path + opp.Initrd),
 			Cmdline: opp.Cmdline,
 		}

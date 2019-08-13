@@ -31,7 +31,7 @@ func main() {
 		{"date"},
 		{"go", "get", "-u", "github.com/u-root/u-root"},
 		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
-		{"go", "run", "github.com/u-root/u-root/.", *uroot, *cmds, *wcmds, *ncmds},
+		{"go", "run", "github.com/u-root/u-root/.", "-files", "initramfs.cpio:initrd", "-files", "RonbzImage:bzImage", "-files", "/sbin/iwconfig:/bin/iwconfig", "-files", "/sbin/iwlist:/bin/iwlist", *uroot, *cmds, *wcmds, *ncmds},
 	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)

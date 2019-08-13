@@ -26,14 +26,14 @@ import (
 var (
 	cmd      = flag.String("cmd", "", "Command Line")
 	mountDir = flag.String("dir", "/tmp/mountDir", "The mount point of the ISO")
-	ifName   = flag.String("interface", "^e.*", "Name of the interface")
+	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
 	verbose  = flag.Bool("verbose", false, "Verbose output")
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	bookmark = map[string]*webboot.Distro{
-		"tinycore": &webboot.Distro{"/boot/vmlinuz64", "/boot/corepure64.gz", "console=tty1", "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso"},
+		"tinycore": &webboot.Distro{"bzImage", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-current.iso"},
 	}
 )
 
