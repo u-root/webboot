@@ -35,6 +35,7 @@ var (
 	bookmark = map[string]*webboot.Distro{
 		"tinycore": &webboot.Distro{"/boot/vmlinuz64", "/boot/corepure64.gz", "console=tty1", "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso"},
 	}
+	dryrun = flag.Bool("dryrun", false, "Do not do the kexec")
 )
 
 // parseArg takes a name and produces a filename and a URL
@@ -140,15 +141,16 @@ func main() {
 		log.Fatalf("Error in mountISO:%v", err)
 
 	}
-	//Process the commandline input of the distro
-	if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd); err != nil {
-		log.Fatalf("Error in webbootCommandline:%v", err)
-	} else {
-		bookmark[filename].Cmdline = cmdline
+	if *dryrun == false {
+		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd); err != nil {
+			log.Fatalf("Error in webbootCommandline:%v", err)
+		} else {
+			bookmark[filename].Cmdline = cmdline
+		}
+		if err := mountkexec.KexecISO(bookmark[filename], *mountDir); err != nil {
+			log.Fatalf("Error in kexecISO:%v", err)
+		}
 	}
 
-	//Kexec into the new distro
-	if err := mountkexec.KexecISO(bookmark[filename], *mountDir); err != nil {
-		log.Fatalf("Error in kexecISO:%v", err)
-	}
+	fmt.Println("The URL requested: %v\n The file requested: %v\n The mounting point: %v\n", URL, filename, *mountDir)
 }
