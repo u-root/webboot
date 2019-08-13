@@ -26,7 +26,7 @@ import (
 var (
 	cmd      = flag.String("cmd", "", "Command Line")
 	mountDir = flag.String("dir", "/tmp/mountDir", "The mount point of the ISO")
-	ifName   = flag.String("interface", "^e.*", "Name of the interface")
+	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
 	verbose  = flag.Bool("verbose", false, "Verbose output")
