@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 var (
@@ -32,7 +33,7 @@ func main() {
 		{"go", "get", "-u", "github.com/u-root/u-root"},
 		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
 		{"sudo", "apt", "install", "wireless-tools"},
-		{"go", "run", "github.com/u-root/u-root/.", "-files", "/sbin/iwconfig:bin/iwconfig", "-files", "/sbin/iwlist:bin/iwlist", *uroot, *cmds, *wcmds, *ncmds},
+		append(append([]string{"go", "run", "github.com/u-root/u-root/.", "-files", "/sbin/iwconfig:bin/iwconfig", "-files", "/sbin/iwlist:bin/iwlist"}, strings.Fields(*uroot)...), *cmds, *wcmds, *ncmds),
 	}
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
