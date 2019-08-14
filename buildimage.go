@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	debug   = func(string, ...interface{}) {}
+	debug = func(string, ...interface{}) {}
+
 	verbose = flag.Bool("v", true, "verbose debugging output")
 	uroot   = flag.String("u", "", "options for u-root")
 	cmds    = flag.String("c", "core", "u-root commands to build into the image")
@@ -35,6 +36,7 @@ func main() {
 		{"sudo", "apt", "install", "wireless-tools"},
 		append(append([]string{"go", "run", "github.com/u-root/u-root/.", "-files", "/sbin/iwconfig:bin/iwconfig", "-files", "/sbin/iwlist:bin/iwlist"}, strings.Fields(*uroot)...), *cmds, *wcmds, *ncmds),
 	}
+
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
 		c := exec.Command(cmd[0], cmd[1:]...)

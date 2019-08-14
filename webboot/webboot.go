@@ -42,10 +42,12 @@ var (
 	verbose  = flag.Bool("verbose", false, "Verbose output")
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
+	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
 	bookmark = map[string]*webboot.Distro{
-		"tinycore": &webboot.Distro{"/boot/vmlinuz64", "/boot/corepure64.gz", "console=tty1", "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso"},
+		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+		"mykernel": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+		"core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
 	}
-	dryrun = flag.Bool("dryrun", false, "Do not do the kexec")
 )
 
 // parseArg takes a name and produces a filename and a URL
