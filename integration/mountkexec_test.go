@@ -77,8 +77,11 @@ func genISO(t *testing.T) (err error) {
 
 // TestMountKexec runs an init which mounts a filesystem and kexecs a kernel.
 func TestKexecMount(t *testing.T) {
+	if _, ok := os.LookupEnv("UROOT_KERNEL"); !ok {
+		t.Skip("test is skipped unless UROOT_KERNEL is set")
+	}
 	if err := genISO(t); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if TestArch() != "amd64" {
 		t.Skipf("test not supported on %s", TestArch())
