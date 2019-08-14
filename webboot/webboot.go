@@ -1,16 +1,27 @@
 // Copyright 2019 the u-root Authors. All rights reserved
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-// Get the time the machine has been up
+//
 // Synopsis:
-//     webboot
+//     webboot [OPTIONS...] URL or name of bookmark
+//
+// Options:
+//	-cmd: Command line parameters to the second kernel
+//	-mountDir: Mount point
+//	-ifName: Name of the interface
+//	-timeout: Lease timeout in seconds
+//	-retry: Number of DHCP renewals before exiting
+//	-verbose:  Verbose output
+//	-ipv4: Use IPV4
+//	-ipv6: Use IPV6
+//	-dryrun: Do not do the kexec
 package main
 
 import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -24,8 +35,7 @@ import (
 )
 
 var (
-	cmd      = flag.String("cmd", "", "Command Line")
-	mountDir = flag.String("dir", "/tmp/mountDir", "The mount point of the ISO")
+	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
 	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
@@ -56,6 +66,7 @@ func parseArg(arg string) (string, string, error) {
 
 	return URL, filename, nil
 }
+
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
@@ -104,13 +115,12 @@ func name(URL string) (string, error) {
 }
 
 func usage() {
-	log.Printf("Usage: %s [ARGS] URL or name of ISO\n", os.Args[0])
+	log.Printf("Usage: %s [ARGS] URL or name of OS\n", os.Args[0])
 	flag.PrintDefaults()
 	os.Exit(1)
 }
 
 func main() {
-
 	flag.Parse()
 
 	if flag.NArg() != 1 {
@@ -125,6 +135,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	//Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
 	log.Println("Retrieving the file...")
 	read, err := linkOpen(URL)
@@ -137,7 +148,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = mountkexec.MountISO(filename, *mountDir); err != nil {
+	tmp, err := ioutil.TempDir("", "mnt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = mountkexec.MountISO(filename, tmp); err != nil {
 		log.Fatalf("Error in mountISO:%v", err)
 
 	}
@@ -147,10 +163,10 @@ func main() {
 		} else {
 			bookmark[filename].Cmdline = cmdline
 		}
-		if err := mountkexec.KexecISO(bookmark[filename], *mountDir); err != nil {
+		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
 			log.Fatalf("Error in kexecISO:%v", err)
 		}
 	}
 
-	fmt.Println("The URL requested: %v\n The file requested: %v\n The mounting point: %v\n", URL, filename, *mountDir)
+	fmt.Printf("The URL requested: %v\n The file requested: %v\n The mounting point: %v\n", URL, filename, tmp)
 }
