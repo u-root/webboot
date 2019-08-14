@@ -7,6 +7,7 @@ package mountkexec
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/kexec"
@@ -39,17 +40,22 @@ func MountISO(isoPath, mountDir string) error {
 }
 
 // KexecISO boots up a new kernel and initramfs
-func KexecISO(opp *webboot.Distro, path string) error {
+func KexecISO(opp *webboot.Distro, dir string) error {
 	var image boot.OSImage
-	if err := multiboot.Probe(path + opp.Kernel); err == nil {
+	kernelPath := opp.Kernel
+	if !filepath.IsAbs(kernelPath) {
+		kernelPath = filepath.Join(dir, kernelPath)
+	}
+
+	if err := multiboot.Probe(kernelPath); err == nil {
 		image = &boot.MultibootImage{
-			Path:    opp.Kernel,
+			Path:    kernelPath,
 			Cmdline: opp.Cmdline,
 		}
 	} else {
 		image = &boot.LinuxImage{
-			Kernel:  uio.NewLazyFile(path + opp.Kernel),
-			Initrd:  uio.NewLazyFile(path + opp.Initrd),
+			Kernel:  uio.NewLazyFile(kernelPath),
+			Initrd:  uio.NewLazyFile(dir + opp.Initrd),
 			Cmdline: opp.Cmdline,
 		}
 	}
