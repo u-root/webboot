@@ -54,19 +54,14 @@ var (
 // The URL can be used to download data to the file 'filename'
 // The argument is either a full URL or a bookmark.
 func parseArg(arg string) (string, string, error) {
-	var URL, filename string
 	if u, ok := bookmark[arg]; ok {
 		return u.DownloadLink, arg, nil
 	}
-
-	var err error
-	filename, err = name(arg)
-	URL = arg
+	filename, err := name(arg)
 	if err != nil {
-		return "", "", fmt.Errorf("%v is not a valid URL: %v", URL, err)
+		return "", "", fmt.Errorf("%v is not a valid URL: %v", arg, err)
 	}
-
-	return URL, filename, nil
+	return arg, filename, nil
 }
 
 
