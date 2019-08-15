@@ -115,7 +115,7 @@ func name(URL string) (string, error) {
 }
 
 func usage() {
-	log.Printf("Usage: %s [ARGS] URL or name of OS\n", os.Args[0])
+	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
 	flag.PrintDefaults()
 	os.Exit(1)
 }
