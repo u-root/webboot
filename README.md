@@ -12,10 +12,10 @@ Tip:Dont use the -nographic option on qemu when booting u-root in qemu.
 
 ### Run the webboot command in Qemu
 
- `webboot distrubution`
+ `webboot distribution`
 
-- distrubution a defines a supported operating system distribution.
-- example `webboot tinycore`perfoms a webboot of the TinyCore linux distrubution.
+- distribution a defines a supported operating system distribution.
+- example `webboot tinycore`perfoms a webboot of the TinyCore linux distribution.
 
 ### Supported Operating Systems
 - Linux TinyCore
