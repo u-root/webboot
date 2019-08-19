@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 
@@ -43,6 +44,7 @@ var (
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
+	essid    = flag.String("essid", "GoogleGuest", "ESSID name")
 	bookmark = map[string]*webboot.Distro{
 		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
 		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
@@ -63,7 +65,6 @@ func parseArg(arg string) (string, string, error) {
 	}
 	return arg, filename, nil
 }
-
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
@@ -117,11 +118,23 @@ func usage() {
 	os.Exit(1)
 }
 
+func setupEssid(essid string) error {
+	o, err := exec.Command("iwconfig", "wlan0", "essid", essid).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error setting up wifi:%v", err)
+	}
+	log.Printf("setupEssid: iwconfig returned %v", string(o))
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
 	if flag.NArg() != 1 {
 		usage()
+	}
+	if err := setupEssid(*essid); err != nil {
+		log.Fatal(err)
 	}
 
 	dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
