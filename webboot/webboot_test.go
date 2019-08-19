@@ -63,31 +63,6 @@ func TestName(t *testing.T) {
 
 }
 
-func TestWrite(t *testing.T) {
-	content := []byte("temporary file's content")
-	tmpDir, err := ioutil.TempDir("", "tmpDir")
-	if err != nil {
-		t.Fatalf("Failed to create a temporary directory")
-	}
-	tmpfile := filepath.Join(tmpDir, "tmpfile")
-	if err := ioutil.WriteFile(tmpfile, content, 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	file, err := os.Open(tmpfile)
-	if err != nil {
-		t.Fatalf("Failed to open %v: got %v, want nil", tmpfile, err)
-	}
-
-	testfn := filepath.Join(tmpDir, "testfile")
-	err = write(file, testfn)
-
-	read, err := ioutil.ReadFile(testfn)
-	if !bytes.Equal(content, read) {
-		t.Fatalf("Failed to write %v: got %v, want %v", testfn, string(read), string(content))
-	}
-}
-
 func TestLinkOpen(t *testing.T) {
 	tests := []test{
 		{name: "TinyCore", linkOrName: "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso", md5link: "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso.md5.txt"},
