@@ -79,22 +79,6 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-// write copies the content from an io.readCloser to a named file with filename.
-func write(read io.ReadCloser, filename string) error {
-	w, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-
-	defer w.Close()
-	defer read.Close()
-
-	if _, err := io.Copy(w, read); err != nil {
-		return fmt.Errorf("Error copying %v: %v", filename, err)
-	}
-	return nil
-}
-
 // name takes a URL and generates a filename from it
 // For example, if a valid URL = http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso, then filename = CorePure64-10.1.iso
 // if the URL is empty or if the URL's Path ends in /, name returns a default index.html as the filename
@@ -148,14 +132,22 @@ func main() {
 
 	//Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
 	log.Println("Retrieving the file...")
-	read, err := linkOpen(URL)
+	iso, err := linkOpen(URL)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer iso.Close()
 
-	err = write(read, filename)
+	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
+	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if _, err := io.Copy(pmem, iso); err != nil {
+		log.Fatalf("Error copying to persistent memory device: %v", err)
+	}
+	if err = pmem.Close(); err != nil {
+		log.Fatalf("Error closing /dev/pmem0: %v", err)
 	}
 
 	tmp, err := ioutil.TempDir("", "mnt")
