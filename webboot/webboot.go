@@ -155,7 +155,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = mountkexec.MountISO(filename, tmp); err != nil {
+	if err = mountkexec.MountISOPmem("/dev/pmem0", tmp); err != nil {
 		log.Fatalf("Error in mountISO:%v", err)
 
 	}
