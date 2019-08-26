@@ -67,8 +67,8 @@ func TestLinkOpen(t *testing.T) {
 	tests := []test{
 		{name: "TinyCore", linkOrName: "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso", md5link: "http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso.md5.txt"},
 		{name: "ArchLinux", linkOrName: "http://mirrors.edge.kernel.org/archlinux/iso/2019.08.01/archlinux-2019.08.01-x86_64.iso", md5link: "http://mirrors.edge.kernel.org/archlinux/iso/2019.08.01/md5sums.txt"},
-		//		Ubuntu takes too long to download right now for testing purposes. Test fails due to the download and testing being too long.
-		//		{name: "Ubuntu", linkOrName: "http://old-releases.ubuntu.com/releases/18.04.2/ubuntu-18.04.2-desktop-amd64.iso", md5link: "http://old-releases.ubuntu.com/releases/18.04.2/MD5SUMS"},
+//		Ubuntu takes too long to download right now for testing purposes. Test fails due to the download and testing being too long.
+//		{name: "Ubuntu", linkOrName: "http://old-releases.ubuntu.com/releases/18.04.2/ubuntu-18.04.2-desktop-amd64.iso", md5link: "http://old-releases.ubuntu.com/releases/18.04.2/MD5SUMS"},
 	}
 
 	for _, v := range tests {

@@ -7,7 +7,6 @@
 //
 // Options:
 //	-cmd: Command line parameters to the second kernel
-//	-mountDir: Mount point
 //	-ifName: Name of the interface
 //	-timeout: Lease timeout in seconds
 //	-retry: Number of DHCP renewals before exiting
@@ -15,6 +14,7 @@
 //	-ipv4: Use IPV4
 //	-ipv6: Use IPV6
 //	-dryrun: Do not do the kexec
+//	-essid: ESSID name
 package main
 
 import (
@@ -46,9 +46,11 @@ var (
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
 	essid    = flag.String("essid", "GoogleGuest", "ESSID name")
 	bookmark = map[string]*webboot.Distro{
-		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+//		TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
+//		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
 		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
-		"core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
+//		TODO: Fix 'core' with CorePlus' 64-bit architecture
+//		"core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
 	}
 )
 
@@ -96,22 +98,22 @@ func name(URL string) (string, error) {
 	return filename, nil
 }
 
-func usage() {
-	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
-	flag.PrintDefaults()
-	os.Exit(1)
-}
-
 func setupEssid(essid string) error {
 	if essid == "" {
 		return nil
 	}
 	o, err := exec.Command("iwconfig", "wlan0", "essid", essid).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("error setting up wifi:%v", err)
+		return fmt.Errorf("Error setting up wifi:%v", err)
 	}
 	log.Printf("setupEssid: iwconfig returned %v", string(o))
 	return nil
+}
+
+func usage() {
+	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(1)
 }
 
 func main() {
@@ -133,7 +135,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
+	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
 	log.Println("Retrieving the file...")
 	iso, err := linkOpen(URL)
 	if err != nil {
