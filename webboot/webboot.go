@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 //
 // Synopsis:
-//     webboot [OPTIONS...] URL or name of bookmark
+//     webboot [OPTIONS...] name of bookmark
 //
 // Options:
 //	-cmd: Command line parameters to the second kernel
@@ -24,10 +24,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 
 	"github.com/u-root/webboot/pkg/dhclient"
@@ -54,18 +52,13 @@ var (
 	}
 )
 
-// parseArg takes a name and produces a filename and a URL
-// The URL can be used to download data to the file 'filename'
-// The argument is either a full URL or a bookmark.
+// parseArg takes a name of bookmark and produces a download link
+// The download link can be used to download data to a persistent memory device '/dev/pmem0'
 func parseArg(arg string) (string, string, error) {
 	if u, ok := bookmark[arg]; ok {
 		return u.DownloadLink, arg, nil
 	}
-	filename, err := name(arg)
-	if err != nil {
-		return "", "", fmt.Errorf("%v is not a valid URL: %v", arg, err)
-	}
-	return arg, filename, nil
+	return "", "", fmt.Errorf("%s is not supported", arg)
 }
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
@@ -79,23 +72,6 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
 	}
 	return resp.Body, nil
-}
-
-// name takes a URL and generates a filename from it
-// For example, if a valid URL = http://tinycorelinux.net/10.x/x86_64/release/CorePure64-10.1.iso, then filename = CorePure64-10.1.iso
-// if the URL is empty or if the URL's Path ends in /, name returns a default index.html as the filename
-func name(URL string) (string, error) {
-	p, err := url.Parse(URL)
-
-	if err != nil {
-		return "", err
-	}
-	filename := "index.html"
-
-	if p.Path != "" && !strings.HasSuffix(p.Path, "/") {
-		filename = path.Base(p.Path)
-	}
-	return filename, nil
 }
 
 // setupWIFI enables connection to a specified wifi network
@@ -139,7 +115,11 @@ func main() {
 
 	URL, filename, err := parseArg(arg)
 	if err != nil {
-		log.Fatal(err)
+		var s string
+		for os := range bookmark {
+			s += os + " "
+		}
+		log.Fatalf("%v, valid names: %q", err, s)
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
