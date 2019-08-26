@@ -14,7 +14,7 @@
 //	-ipv4: Use IPV4
 //	-ipv6: Use IPV6
 //	-dryrun: Do not do the kexec
-//	-essid: ESSID name
+//	-wifi: [essid [WPA [password]]] 
 package main
 
 import (
@@ -46,11 +46,11 @@ var (
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
 	wifi    = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
-//		TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
-//		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
+		// "tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
 		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
-//		TODO: Fix 'core' with CorePlus' 64-bit architecture
-//		"core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
+		// TODO: Fix 'core' with CorePlus' 64-bit architecture
+		// "core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
 	}
 )
 
@@ -98,12 +98,8 @@ func name(URL string) (string, error) {
 	return filename, nil
 }
 
-func usage() {
-	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
-	flag.PrintDefaults()
-	os.Exit(1)
-}
-
+// setupWIFI enables connection to a specified wifi network
+// wifi can be an open or closed network
 func setupWIFI(wifi string) error {
 	if wifi == "" {
 		return nil
@@ -114,9 +110,15 @@ func setupWIFI(wifi string) error {
 	// wifi and its children can run a long time. The bigger problem is
 	// knowing when the net is ready, but one problem at a time.
 	if err := c.Start(); err != nil {
-		return fmt.Errorf("error starting wifi(%v):%v", wifi, err)
+		return fmt.Errorf("Error starting wifi(%v):%v", wifi, err)
 	}
 	return nil
+}
+
+func usage() {
+	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(1)
 }
 
 func main() {
