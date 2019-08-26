@@ -17,6 +17,9 @@ variables:
 
 steps:
 - script: |
+    echo $PATH
+    set
+    sudo apt install wireless-tools wpasupplicant
     mkdir -p '$(GOBIN)'
     mkdir -p '$(GOPATH)/pkg'
     mkdir -p '$(modulePath)'
@@ -24,15 +27,21 @@ steps:
     mv !(gopath) '$(modulePath)'
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
-  displayName: 'Set up the Go workspace'
+  displayName: 'Set up the Go workspace and packages'
 
 - script: |
+    echo $PATH
+    set
     go version
     pwd
+    sudo apt install wireless-tools wpasupplicant
+    ls -l /sbin
+    ls -l /usr/sbin
     echo $(build.repository.name)
-    go get github.com/u-root/webboot
-    go run github.com/u-root/webboot
-    go run github.com/u-root/webboot -c=all
-    go run github.com/u-root/webboot -u=-build=bb
-    go run github.com/u-root/webboot -c=all -u=-build=bb
+    echo azure can really make me mad
+    PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/webboot
+    PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot
+    PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all
+    PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -u=-build=bb
+    PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all -u=-build=bb
   displayName: 'Get dependencies, then build'

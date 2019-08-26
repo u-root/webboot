@@ -44,7 +44,7 @@ var (
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
-	essid    = flag.String("essid", "GoogleGuest", "ESSID name")
+	wifi    = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
 //		TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
 //		"tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
@@ -98,22 +98,25 @@ func name(URL string) (string, error) {
 	return filename, nil
 }
 
-func setupEssid(essid string) error {
-	if essid == "" {
-		return nil
-	}
-	o, err := exec.Command("iwconfig", "wlan0", "essid", essid).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("Error setting up wifi:%v", err)
-	}
-	log.Printf("setupEssid: iwconfig returned %v", string(o))
-	return nil
-}
-
 func usage() {
 	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
 	flag.PrintDefaults()
 	os.Exit(1)
+}
+
+func setupWIFI(wifi string) error {
+	if wifi == "" {
+		return nil
+	}
+
+	c := exec.Command("wifi", strings.Split(wifi, " ")...)
+	c.Stdout, c.Stderr = os.Stdout, os.Stderr
+	// wifi and its children can run a long time. The bigger problem is
+	// knowing when the net is ready, but one problem at a time.
+	if err := c.Start(); err != nil {
+		return fmt.Errorf("error starting wifi(%v):%v", wifi, err)
+	}
+	return nil
 }
 
 func main() {
@@ -122,11 +125,13 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
-	if err := setupEssid(*essid); err != nil {
+	if err := setupWIFI(*wifi); err != nil {
 		log.Fatal(err)
 	}
 
-	dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+	if *ipv4 || *ipv6 {
+		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+	}
 
 	arg := flag.Arg(0)
 
