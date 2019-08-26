@@ -103,6 +103,9 @@ func usage() {
 }
 
 func setupEssid(essid string) error {
+	if essid == "" {
+		return nil
+	}
 	o, err := exec.Command("iwconfig", "wlan0", "essid", essid).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error setting up wifi:%v", err)
