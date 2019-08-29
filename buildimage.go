@@ -41,8 +41,9 @@ func extraBinMust(n string) string {
 func main() {
 	var commands = [][]string{
 		{"date"},
-		{"go", "get", "-u", "github.com/u-root/u-root"},
-		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
+		// These are now vendored; you can do these commands by hand if you think something is wrong.
+		//{"go", "get", "-u", "github.com/u-root/u-root"},
+		//{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
 		append(append([]string{"go", "run", "github.com/u-root/u-root/.",
 			"-files", extraBinMust("iwconfig"),
 			"-files", extraBinMust("iwlist"),
