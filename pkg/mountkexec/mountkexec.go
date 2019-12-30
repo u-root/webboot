@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 
 	"github.com/u-root/u-root/pkg/boot"
-	"github.com/u-root/u-root/pkg/kexec"
+	"github.com/u-root/u-root/pkg/boot/kexec"
+	"github.com/u-root/u-root/pkg/boot/multiboot"
 	"github.com/u-root/u-root/pkg/loop"
 	"github.com/u-root/u-root/pkg/mount"
-	"github.com/u-root/u-root/pkg/multiboot"
 	"github.com/u-root/u-root/pkg/uio"
 	"github.com/u-root/webboot/pkg/webboot"
 	"golang.org/x/sys/unix"
@@ -31,7 +31,7 @@ func MountISO(isoPath, mountDir string) error {
 	if err := loop.SetFile(loopDevice, isoPath); err != nil {
 		return fmt.Errorf("error setting loop device:%v", err)
 	}
-	if err = mount.Mount(loopDevice, mountDir, "iso9660", "", unix.MS_RDONLY); err != nil {
+	if _, err = mount.Mount(loopDevice, mountDir, "iso9660", "", unix.MS_RDONLY); err != nil {
 		return fmt.Errorf("error mounting ISO:%v", err)
 	}
 	return nil
@@ -42,7 +42,7 @@ func MountISOPmem(pmem, mountDir string) error {
 	if err := os.MkdirAll(mountDir, 777); err != nil {
 		return fmt.Errorf("error making mount directory:%v", err)
 	}
-	if err := mount.Mount(pmem, mountDir, "iso9660", "", unix.MS_RDONLY); err != nil {
+	if _, err := mount.Mount(pmem, mountDir, "iso9660", "", unix.MS_RDONLY); err != nil {
 		return fmt.Errorf("error mounting %v on %v: %v", pmem, mountDir, err)
 	}
 	return nil
