@@ -33,6 +33,13 @@ import (
 	"github.com/u-root/webboot/pkg/webboot"
 )
 
+const (
+	tcUrl   = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
+	coreUrl = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
+	ubuUrl  = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
+	archUrl = "https://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+)
+
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
 	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
@@ -45,10 +52,49 @@ var (
 	wifi    = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
-		// "tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
-		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+		"tinycore": &webboot.Distro{
+			"boot/vmlinuz64",
+			"/boot/corepure64.gz",
+			"console=ttyS0",
+			tcUrl,
+		},
+		"Tinycore": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/boot/corepure64.gz",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
+			tcUrl,
+		},
+		"arch": &webboot.Distro{
+			"arch/boot/x86_64/vmlinuz",
+			"/arch/boot/x86_64/archiso.img",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			archUrl,
+		},
+		"Arch": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/arch/boot/x86_64/archiso.img",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			archUrl,
+		},
+		"ubuntu": &webboot.Distro{
+			"casper/vmlinuz",
+			"/casper/initrd",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			ubuUrl,
+		},
+		"Ubuntu": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/casper/initrd",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			ubuUrl,
+		},
 		// TODO: Fix 'core' with CorePlus' 64-bit architecture
-		// "core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
+		"core": &webboot.Distro{
+			"boot/vmlinuz",
+			"/boot/core.gz",
+			"console=tty0",
+			coreUrl,
+		},
 	}
 )
 
