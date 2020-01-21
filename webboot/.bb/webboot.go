@@ -1,0 +1,218 @@
+// Copyright 2019 the u-root Authors. All rights reserved
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//
+// Synopsis:
+//     webboot [OPTIONS...] name of bookmark
+//
+// Options:
+//	-cmd: Command line parameters to the second kernel
+//	-ifName: Name of the interface
+//	-timeout: Lease timeout in seconds
+//	-retry: Number of DHCP renewals before exiting
+//	-verbose:  Verbose output
+//	-ipv4: Use IPV4
+//	-ipv6: Use IPV6
+//	-dryrun: Do not do the kexec
+//	-wifi: [essid [WPA [password]]]
+package webboot
+
+import (
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+
+	bb "github.com/u-root/u-root/pkg/bb/bbmain"
+	"github.com/u-root/webboot/pkg/dhclient"
+	"github.com/u-root/webboot/pkg/mountkexec"
+	"github.com/u-root/webboot/pkg/webboot"
+)
+
+var (
+	cmd      *string
+	ifName   *string
+	timeout  *int
+	retry    *int
+	verbose  *bool
+	ipv4     *bool
+	ipv6     *bool
+	dryrun   *bool
+	wifi     *string
+	bookmark map[string]*webboot.Distro
+	// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
+	// "tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+
+	// TODO: Fix 'core' with CorePlus' 64-bit architecture
+	// "core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
+
+)
+
+// parseArg takes a name of bookmark and produces a download link
+// The download link can be used to download data to a persistent memory device '/dev/pmem0'
+func parseArg(arg string) (string, string, error) {
+	if u, ok := bookmark[arg]; ok {
+		return u.DownloadLink, arg, nil
+	}
+	return "", "", fmt.Errorf("%s is not supported", arg)
+}
+
+// linkOpen returns an io.ReadCloser that holds the content of the URL
+func linkOpen(URL string) (io.ReadCloser, error) {
+	resp, err := http.Get(URL)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+	}
+	return resp.Body, nil
+}
+
+// setupWIFI enables connection to a specified wifi network
+// wifi can be an open or closed network
+func setupWIFI(wifi string) error {
+	if wifi == "" {
+		return nil
+	}
+
+	c := exec.Command("wifi", strings.Split(wifi, " ")...)
+	c.Stdout, c.Stderr = os.Stdout, os.Stderr
+	// wifi and its children can run a long time. The bigger problem is
+	// knowing when the net is ready, but one problem at a time.
+	if err := c.Start(); err != nil {
+		return fmt.Errorf("Error starting wifi(%v):%v", wifi, err)
+	}
+	return nil
+}
+
+func usage() {
+	log.Printf("Usage: %s [flags] URL or name of bookmark\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(1)
+}
+
+func Main() {
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		usage()
+	}
+	if err := setupWIFI(*wifi); err != nil {
+		log.Fatal(err)
+	}
+
+	if *ipv4 || *ipv6 {
+		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+	}
+
+	arg := flag.Arg(0)
+
+	URL, filename, err := parseArg(arg)
+	if err != nil {
+		var s string
+		for os := range bookmark {
+			s += os + " "
+		}
+		log.Fatalf("%v, valid names: %q", err, s)
+	}
+
+	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
+	log.Println("Retrieving the file...")
+	iso, err := linkOpen(URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer iso.Close()
+
+	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
+	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := io.Copy(pmem, iso); err != nil {
+		log.Fatalf("Error copying to persistent memory device: %v", err)
+	}
+	if err = pmem.Close(); err != nil {
+		log.Fatalf("Error closing /dev/pmem0: %v", err)
+	}
+
+	tmp, err := ioutil.TempDir("", "mnt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = mountkexec.MountISOPmem("/dev/pmem0", tmp); err != nil {
+		log.Fatalf("Error in mountISO:%v", err)
+
+	}
+	if *dryrun == false {
+		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd); err != nil {
+			log.Fatalf("Error in webbootCommandline:%v", err)
+		} else {
+			bookmark[filename].Cmdline = cmdline
+		}
+		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
+			log.Fatalf("Error in kexecISO:%v", err)
+		}
+	}
+
+	fmt.Printf("The URL requested: %v\n The file requested: %v\n The mounting point: %v\n", URL, filename, tmp)
+}
+func Init1() {
+	cmd = flag.String("cmd", "", "Command line parameters to the second kernel")
+}
+func Init2() {
+	ifName = flag.String("interface", "^[we].*", "Name of the interface")
+}
+func Init3() {
+	timeout = flag.Int("timeout", 15, "Lease timeout in seconds")
+}
+func Init4() {
+	retry = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
+}
+func Init5() {
+	verbose = flag.Bool("verbose", false, "Verbose output")
+}
+func Init6() {
+	ipv4 = flag.Bool("ipv4", true, "use IPV4")
+}
+func Init7() {
+	ipv6 = flag.Bool("ipv6", true, "use IPV6")
+}
+func Init8() {
+	dryrun = flag.Bool("dryrun", false, "Do not do the kexec")
+}
+func Init9() {
+	wifi = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
+}
+func Init10() {
+	bookmark = map[string]*webboot.Distro{
+
+		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
+	}
+}
+func Init0() {
+	Init1()
+	Init2()
+	Init3()
+	Init4()
+	Init5()
+	Init6()
+	Init7()
+	Init8()
+	Init9()
+	Init10()
+}
+func Init() {
+	Init0()
+}
+func init() {
+	bb.Register("webboot", Init, Main)
+}
