@@ -52,13 +52,19 @@ func MountISOPmem(pmem, mountDir string) error {
 func KexecISO(opp *webboot.Distro, dir string) error {
 	var image boot.OSImage
 	kernelPath := opp.Kernel
+
+	kernel, err := os.Open(kernelPath)
+
+	if err != nil {
+		fmt.Errorf("Error: %v", err)
+	}
+
 	if !filepath.IsAbs(kernelPath) {
 		kernelPath = filepath.Join(dir, kernelPath)
 	}
 
-	if err := multiboot.Probe(kernelPath); err == nil {
+	if err := multiboot.Probe(kernel); err == nil {
 		image = &boot.MultibootImage{
-			Path:    kernelPath,
 			Cmdline: opp.Cmdline,
 		}
 	} else {
