@@ -53,6 +53,7 @@ func KexecISO(opp *webboot.Distro, dir string) error {
 	var image boot.OSImage
 	kernelPath := opp.Kernel
 
+	//kernel can be used in multiboot.Probe
 	kernel, err := os.Open(kernelPath)
 
 	if err != nil {
