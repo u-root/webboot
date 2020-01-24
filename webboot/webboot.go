@@ -14,7 +14,7 @@
 //	-ipv4: Use IPV4
 //	-ipv6: Use IPV6
 //	-dryrun: Do not do the kexec
-//	-wifi: [essid [WPA [password]]] 
+//	-wifi: [essid [WPA [password]]]
 package main
 
 import (
@@ -49,7 +49,7 @@ var (
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
-	wifi    = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
+	wifi     = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
 		"tinycore": &webboot.Distro{
