@@ -49,7 +49,7 @@ var (
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
-	wifi     = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
+	wifi     = flag.String("wifi", "", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
 		"tinycore": &webboot.Distro{
@@ -88,7 +88,12 @@ var (
 			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
 			ubuUrl,
 		},
-		// TODO: Fix 'core' with CorePlus' 64-bit architecture
+		"local":    &webboot.Distro{
+			"/bzImage",
+			"/boot/corepure64.gz",
+			"memmap=256M!1G earlyprintk=ttyS0,115200,keep console=ttyS0 console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
+			"file:///iso", // NOTE: three / is REQUIRED
+		},
 		"core": &webboot.Distro{
 			"boot/vmlinuz",
 			"/boot/core.gz",
@@ -109,15 +114,21 @@ func parseArg(arg string) (string, string, error) {
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
-	resp, err := http.Get(URL)
-	if err != nil {
-		return nil, err
-	}
+	switch URL[:7] {
+	case "file://":
+		return os.Open(URL[7:])
+	case "http://":
+		resp, err := http.Get(URL)
+		if err != nil {
+			return nil, err
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+		}
+		return resp.Body, nil
 	}
-	return resp.Body, nil
+	return nil, fmt.Errorf("linkopen only supports file:// and http:// schemes")
 }
 
 // setupWIFI enables connection to a specified wifi network
@@ -149,8 +160,10 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
-	if err := setupWIFI(*wifi); err != nil {
-		log.Fatal(err)
+	if *wifi != "" {
+		if err := setupWIFI(*wifi); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if *ipv4 || *ipv6 {
