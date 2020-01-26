@@ -35,7 +35,13 @@ as [instructions](https://en.opensuse.org/openSUSE:Kernel_git).
 
 ## TinyCore
 
-- kernel sources: uses upstream Linux? - TODO: check
+Patched kernel sources, separate patches and config can be found among the
+[release sources](http://tinycorelinux.net/10.x/x86/release/src/kernel/).
+
+- [Core ISO](http://tinycorelinux.net/10.x/x86/release/Core-current.iso)
+- [CorePlus ISO](http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso)
+- [TinyCore ISO](http://tinycorelinux.net/10.x/x86/release/TinyCore-current.iso)
+- [kernel sources](http://tinycorelinux.net/10.x/x86/release/src/kernel/linux-4.19.10-patched.txz)
 - [kernel config](http://tinycorelinux.net/10.x/x86/release/src/kernel/config-4.19.10-tinycore)
 
 ## Ubuntu
