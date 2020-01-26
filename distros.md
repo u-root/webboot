@@ -23,6 +23,12 @@ Cloning from the repository and applying the config should just work though.
 - [stable sources](https://koji.fedoraproject.org/koji/search?terms=kernel-5.5.0-0.rc6.git3.1.fc32&type=build&match=glob)
 - [kernel config](https://src.fedoraproject.org/rpms/kernel/raw/master/f/kernel-x86_64-fedora.config)
 
+### Release 30
+
+- [ISO](https://dl.fedoraproject.org/pub/archive/fedora/linux/releases/30/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-30-1.2.iso)
+- [netinst](https://dl.fedoraproject.org/pub/archive/fedora/linux/releases/30/Workstation/x86_64/iso/Fedora-Workstation-netinst-x86_64-30-1.2.iso)
+- [kernel sources](https://dl.fedoraproject.org/pub/archive/fedora/linux/releases/30/Workstation/source/tree/Packages/k/kernel-5.0.9-301.fc30.src.rpm)
+
 ## openSUSE
 
 Details on the kernel are [in the wiki](https://en.opensuse.org/Kernel), as well
