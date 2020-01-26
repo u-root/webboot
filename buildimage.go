@@ -21,6 +21,7 @@ var (
 	ncmds   = flag.String("n", "github.com/u-root/NiChrome/cmds/wifi", "NiChrome commands to build into the image")
 	bzImage = flag.String("bzImage", "", "Optional bzImage to embed in the initramfs")
 	iso     = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
+	wifi    = flag.Bool("wifi", true, "include wifi tools")
 )
 
 func init() {
@@ -43,12 +44,15 @@ func extraBinMust(n string) string {
 func main() {
 	var args = []string{
 		"go", "run", "github.com/u-root/u-root/.",
-		"-files", extraBinMust("iwconfig"),
-		"-files", extraBinMust("iwlist"),
-		"-files", extraBinMust("wpa_supplicant"),
-		"-files", extraBinMust("wpa_action"),
-		"-files", extraBinMust("wpa_cli"),
-		"-files", extraBinMust("wpa_passphrase"),
+	}
+	if *wifi {
+		args = append(args,
+			"-files", extraBinMust("iwconfig"),
+			"-files", extraBinMust("iwlist"),
+			"-files", extraBinMust("wpa_supplicant"),
+			"-files", extraBinMust("wpa_action"),
+			"-files", extraBinMust("wpa_cli"),
+			"-files", extraBinMust("wpa_passphrase"))
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
