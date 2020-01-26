@@ -9,6 +9,7 @@ developing webboot.
 
 ## Arch Linux
 
+- [ISO](http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso)
 - [kernel sources](https://git.archlinux.org/linux.git?signed#tag=v5.4.14-arch1)
 - [kernel config](https://git.archlinux.org/svntogit/packages.git/tree/trunk?h=packages/linux)
 
