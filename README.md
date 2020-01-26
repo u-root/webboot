@@ -5,12 +5,26 @@ over the web.
 
 ## Concept
 
-The key idea is to have the respective distro's image copied to RAM and preserve
-it throughout a kexec. That is achieved by using a pmem device, which is created
-at `/dev/pmem[N]` when booting Linux with the `memmap` parameter.
+The webboot bootloader works as follows:
+
+1. fetch an OS distro release ISO from the web
+2. copy the ISO to memory
+3. mount the ISO and copy out the kernel and initrd
+4. load the extracted kernel with the initrd
+5. kexec that kernel with `memmap` parameters to retain the ISO
+
+The key point lies in preserving the respective ISO file without further storage
+throughout the kexec. That is achieved by using a persistent memory driver,
+which creates a pmem device at `/dev/pmem[N]` when booting Linux with the
+`memmap` parameter.
 
 The caveat is that both our webboot kernel as well as the kernel we kexec into
-need support for pmem.
+need support for pmem. See [below](#supported-operating-systems) for details on
+OS distribution support and how the kernel needs to be configured.
+
+The second issue is with carefully choosing size options. The Linux system
+started first needs enough memory to work with, and the pmem device needs to be
+large enough to hold the ISO.
 
 For reference, webboot developers should familiarize themselves with:
 
@@ -32,6 +46,16 @@ extra options, such as to include extra files, use the `-u` switch, e.g.,
 kernel which can be used to test whether kexec works in a small setup. That
 saves a lot of time, because a full webboot flow would always need to download
 large ISO files, copy them, mount and decompress.
+
+#### Convenience
+
+For convenience, you can
+
+- skip the inclusion of Wi-Fi tools by passing `-wifi false`
+- add a custom kernel for within the initramfs via `-bzImage path/to/bzImage`
+- add an ISO file to the initramfs via `-iso path/to/os-distro.iso`
+    * boot that ISO via `webboot -dhcp4=false -dhcp6-false local` later, which
+      requires passing a pmem-enabled kernel via `-bzImage` as described above
 
 #### Compression
 
