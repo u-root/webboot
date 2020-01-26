@@ -153,7 +153,7 @@ squashfs (`lib/modules/*/kernel/drivers/nvdimm/`). They would need to either
 have the module in their initramfs already or even built into their kernel.
 Otherwise, when we kexec into the respective kernel, we lose the ISO.
 
-For more details, see [distros.md](distros.md).
+The following table lists how the distros structure the ISOs.
 
 | distro     | base dir           | kernel    | initrd        | squashfs       |
 | ---------- | ------------------ | --------- | ------------- | -------------- |
@@ -162,14 +162,18 @@ For more details, see [distros.md](distros.md).
 | TinyCore   | `boot`             | `vmlinuz64` | `corepure64.gz` | directory  |
 | Ubuntu     | `casper`           | `vmlinuz` | `initrd` | `filesystem.squashfs` |
 
-As a hackaround, we could mount the squashfs within webboot already, copy out
+For more details, see [distros.md](distros.md).
+
+#### Solutions
+
+1) As a hackaround, we could mount the squashfs within webboot already, copy out
 the pmem modules, recreate the initramfs with the pmem modules in addition, and
 then boot into that.
 
-A much easier way would be to ask the distributors to include the modules for
+2) A much easier way would be to ask the distributors to include the modules for
 pmem support already in their initramfs, i.e., the nvdimm drivers, or build them
-into the kernel. For the latter, their config would need the following:
-need to include the following:
+into the kernel. For the latter, their config would need to include the
+following:
 
 ```
 CONFIG_X86_PMEM_LEGACY_DEVICE=y
@@ -178,6 +182,10 @@ CONFIG_BLK_DEV_PMEM=y
 CONFIG_ARCH_HAS_PMEM_API=y
 ```
 
-A third option would be rebuilding the respective distro's kernel on our side
+3) A third option would be rebuilding the respective distro's kernel on our side
 with the options as listed above as a PoC to show them that it works. Then we
 could upstream patches.
+
+For a start, the first iteration is a remastered ISO for TinyCore, with a
+modified kernel as per 3). The result is stored in
+[a separate repository](https://github.com/u-root/webboot-distro/).
