@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	wbtcURL = "http://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/webboot.iso"
+	wbtcURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/webboot.iso"
 	tcURL   = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	coreURL = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL  = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
@@ -124,7 +124,7 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 	switch URL[:7] {
 	case "file://":
 		return os.Open(URL[7:])
-	case "http://":
+	case "http://", "https://":
 		resp, err := http.Get(URL)
 		if err != nil {
 			return nil, err
@@ -135,7 +135,7 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 		}
 		return resp.Body, nil
 	}
-	return nil, fmt.Errorf("linkopen only supports file:// and http:// schemes")
+	return nil, fmt.Errorf("%q: linkopen only supports file://, https://, and http:// schemes", URL)
 }
 
 // setupWIFI enables connection to a specified wifi network
