@@ -121,10 +121,10 @@ func parseArg(arg string) (string, string, error) {
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
-	switch URL[:7] {
-	case "file://":
+	switch {
+	case strings.HasPrefix(URL, "file://"):
 		return os.Open(URL[7:])
-	case "http://", "https://":
+	case strings.HasPrefix(URL, "http://"), strings.HasPrefix(URL, "https://"):
 		resp, err := http.Get(URL)
 		if err != nil {
 			return nil, err
