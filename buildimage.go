@@ -44,6 +44,7 @@ func extraBinMust(n string) string {
 func main() {
 	var args = []string{
 		"go", "run", "github.com/u-root/u-root/.",
+		"-files", "/etc/ssl/certs",
 	}
 	if *wifi {
 		args = append(args,
