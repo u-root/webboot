@@ -129,7 +129,7 @@ qemu-system-x86_64 \
   -enable-kvm \
   -m 20G \
   -kernel linux/arch/x86/boot/bzImage \
-  -append 'console=ttyS0 console=tty1 memmap=4G!4G' \
+  -append 'console=ttyS0 console=tty1 memmap=1G!1G' \
   -initrd /tmp/initramfs.linux_amd64.cpio \
   -device virtio-rng-pci
 ```

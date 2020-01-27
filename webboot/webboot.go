@@ -57,7 +57,7 @@ var (
 		"webboot-tinycorepure": &webboot.Distro{
 			"boot/vmlinuz64",
 			"/boot/corepure64.gz",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
 			wbtcpURL,
 		},
 		"webboot-corepure": &webboot.Distro{
@@ -75,31 +75,31 @@ var (
 		"Tinycore": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/boot/corepure64.gz",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
 			tcURL,
 		},
 		"arch": &webboot.Distro{
 			"arch/boot/x86_64/vmlinuz",
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
 			archURL,
 		},
 		"Arch": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
 			archURL,
 		},
 		"ubuntu": &webboot.Distro{
 			"casper/vmlinuz",
 			"/casper/initrd",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
 			ubuURL,
 		},
 		"Ubuntu": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/casper/initrd",
-			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			"memmap=1G!1G console=ttyS0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
 			ubuURL,
 		},
 		"local": &webboot.Distro{
