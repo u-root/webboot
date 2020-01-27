@@ -34,11 +34,12 @@ import (
 )
 
 const (
-	wbtcURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/webboot.iso"
-	tcURL   = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
-	coreURL = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
-	ubuURL  = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
-	archURL = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+	wbtcpURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
+	wbcpURL  = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/CorePure64.iso"
+	tcURL    = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
+	coreURL  = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
+	ubuURL   = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
+	archURL  = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
 )
 
 var (
@@ -53,11 +54,17 @@ var (
 	wifi     = flag.String("wifi", "", "[essid [WPA [password]]]")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
-		"webboot-tinycore": &webboot.Distro{
+		"webboot-tinycorepure": &webboot.Distro{
 			"boot/vmlinuz64",
 			"/boot/corepure64.gz",
 			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
-			wbtcURL,
+			wbtcpURL,
+		},
+		"webboot-corepure": &webboot.Distro{
+			"boot/vmlinuz64",
+			"/boot/corepure64.gz",
+			"memmap=4G!4G console=ttyS0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791",
+			wbcpURL,
 		},
 		"tinycore": &webboot.Distro{
 			"boot/vmlinuz64",
