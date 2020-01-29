@@ -53,17 +53,27 @@ func KexecISO(opp *webboot.Distro, dir string) error {
 	var image boot.OSImage
 	kernelPath := opp.Kernel
 
+
 	//	kernel, err := os.Open(kernelPath)
 
 	//	if err != nil {
 	//		fmt.Errorf("Error: %v", err)
 	//	}
 
+
+
 	if !filepath.IsAbs(kernelPath) {
 		kernelPath = filepath.Join(dir, kernelPath)
 	}
 
-	if err := multiboot.Probe(kernelPath); err == nil {
+	//kernel can be used in multiboot.Probe
+	kernel, err := os.Open(kernelPath)
+
+	if err != nil {
+		fmt.Errorf("KexecISO error opening kernelPath %v: ", err)
+	}
+
+	if err := multiboot.Probe(kernel); err == nil {
 		image = &boot.MultibootImage{
 			Cmdline: opp.Cmdline,
 		}
