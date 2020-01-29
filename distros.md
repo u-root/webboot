@@ -13,6 +13,15 @@ developing webboot.
 - [kernel sources](https://git.archlinux.org/linux.git?signed#tag=v5.4.14-arch1)
 - [kernel config](https://git.archlinux.org/svntogit/packages.git/tree/trunk?h=packages/linux)
 
+### SystemRescueCd
+
+Formerly based on Gentoo, SystemRescueCd is now build on top of Arch Linux.
+
+It is meant to be a live distro for system rescue tasks, hence the name.
+
+- [download page](http://www.system-rescue-cd.org/Download/)
+- [ISO](https://osdn.net/projects/systemrescuecd/storage/releases/6.0.7/systemrescuecd-6.0.7.iso)
+
 ## Fedora
 
 [Build instructions](https://fedoraproject.org/wiki/Building_a_custom_kernel)

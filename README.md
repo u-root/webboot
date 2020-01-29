@@ -167,6 +167,7 @@ correct interface, e.g., `eth0`:
 - [ ] Arch Linux
 - [ ] Fedora
 - [ ] openSUSE
+- [ ] SystemRescueCd
 - [x] TinyCore Linux (reusing the webboot kernel for it)
 - [ ] Ubuntu
 
@@ -179,12 +180,13 @@ Otherwise, when we kexec into the respective kernel, we lose the ISO.
 
 The following table lists how the distros structure the ISOs.
 
-| distro     | base dir           | kernel    | initrd        | squashfs       |
-| ---------- | ------------------ | --------- | ------------- | -------------- |
-| Arch Linux | `arch/boot/x86_64` | `vmlinuz` | `archiso.img` | `airootfs.sfs` |
-| openSUSE   | `boot/x86_64/loader` | `linux` | `initrd`      | ?              |
-| TinyCore   | `boot`             | `vmlinuz64` | `corepure64.gz` | directory  |
-| Ubuntu     | `casper`           | `vmlinuz` | `initrd` | `filesystem.squashfs` |
+| distro         | base dir                      | kernel      | initrd          | squashfs                              |
+| -------------- | ----------------------------- | ----------- | --------------- | ------------------------------------- |
+| Arch Linux     | `/arch/boot/x86_64`           | `vmlinuz`   | `archiso.img`   | `/arch/x86_64/airootfs.sfs`           |
+| SystemRescueCd | `/systemrescuecd/boot/x86_64` | `vmlinuz`   | `sysresccd.img` | `/systemrescuecd/x86_64/airootfs.sfs` |
+| openSUSE       | `/boot/x86_64/loader`         | `linux`     | `initrd`        | `/LiveOS/squashfs.img`                |
+| TinyCore       | `/boot`                       | `vmlinuz64` | `corepure64.gz` |  N/A, uses `/cde` directory           |
+| Ubuntu         | `/casper`                     | `vmlinuz`   | `initrd`        | `filesystem.squashfs`                 |
 
 For more details, see [distros.md](distros.md).
 
