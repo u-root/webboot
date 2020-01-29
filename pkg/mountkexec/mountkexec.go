@@ -53,11 +53,7 @@ func KexecISO(opp *webboot.Distro, dir string) error {
 	var image boot.OSImage
 	kernelPath := opp.Kernel
 
-	//	kernel, err := os.Open(kernelPath)
-
-	//	if err != nil {
-	//		fmt.Errorf("Error: %v", err)
-	//	}
+	//kernel type *os.Open cannot be rendered
 
 	if !filepath.IsAbs(kernelPath) {
 		kernelPath = filepath.Join(dir, kernelPath)
