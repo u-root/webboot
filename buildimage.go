@@ -15,10 +15,13 @@ var (
 	debug = func(string, ...interface{}) {}
 
 	verbose = flag.Bool("v", true, "verbose debugging output")
-	uroot   = flag.String("u", "-build=bb", "options for u-root")
-	cmds    = flag.String("c", "core", "u-root commands to build into the image")
+	uroot   = flag.String("u", "", "options for u-root")
+	cmds    = flag.String("c", "all", "u-root commands to build into the image")
 	wcmds   = flag.String("w", "github.com/u-root/webboot/webboot/.", "webboot commands to build into the image")
 	ncmds   = flag.String("n", "github.com/u-root/NiChrome/cmds/wifi", "NiChrome commands to build into the image")
+	bzImage = flag.String("bzImage", "", "Optional bzImage to embed in the initramfs")
+	iso     = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
+	wifi    = flag.Bool("wifi", true, "include wifi tools")
 )
 
 func init() {
@@ -34,23 +37,35 @@ func init() {
 func extraBinMust(n string) string {
 	p, err := exec.LookPath(n)
 	if err != nil {
-		log.Fatalf("extraMustBin(%q): %v; you may need to run sudo apt install wireless-tools wpasupplicant", n, err)
+		log.Fatalf("extraMustBin(%q): %v", n, err)
 	}
 	return p
 }
 func main() {
-	var commands = [][]string{
-		{"date"},
-		{"go", "get", "-u", "github.com/u-root/u-root"},
-		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
-		append(append([]string{"go", "run", "github.com/u-root/u-root/.",
+	var args = []string{
+		"go", "run", "github.com/u-root/u-root/.",
+		"-files", "/etc/ssl/certs",
+	}
+	if *wifi {
+		args = append(args,
 			"-files", extraBinMust("iwconfig"),
 			"-files", extraBinMust("iwlist"),
 			"-files", extraBinMust("wpa_supplicant"),
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
-			"-files", extraBinMust("wpa_passphrase"),
-		}, strings.Fields(*uroot)...), *cmds, *wcmds, *ncmds),
+			"-files", extraBinMust("wpa_passphrase"))
+	}
+	if *bzImage != "" {
+		args = append(args, "-files", *bzImage+":bzImage")
+	}
+	if *iso != "" {
+		args = append(args, "-files", *iso+":iso")
+	}
+	var commands = [][]string{
+		{"date"},
+		{"go", "get", "-u", "github.com/u-root/u-root"},
+		{"go", "get", "-d", "-v", "-u", "github.com/u-root/NiChrome/..."},
+		append(append(args, strings.Fields(*uroot)...), *cmds, *wcmds, *ncmds),
 	}
 
 	for _, cmd := range commands {
