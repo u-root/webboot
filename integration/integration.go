@@ -21,10 +21,10 @@ import (
 	"github.com/u-root/u-root/pkg/cp"
 	"github.com/u-root/u-root/pkg/golang"
 	"github.com/u-root/u-root/pkg/qemu"
+	"github.com/u-root/u-root/pkg/ulog"
 	"github.com/u-root/u-root/pkg/uroot"
 	"github.com/u-root/u-root/pkg/uroot/builder"
 	"github.com/u-root/u-root/pkg/uroot/initramfs"
-	"github.com/u-root/u-root/pkg/uroot/logger"
 )
 
 // Serial output is written to this directory and picked up by circleci, or
@@ -86,7 +86,7 @@ type Options struct {
 	LogFile string
 
 	// Logger logs build statements.
-	Logger logger.Logger
+	Logger ulog.Logger
 
 	// Timeout is the timeout for expect statements.
 	Timeout time.Duration
@@ -362,7 +362,7 @@ func QEMU(o *Options) (*qemu.Options, string, error) {
 		Devices: []qemu.Device{
 			qemu.ReadOnlyDirectory{Dir: tmpDir},
 			qemu.VirtioRandom{},
-			o.Network,
 		},
+		//		Network: o.Network,
 	}, tmpDir, nil
 }
