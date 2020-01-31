@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/u-root/u-root/pkg/multiboot"
+	"github.com/u-root/u-root/pkg/boot/multiboot"
 )
 
 func testMultiboot(t *testing.T, kernel string) {
