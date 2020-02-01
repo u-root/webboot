@@ -1,0 +1,16 @@
+export PMEM_SIZE=4G
+export RAM_SIZE=8G
+export KERNEL=linux/arch/x86/boot/bzImage
+export INITRD=/tmp/initramfs.linux_amd64.cpio
+
+/usr/bin/qemu-system-x86_64 \
+  -machine q35 \
+  -m $RAM_SIZE \
+  -object rng-random,filename=/dev/urandom,id=rng0 \
+  -device virtio-rng-pci,rng=rng0 \
+  -netdev user,id=u1 -device rtl8139,netdev=u1 \
+  -kernel $KERNEL \
+  -initrd $INITRD \
+  -vga std \
+  -append "earlyprintk=ttyS0,115200,keep console=tty0 console=ttyS0 vga=ask memmap=1G!1G" \
+  -serial stdio
