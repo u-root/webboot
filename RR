@@ -1,6 +1,6 @@
 export PMEM_SIZE=4G
-export RAM_SIZE=8G
-export KERNEL=linux/arch/x86/boot/bzImage
+export RAM_SIZE=2048
+export KERNEL=/home/brandonjakobson/linux/arch/x86/boot/bzImage
 export INITRD=/tmp/initramfs.linux_amd64.cpio
 
 /usr/bin/qemu-system-x86_64 \
