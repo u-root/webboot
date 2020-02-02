@@ -1,7 +1,8 @@
-export PMEM_SIZE=4G
-export RAM_SIZE=8G
-export KERNEL=linux/arch/x86/boot/bzImage
-export INITRD=/tmp/initramfs.linux_amd64.cpio
+PMEM_SIZE=${PMEM_SIZE:=1G}
+PMEM_BASE=${PMEM_BASE:=1G}
+RAM_SIZE=${RAM_SIZE:=2G}
+KERNEL=${KERNEL:=linux/arch/x86/boot/bzImage}
+INITRD=${INITRD:=/tmp/initramfs.linux_amd64.cpio}
 
 /usr/bin/qemu-system-x86_64 \
   -machine q35 \
@@ -12,5 +13,5 @@ export INITRD=/tmp/initramfs.linux_amd64.cpio
   -kernel $KERNEL \
   -initrd $INITRD \
   -vga std \
-  -append "earlyprintk=ttyS0,115200,keep console=tty0 console=ttyS0 vga=ask memmap=1G!1G" \
+  -append "earlyprintk=ttyS0,115200,keep console=tty0 console=ttyS0 vga=ask memmap=$PMEM_SIZE!$PMEM_BASE" \
   -serial stdio

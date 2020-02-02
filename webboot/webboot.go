@@ -40,7 +40,10 @@ const (
 	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
 	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+
 	tcCmdLine = "memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde  "
+
+
 )
 
 var (
@@ -181,6 +184,22 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
+
+	URL, filename, err := parseArg(flag.Arg(0))
+	if err != nil {
+		var s string
+		for os := range bookmark {
+			s += os + " "
+		}
+		log.Fatalf("%v, valid names: %q", err, s)
+	}
+
+	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
+	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *wifi != "" {
 		if err := setupWIFI(*wifi); err != nil {
 			log.Fatal(err)
@@ -191,17 +210,6 @@ func main() {
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 	}
 
-	arg := flag.Arg(0)
-
-	URL, filename, err := parseArg(arg)
-	if err != nil {
-		var s string
-		for os := range bookmark {
-			s += os + " "
-		}
-		log.Fatalf("%v, valid names: %q", err, s)
-	}
-
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
 	log.Println("Retrieving the file...")
 	iso, err := linkOpen(URL)
@@ -210,11 +218,6 @@ func main() {
 	}
 	defer iso.Close()
 
-	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
-	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		log.Fatal(err)
-	}
 	if _, err := io.Copy(pmem, iso); err != nil {
 		log.Fatalf("Error copying to persistent memory device: %v", err)
 	}
