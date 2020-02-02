@@ -232,6 +232,7 @@ func main() {
 
 	}
 	if *dryrun == false {
+		//include tinycore commandline
 		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd+tinyCoreCmdLine()); err != nil {
 			log.Fatalf("Error in webbootCommandline:%v", err)
 		} else {
