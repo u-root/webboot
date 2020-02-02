@@ -40,7 +40,7 @@ const (
 	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
 	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
-	tcCmdLine = "memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791"
+	tcCmdLine = "memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde"
 )
 
 var (
@@ -84,25 +84,25 @@ var (
 		"arch": &webboot.Distro{
 			"arch/boot/x86_64/vmlinuz",
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
 			archURL,
 		},
 		"Arch": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
 			archURL,
 		},
 		"ubuntu": &webboot.Distro{
 			"casper/vmlinuz",
 			"/casper/initrd",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
 		"Ubuntu": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/casper/initrd",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
 		"local": &webboot.Distro{
