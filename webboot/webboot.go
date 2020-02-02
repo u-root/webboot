@@ -40,11 +40,7 @@ const (
 	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
 	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
-<<<<<<< HEAD
 	tcCmdLine = " memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde"
-=======
-	tcCmdLine = "memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791"
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 )
 
 var (
@@ -88,41 +84,25 @@ var (
 		"arch": &webboot.Distro{
 			"arch/boot/x86_64/vmlinuz",
 			"/arch/boot/x86_64/archiso.img",
-<<<<<<< HEAD
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
-=======
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 			archURL,
 		},
 		"Arch": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/arch/boot/x86_64/archiso.img",
-<<<<<<< HEAD
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
-=======
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 			archURL,
 		},
 		"ubuntu": &webboot.Distro{
 			"casper/vmlinuz",
 			"/casper/initrd",
-<<<<<<< HEAD
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
-=======
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 			ubuURL,
 		},
 		"Ubuntu": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/casper/initrd",
-<<<<<<< HEAD
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5",
-=======
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 			ubuURL,
 		},
 		"local": &webboot.Distro{
@@ -201,7 +181,6 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
-<<<<<<< HEAD
 	if *wifi != "" {
 		if err := setupWIFI(*wifi); err != nil {
 			log.Fatal(err)
@@ -213,32 +192,14 @@ func main() {
 	}
 
 	arg := flag.Arg(0)
-=======
->>>>>>> d6b9b8890763997dc255defcba2c5cfd87860c97
 
-	URL, filename, err := parseArg(flag.Arg(0))
+	URL, filename, err := parseArg(arg)
 	if err != nil {
 		var s string
 		for os := range bookmark {
 			s += os + " "
 		}
 		log.Fatalf("%v, valid names: %q", err, s)
-	}
-
-	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
-	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if *wifi != "" {
-		if err := setupWIFI(*wifi); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if *ipv4 || *ipv6 {
-		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
@@ -249,6 +210,11 @@ func main() {
 	}
 	defer iso.Close()
 
+	// TODO: Find a persistent memory device large enough to store the content. If no blocks are available, error the user.
+	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if _, err := io.Copy(pmem, iso); err != nil {
 		log.Fatalf("Error copying to persistent memory device: %v", err)
 	}
