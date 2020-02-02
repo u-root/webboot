@@ -34,16 +34,23 @@ import (
 )
 
 const (
-	wbtcpURL  = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
-	wbcpURL   = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/CorePure64.iso"
-	tcURL     = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
-	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
-	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
-	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
-	tcCmdLine = "memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791"
+	wbtcpURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
+	wbcpURL  = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/CorePure64.iso"
+	tcURL    = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
+	coreURL  = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
+	ubuURL   = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
+	archURL  = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
 )
 
 var (
+	commandline, err = ioutil.ReadFile("/proc/cmdline")
+
+	values = []string{string(commandline), " root=/dev/pmem0 vga=791"}
+
+	cl = strings.Join(values, " loglevel=3 cde")
+
+	cdl = &cl
+
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
 	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
@@ -53,8 +60,6 @@ var (
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
 	wifi     = flag.String("wifi", "", "[essid [WPA [password]]]")
-	pmbase   = flag.Int("pmbase", 1, "PM base in GiB")
-	pmsize   = flag.Int("pmsize", 1, "PM size in GiB")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
 		"webboot-tinycorepure": &webboot.Distro{
@@ -84,25 +89,25 @@ var (
 		"arch": &webboot.Distro{
 			"arch/boot/x86_64/vmlinuz",
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			*cdl,
 			archURL,
 		},
 		"Arch": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 waitusb=5 vga=791",
+			*cdl,
 			archURL,
 		},
 		"ubuntu": &webboot.Distro{
 			"casper/vmlinuz",
 			"/casper/initrd",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			*cdl + "boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
 		"Ubuntu": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/casper/initrd",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5 vga=791",
+			*cdl + "boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
 		"local": &webboot.Distro{
@@ -121,7 +126,11 @@ var (
 )
 
 func tinyCoreCmdLine() string {
-	return fmt.Sprintf(tcCmdLine, *pmsize, *pmbase)
+
+	if err != nil {
+		fmt.Errorf("Error opening /proc/cmdline")
+	}
+	return fmt.Sprintf(*cdl)
 }
 
 // parseArg takes a name of bookmark and produces a download link
