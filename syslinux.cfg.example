@@ -1,0 +1,11 @@
+DEFAULT webboot
+  SAY Now booting webboot
+PROMPT 1
+TIMEOUT 1
+
+LABEL webboot
+  KERNEL /boot/webboot
+  INITRD /boot/webboot.cpio.gz
+  APPEND earlyprintk=tty0 earlyprintk=ttyS0,115200,keep console=ttyS0 console=tty0 memmap=1G!1G vga=ask
+
+

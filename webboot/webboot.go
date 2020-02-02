@@ -14,7 +14,7 @@
 //	-ipv4: Use IPV4
 //	-ipv6: Use IPV6
 //	-dryrun: Do not do the kexec
-//	-wifi: [essid [WPA [password]]] 
+//	-wifi: [essid [WPA [password]]]
 package main
 
 import (
@@ -33,6 +33,16 @@ import (
 	"github.com/u-root/webboot/pkg/webboot"
 )
 
+const (
+	wbtcpURL  = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
+	wbcpURL   = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/CorePure64.iso"
+	tcURL     = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
+	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
+	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
+	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+	tcCmdLine = " memmap=%dG!%dG earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 cde"
+)
+
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
 	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
@@ -42,15 +52,77 @@ var (
 	ipv4     = flag.Bool("ipv4", true, "use IPV4")
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
-	wifi    = flag.String("wifi", "GoogleGuest", "[essid [WPA [password]]]")
+	wifi     = flag.String("wifi", "", "[essid [WPA [password]]]")
+	pmbase   = flag.Int("pmbase", 1, "PM base in GiB")
+	pmsize   = flag.Int("pmsize", 1, "PM size in GiB")
 	bookmark = map[string]*webboot.Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
-		// "tinycore": &webboot.Distro{"boot/vmlinuz64", "/boot/corepure64.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
-		"Tinycore": &webboot.Distro{"/bzImage", "/boot/corepure64.gz", "memmap=4G!4G console=tty1 root=/dev/pmem0 loglevel=3 cde waitusb=5 vga=791", "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"},
-		// TODO: Fix 'core' with CorePlus' 64-bit architecture
-		// "core":     &webboot.Distro{"boot/vmlinuz", "/boot/core.gz", "console=tty0", "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"},
+		"webboot-tinycorepure": &webboot.Distro{
+			"boot/vmlinuz64",
+			"/boot/corepure64.gz",
+			tinyCoreCmdLine(),
+			wbtcpURL,
+		},
+		"webboot-corepure": &webboot.Distro{
+			"boot/vmlinuz64",
+			"/boot/corepure64.gz",
+			tinyCoreCmdLine(),
+			wbcpURL,
+		},
+		"tinycore": &webboot.Distro{
+			"boot/vmlinuz64",
+			"/boot/corepure64.gz",
+			tinyCoreCmdLine(),
+			tcURL,
+		},
+		"Tinycore": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/boot/corepure64.gz",
+			tinyCoreCmdLine(),
+			tcURL,
+		},
+		"arch": &webboot.Distro{
+			"arch/boot/x86_64/vmlinuz",
+			"/arch/boot/x86_64/archiso.img",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
+			archURL,
+		},
+		"Arch": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/arch/boot/x86_64/archiso.img",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
+			archURL,
+		},
+		"ubuntu": &webboot.Distro{
+			"casper/vmlinuz",
+			"/casper/initrd",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
+			ubuURL,
+		},
+		"Ubuntu": &webboot.Distro{
+			"/bzImage", // our own custom kernel, which has to be in the initramfs
+			"/casper/initrd",
+			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed waitusb=5",
+			ubuURL,
+		},
+		"local": &webboot.Distro{
+			"/bzImage",
+			"/boot/corepure64.gz",
+			tinyCoreCmdLine(),
+			"file:///iso", // NOTE: three / is REQUIRED
+		},
+		"core": &webboot.Distro{
+			"boot/vmlinuz",
+			"/boot/core.gz",
+			tinyCoreCmdLine(),
+			coreURL,
+		},
 	}
 )
+
+func tinyCoreCmdLine() string {
+	return fmt.Sprintf(tcCmdLine, *pmsize, *pmbase)
+}
 
 // parseArg takes a name of bookmark and produces a download link
 // The download link can be used to download data to a persistent memory device '/dev/pmem0'
@@ -63,15 +135,21 @@ func parseArg(arg string) (string, string, error) {
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
-	resp, err := http.Get(URL)
-	if err != nil {
-		return nil, err
-	}
+	switch {
+	case strings.HasPrefix(URL, "file://"):
+		return os.Open(URL[7:])
+	case strings.HasPrefix(URL, "http://"), strings.HasPrefix(URL, "https://"):
+		resp, err := http.Get(URL)
+		if err != nil {
+			return nil, err
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+		}
+		return resp.Body, nil
 	}
-	return resp.Body, nil
+	return nil, fmt.Errorf("%q: linkopen only supports file://, https://, and http:// schemes", URL)
 }
 
 // setupWIFI enables connection to a specified wifi network
@@ -103,8 +181,10 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
-	if err := setupWIFI(*wifi); err != nil {
-		log.Fatal(err)
+	if *wifi != "" {
+		if err := setupWIFI(*wifi); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if *ipv4 || *ipv6 {
@@ -152,10 +232,11 @@ func main() {
 
 	}
 	if *dryrun == false {
-		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd); err != nil {
+		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd+tinyCoreCmdLine()); err != nil {
 			log.Fatalf("Error in webbootCommandline:%v", err)
 		} else {
 			bookmark[filename].Cmdline = cmdline
+
 		}
 		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
 			log.Fatalf("Error in kexecISO:%v", err)

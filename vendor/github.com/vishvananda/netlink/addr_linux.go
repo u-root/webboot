@@ -11,43 +11,63 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// IFA_FLAGS is a u32 attribute.
-const IFA_FLAGS = 0x8
-
 // AddrAdd will add an IP address to a link device.
+//
 // Equivalent to: `ip addr add $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func AddrAdd(link Link, addr *Addr) error {
 	return pkgHandle.AddrAdd(link, addr)
 }
 
 // AddrAdd will add an IP address to a link device.
+//
 // Equivalent to: `ip addr add $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func (h *Handle) AddrAdd(link Link, addr *Addr) error {
 	req := h.newNetlinkRequest(unix.RTM_NEWADDR, unix.NLM_F_CREATE|unix.NLM_F_EXCL|unix.NLM_F_ACK)
 	return h.addrHandle(link, addr, req)
 }
 
 // AddrReplace will replace (or, if not present, add) an IP address on a link device.
+//
 // Equivalent to: `ip addr replace $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func AddrReplace(link Link, addr *Addr) error {
 	return pkgHandle.AddrReplace(link, addr)
 }
 
 // AddrReplace will replace (or, if not present, add) an IP address on a link device.
+//
 // Equivalent to: `ip addr replace $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func (h *Handle) AddrReplace(link Link, addr *Addr) error {
 	req := h.newNetlinkRequest(unix.RTM_NEWADDR, unix.NLM_F_CREATE|unix.NLM_F_REPLACE|unix.NLM_F_ACK)
 	return h.addrHandle(link, addr, req)
 }
 
 // AddrDel will delete an IP address from a link device.
+//
 // Equivalent to: `ip addr del $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func AddrDel(link Link, addr *Addr) error {
 	return pkgHandle.AddrDel(link, addr)
 }
 
 // AddrDel will delete an IP address from a link device.
 // Equivalent to: `ip addr del $addr dev $link`
+//
+// If `addr` is an IPv4 address and the broadcast address is not given, it
+// will be automatically computed based on the IP mask if /30 or larger.
 func (h *Handle) AddrDel(link Link, addr *Addr) error {
 	req := h.newNetlinkRequest(unix.RTM_DELADDR, unix.NLM_F_ACK)
 	return h.addrHandle(link, addr, req)
@@ -102,20 +122,26 @@ func (h *Handle) addrHandle(link Link, addr *Addr, req *nl.NetlinkRequest) error
 		} else {
 			b := make([]byte, 4)
 			native.PutUint32(b, uint32(addr.Flags))
-			flagsData := nl.NewRtAttr(IFA_FLAGS, b)
+			flagsData := nl.NewRtAttr(unix.IFA_FLAGS, b)
 			req.AddData(flagsData)
 		}
 	}
 
 	if family == FAMILY_V4 {
-		if addr.Broadcast == nil {
+		// Automatically set the broadcast address if it is unset and the
+		// subnet is large enough to sensibly have one (/30 or larger).
+		// See: RFC 3021
+		if addr.Broadcast == nil && prefixlen < 31 {
 			calcBroadcast := make(net.IP, masklen/8)
 			for i := range localAddrData {
 				calcBroadcast[i] = localAddrData[i] | ^mask[i]
 			}
 			addr.Broadcast = calcBroadcast
 		}
-		req.AddData(nl.NewRtAttr(unix.IFA_BROADCAST, addr.Broadcast))
+
+		if addr.Broadcast != nil {
+			req.AddData(nl.NewRtAttr(unix.IFA_BROADCAST, addr.Broadcast))
+		}
 
 		if addr.Label != "" {
 			labelData := nl.NewRtAttr(unix.IFA_LABEL, nl.ZeroTerminated(addr.Label))
@@ -127,10 +153,10 @@ func (h *Handle) addrHandle(link Link, addr *Addr, req *nl.NetlinkRequest) error
 	// value should be "forever". To compensate for that, only add the attributes if at least one of the values is
 	// non-zero, which means the caller has explicitly set them
 	if addr.ValidLft > 0 || addr.PreferedLft > 0 {
-		cachedata := nl.IfaCacheInfo{
-			IfaValid:    uint32(addr.ValidLft),
-			IfaPrefered: uint32(addr.PreferedLft),
-		}
+		cachedata := nl.IfaCacheInfo{unix.IfaCacheinfo{
+			Valid:    uint32(addr.ValidLft),
+			Prefered: uint32(addr.PreferedLft),
+		}}
 		req.AddData(nl.NewRtAttr(unix.IFA_CACHEINFO, cachedata.Serialize()))
 	}
 
@@ -225,12 +251,12 @@ func parseAddr(m []byte) (addr Addr, family, index int, err error) {
 			addr.Broadcast = attr.Value
 		case unix.IFA_LABEL:
 			addr.Label = string(attr.Value[:len(attr.Value)-1])
-		case IFA_FLAGS:
+		case unix.IFA_FLAGS:
 			addr.Flags = int(native.Uint32(attr.Value[0:4]))
-		case nl.IFA_CACHEINFO:
+		case unix.IFA_CACHEINFO:
 			ci := nl.DeserializeIfaCacheInfo(attr.Value)
-			addr.PreferedLft = int(ci.IfaPrefered)
-			addr.ValidLft = int(ci.IfaValid)
+			addr.PreferedLft = int(ci.Prefered)
+			addr.ValidLft = int(ci.Valid)
 		}
 	}
 

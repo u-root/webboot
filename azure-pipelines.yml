@@ -39,8 +39,10 @@ steps:
     ls -l /usr/sbin
     echo $(build.repository.name)
     echo azure can really make me mad
+    PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/u-root
+    PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/NiChrome/...
     PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/webboot
-    PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot
+    cd gopath/src/github.com/u-root/webboot
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -u=-build=bb
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all -u=-build=bb

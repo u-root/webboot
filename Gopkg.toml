@@ -27,11 +27,7 @@
 
 [[constraint]]
   name = "github.com/u-root/u-root"
-  version = "5.0.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/vishvananda/netlink"
+  revision="4138a0a393c69865073190c4a1f40233e78ebbc2"
 
 [prune]
   go-tests = true
