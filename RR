@@ -1,5 +1,5 @@
 export PMEM_SIZE=4G
-export RAM_SIZE=2048
+export RAM_SIZE=8G
 export KERNEL=linux/arch/x86/boot/bzImage
 export INITRD=/tmp/initramfs.linux_amd64.cpio
 
