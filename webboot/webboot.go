@@ -40,6 +40,7 @@ const (
 	coreURL  = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL   = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
 	archURL  = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+
 )
 
 var (
@@ -90,24 +91,30 @@ var (
 			"arch/boot/x86_64/vmlinuz",
 			"/arch/boot/x86_64/archiso.img",
 			*cdl,
+
 			archURL,
 		},
 		"Arch": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/arch/boot/x86_64/archiso.img",
+
 			*cdl,
+
 			archURL,
 		},
 		"ubuntu": &webboot.Distro{
 			"casper/vmlinuz",
 			"/casper/initrd",
 			*cdl + "boot=casper file=/cdrom/preseed/ubuntu.seed",
+
 			ubuURL,
 		},
 		"Ubuntu": &webboot.Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"/casper/initrd",
+
 			*cdl + "boot=casper file=/cdrom/preseed/ubuntu.seed",
+
 			ubuURL,
 		},
 		"local": &webboot.Distro{
