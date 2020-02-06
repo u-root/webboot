@@ -178,17 +178,12 @@ func usage() {
 func main() {
 	flag.Parse()
 
-	commandline, err := ioutil.ReadFile("/proc/cmdline")
-
+	cl, err := ioutil.ReadFile("/proc/cmdline")
 
 	if err != nil {
-		fmt.Errorf("Unable to read /proc/cmdline: %v", err)
-		//maybe here, we can have a hardcoded commandline so if
-		//we cannot get /proc/cmdline, we can just use the hardcoded on
-		//just an idea. 
+		log.Fatal(err)
 	}
 
-	_ = commandline //do something with the output of /proc/cmdline
 
 
 	if flag.NArg() != 1 {
@@ -245,11 +240,9 @@ func main() {
 
 	}
 	if *dryrun == false {
-		if cmdline, err := webboot.CommandLine(bookmark[filename].Cmdline, *cmd); err != nil {
-			log.Fatalf("Error in webbootCommandline:%v", err)
-		} else {
-			bookmark[filename].Cmdline = cmdline
-		}
+	bookmark[filename].Cmdline = string(cl) + " " + bookmark[filename].Cmdline
+
+
 		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
 			log.Fatalf("Error in kexecISO:%v", err)
 		}
