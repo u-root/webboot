@@ -178,6 +178,19 @@ func usage() {
 func main() {
 	flag.Parse()
 
+	commandline, err := ioutil.ReadFile("/proc/cmdline")
+
+
+	if err != nil {
+		fmt.Errorf("Unable to read /proc/cmdline: %v", err)
+		//maybe here, we can have a hardcoded commandline so if
+		//we cannot get /proc/cmdline, we can just use the hardcoded on
+		//just an idea. 
+	}
+
+	_ = commandline //do something with the output of /proc/cmdline
+
+
 	if flag.NArg() != 1 {
 		usage()
 	}
