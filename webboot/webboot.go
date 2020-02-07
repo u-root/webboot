@@ -70,7 +70,7 @@ var (
 		"tinycore": &webboot.Distro{
 			"boot/vmlinuz64",
 			"/boot/corepure64.gz",
-			tcCmdLine,			
+			tcCmdLine,
 			tcURL,
 		},
 		"Tinycore": &webboot.Distro{
@@ -117,8 +117,6 @@ var (
 		},
 	}
 )
-
-
 
 // parseArg takes a name of bookmark and produces a download link
 // The download link can be used to download data to a persistent memory device '/dev/pmem0'
@@ -180,8 +178,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-
-
 	if flag.NArg() != 1 {
 		usage()
 	}
@@ -236,8 +232,7 @@ func main() {
 
 	}
 	if *dryrun == false {
-	bookmark[filename].Cmdline = string(cl) + " " + bookmark[filename].Cmdline
-
+		bookmark[filename].Cmdline = string(cl) + " " + bookmark[filename].Cmdline
 
 		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
 			log.Fatalf("Error in kexecISO:%v", err)
