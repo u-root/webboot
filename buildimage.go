@@ -53,6 +53,12 @@ func extraBinMust(n string) string {
 	return p
 }
 func main() {
+
+	currentDir, err := os.Getwd()
+
+	if err != nil{
+		log.Fatalf("error getting current directory %v", err)
+	}
 	var args = []string{
 		"go", "run", "github.com/u-root/u-root/.",
 		"-files", "/etc/ssl/certs",
@@ -65,7 +71,7 @@ func main() {
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
 			"-files", extraBinMust("wpa_passphrase"),
-			"-files", "webboot/webboot:bbin/webboot")
+			"-files", currentDir+"/webboot/webboot:bbin/webboot")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
@@ -77,7 +83,7 @@ func main() {
 		{args: []string{"date"}},
 		{args: []string{"ls"}},
 		{args: []string{"pwd"}},
-		{args: []string{"go", "build"}, dir: "webboot"},
+		{args: []string{"go", "build"}, dir: currentDir+"/webboot"},
 		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds)},
 	}
 
