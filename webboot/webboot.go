@@ -28,9 +28,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/webboot/pkg/dhclient"
 	"github.com/u-root/webboot/pkg/mountkexec"
 	"github.com/u-root/webboot/pkg/webboot"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -227,8 +229,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = mountkexec.MountISOPmem("/dev/pmem0", tmp); err != nil {
-		log.Fatalf("Error in mountISO:%v", err)
+	if _, err := mount.Mount("/dev/pmem0", tmp, "iso9660", "", unix.MS_RDONLY|unix.MS_NOATIME); err != nil {
+		log.Fatal(err)
 
 	}
 	if *dryrun == false {
