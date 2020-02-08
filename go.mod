@@ -11,8 +11,10 @@ require (
 	github.com/mdlayher/raw v0.0.0-20191009151244-50f2db8cc065 // indirect
 	github.com/u-root/u-root v5.0.0+incompatible
 	github.com/vishvananda/netlink v1.1.0
+	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
 	golang.org/x/tools v0.0.0-20190709211700-7b25e351ac0e // indirect
 	google.golang.org/grpc v1.27.1 // indirect
+	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc // indirect
 	pack.ag/tftp v1.0.0
 )
