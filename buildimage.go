@@ -53,6 +53,7 @@ func extraBinMust(n string) string {
 	return p
 }
 func main() {
+	goenv := os.Getenv("GOPATH")
 	var args = []string{
 		"go", "run", "github.com/u-root/u-root/.",
 		"-files", "/etc/ssl/certs",
@@ -65,7 +66,7 @@ func main() {
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
 			"-files", extraBinMust("wpa_passphrase"),
-			"-files", "webboot/webboot:bbin/webboot")
+			"-files", goenv+"/src/github.com/u-root/webboot/webboot:bbin/webboot")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
@@ -77,7 +78,7 @@ func main() {
 		{args: []string{"date"}},
 		{args: []string{"ls"}},
 		{args: []string{"pwd"}},
-		{args: []string{"go", "build"}, dir: "webboot"},
+		{args: []string{"go", "build"}, dir: goenv + "/src/github.com/u-root/webboot/webboot"},
 		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds)},
 	}
 
@@ -85,6 +86,7 @@ func main() {
 		debug("Run %v", cmd)
 		c := exec.Command(cmd.args[0], cmd.args[1:]...)
 		c.Stdout, c.Stderr = os.Stdout, os.Stderr
+
 		c.Dir = cmd.dir
 		if err := c.Run(); err != nil {
 			log.Fatalf("%s failed: %v", cmd, err)
