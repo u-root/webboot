@@ -35,10 +35,10 @@ var (
 	iso     = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
 	wifi    = flag.Bool("wifi", true, "include wifi tools")
 )
+
 //precheck can check anything from go env
 
-
-func precheck(check string) string{
+func precheck(check string) string {
 	s := os.Getenv(check)
 
 	return s
@@ -70,7 +70,6 @@ func main() {
 		//set GO111MODULE=auto if it's not already, or GO111MODULE="".
 		os.Setenv("GO111MODULE", "auto")
 	}
-	
 
 	currentDir, err := os.Getwd()
 
@@ -89,7 +88,7 @@ func main() {
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
 			"-files", extraBinMust("wpa_passphrase"),
-			"-files", filepath.Join(currentDir, "webboot","webboot")+":bbin/webboot")
+			"-files", filepath.Join(currentDir, "webboot", "webboot")+":bbin/webboot")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
