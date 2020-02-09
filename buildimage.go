@@ -88,7 +88,7 @@ func main() {
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
 			"-files", extraBinMust("wpa_passphrase"),
-			"-files", filepath.Join(currentDir, "webboot", "webboot")+":bbin/webboot")
+			"-files", filepath.Join(currentDir, "webboot","webboot")+":bbin/webboot")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
