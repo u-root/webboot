@@ -35,6 +35,14 @@ var (
 	iso     = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
 	wifi    = flag.Bool("wifi", true, "include wifi tools")
 )
+//precheck can check anything from go env
+
+
+func precheck(check string) string{
+	s := os.Getenv(check)
+
+	return s
+}
 
 func init() {
 	flag.Parse()
@@ -54,6 +62,15 @@ func extraBinMust(n string) string {
 	return p
 }
 func main() {
+	//if GO111MODULE=off or GO111MODULE=on, buildimage won't work
+	//only GO111MODULE="" or GO111MODULE=auto works
+	s := precheck("GO111MODULE")
+
+	if s != "" || s != "auto" {
+		//set GO111MODULE=auto if it's not already, or GO111MODULE="".
+		os.Setenv("GO111MODULE", "auto")
+	}
+	
 
 	currentDir, err := os.Getwd()
 
