@@ -26,12 +26,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
+	"github.com/u-root/u-root/pkg/boot"
+	"github.com/u-root/u-root/pkg/boot/kexec"
 	"github.com/u-root/u-root/pkg/mount"
+	"github.com/u-root/u-root/pkg/uio"
 	"github.com/u-root/webboot/pkg/dhclient"
-	"github.com/u-root/webboot/pkg/mountkexec"
-	"github.com/u-root/webboot/pkg/webboot"
 	"golang.org/x/sys/unix"
 )
 
@@ -45,6 +47,14 @@ const (
 	tcCmdLine = "cde"
 )
 
+//Distro defines an operating system distribution
+type Distro struct {
+	Kernel  string
+	Initrd  string
+	Cmdline string
+	URL     string
+}
+
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
 	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
@@ -55,79 +65,70 @@ var (
 	ipv6     = flag.Bool("ipv6", true, "use IPV6")
 	dryrun   = flag.Bool("dryrun", false, "Do not do the kexec")
 	wifi     = flag.String("wifi", "", "[essid [WPA [password]]]")
-	bookmark = map[string]*webboot.Distro{
+	bookmark = map[string]*Distro{
 		// TODO: Fix webboot to process the tinycore's kernel and initrd to boot from instead of using our customized kernel
-		"webboot-tinycorepure": &webboot.Distro{
+		"webboot-tinycorepure": &Distro{
 			"boot/vmlinuz64",
-			"/boot/corepure64.gz",
+			"boot/corepure64.gz",
 			tcCmdLine,
 			wbtcpURL,
 		},
-		"webboot-corepure": &webboot.Distro{
+		"webboot-corepure": &Distro{
 			"boot/vmlinuz64",
-			"/boot/corepure64.gz",
+			"boot/corepure64.gz",
 			tcCmdLine,
 			wbcpURL,
 		},
-		"tinycore": &webboot.Distro{
+		"tinycore": &Distro{
 			"boot/vmlinuz64",
-			"/boot/corepure64.gz",
+			"boot/corepure64.gz",
 			tcCmdLine,
 			tcURL,
 		},
-		"Tinycore": &webboot.Distro{
+		"Tinycore": &Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
-			"/boot/corepure64.gz",
+			"boot/corepure64.gz",
 			tcCmdLine,
 			tcURL,
 		},
-		"arch": &webboot.Distro{
+		"arch": &Distro{
 			"arch/boot/x86_64/vmlinuz",
-			"/arch/boot/x86_64/archiso.img",
+			"arch/boot/x86_64/archiso.img",
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
 			archURL,
 		},
-		"Arch": &webboot.Distro{
+		"Arch": &Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
-			"/arch/boot/x86_64/archiso.img",
+			"arch/boot/x86_64/archiso.img",
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
 			archURL,
 		},
-		"ubuntu": &webboot.Distro{
+		"ubuntu": &Distro{
 			"casper/vmlinuz",
-			"/casper/initrd",
+			"casper/initrd",
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
-		"Ubuntu": &webboot.Distro{
+		"Ubuntu": &Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
-			"/casper/initrd",
+			"casper/initrd",
 			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3 boot=casper file=/cdrom/preseed/ubuntu.seed",
 			ubuURL,
 		},
-		"local": &webboot.Distro{
+		"local": &Distro{
 			"/bzImage",
-			"/boot/corepure64.gz",
+			"boot/corepure64.gz",
 			tcCmdLine,
 			"file:///iso", // NOTE: three / is REQUIRED
 		},
-		"core": &webboot.Distro{
+		"core": &Distro{
 			"boot/vmlinuz",
-			"/boot/core.gz",
+			"boot/core.gz",
 			tcCmdLine,
 			coreURL,
 		},
 	}
 )
-
-// parseArg takes a name of bookmark and produces a download link
-// The download link can be used to download data to a persistent memory device '/dev/pmem0'
-func parseArg(arg string) (string, string, error) {
-	if u, ok := bookmark[arg]; ok {
-		return u.DownloadLink, arg, nil
-	}
-	return "", "", fmt.Errorf("%s is not supported", arg)
-}
 
 // linkOpen returns an io.ReadCloser that holds the content of the URL
 func linkOpen(URL string) (io.ReadCloser, error) {
@@ -171,6 +172,14 @@ func usage() {
 	os.Exit(1)
 }
 
+func wbpath(dir, file string) string {
+	if filepath.IsAbs(file) {
+		return file
+	}
+
+	return filepath.Join(dir, file)
+}
+
 func main() {
 	flag.Parse()
 
@@ -183,9 +192,8 @@ func main() {
 	if flag.NArg() != 1 {
 		usage()
 	}
-
-	URL, filename, err := parseArg(flag.Arg(0))
-	if err != nil {
+	b, ok := bookmark[flag.Arg(0)]
+	if !ok {
 		var s string
 		for os := range bookmark {
 			s += os + " "
@@ -211,7 +219,7 @@ func main() {
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
 	log.Println("Retrieving the file...")
-	iso, err := linkOpen(URL)
+	iso, err := linkOpen(b.URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -234,12 +242,20 @@ func main() {
 
 	}
 	if *dryrun == false {
-		bookmark[filename].Cmdline = string(cl) + " " + bookmark[filename].Cmdline
-
-		if err := mountkexec.KexecISO(bookmark[filename], tmp); err != nil {
-			log.Fatalf("Error in kexecISO:%v", err)
+		k, i := wbpath(tmp, b.Kernel), wbpath(tmp, b.Initrd)
+		cmdline := string(cl) + " " + b.Cmdline
+		image := &boot.LinuxImage{
+			Kernel:  uio.NewLazyFile(k),
+			Initrd:  uio.NewLazyFile(i),
+			Cmdline: cmdline,
+		}
+		if err := image.Load(true); err != nil {
+			log.Fatalf("error failed to kexec into new kernel:%v", err)
+		}
+		if err := kexec.Reboot(); err != nil {
+			log.Fatalf("error failed to Reboot into new kernel:%v", err)
 		}
 	}
 
-	fmt.Printf("The URL requested: %v\n The file requested: %v\n The mounting point: %v\n", URL, filename, tmp)
+	fmt.Printf("URL: %v\n Distro: %v\nmount point: %v\n", b.URL, b, tmp)
 }
