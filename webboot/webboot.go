@@ -212,7 +212,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-
+	//the Request function sets up a DHCP confifuration for all interfaces,
+	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 	}
