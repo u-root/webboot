@@ -216,6 +216,8 @@ func main() {
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+
+		//*ifname is used as the name of the interface, defaulting with ^[we].*
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
