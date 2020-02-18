@@ -215,9 +215,11 @@ func main() {
 	//the Request function sets up a DHCP confifuration for all interfaces,
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
+		//*ifName is all the interfaces being used by netlinks MustCompilePOSIX.
+		//it uses all the other bookmark options below the ifname flag.
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
-		//*ifname is used as the name of the interface, defaulting with ^[we].*
+	
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
