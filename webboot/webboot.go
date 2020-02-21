@@ -215,11 +215,7 @@ func main() {
 	//the Request function sets up a DHCP confifuration for all interfaces,
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
-		//ifname uses regex to find patterns.
-		//it uses ^ as the start of the line,
-		//[we] to find any single character containing w,e
-		//. to find any single charachter
-		//and * suggesting 0 or more or ^[we].
+		//ifname uses the regular expression ^[we].* to check for wlan0 or eth0 interfaces.
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
 	
