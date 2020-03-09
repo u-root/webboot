@@ -216,7 +216,7 @@ func main() {
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
 		//ifname uses the regular expression ^[we].* to check for an interface starting with w or e such as
-		//wlan0 or eth0
+		//wlan0/1, enx453243, or eth0/1
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
 	
