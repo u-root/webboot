@@ -218,8 +218,11 @@ func main() {
 		//ifname uses the regular expression ^[we].* to check for an interface starting with w or e such as
 		//wlan0/1, enx453243, or eth0/1
 
-		//timeout and retry are used to figure out how many times to retry the configuration
+		//timeout and retry are used to see how many times to retry the configuration
 		//process and how often, defaulted to retry 5 times every 15 seconds
+
+		//verbose is a boolean and used to display the timeouts and retrys as an io.Writer.
+		//verbose is as defaulted off.
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
 	
