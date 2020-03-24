@@ -1,7 +1,7 @@
 PMEM_SIZE=${PMEM_SIZE:=1G}
 PMEM_BASE=${PMEM_BASE:=1G}
 RAM_SIZE=${RAM_SIZE:=2G}
-KERNEL=${KERNEL:=/home/brandonjakobson/linux/arch/x86/boot/bzImage}
+KERNEL=${KERNEL:=linux/arch/x86/boot/bzImage}
 INITRD=${INITRD:=/tmp/initramfs.linux_amd64.cpio}
 
 /usr/bin/qemu-system-x86_64 \
