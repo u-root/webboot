@@ -217,6 +217,9 @@ func main() {
 	if *ipv4 || *ipv6 {
 		//ifname uses the regular expression ^[we].* to check for an interface starting with w or e such as
 		//wlan0/1, enx453243, or eth0/1
+
+		//timeout and retry are used to figure out how many times to retry the configuration
+		//process and how often, defaulted to retry 5 times every 15 seconds
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
 	
