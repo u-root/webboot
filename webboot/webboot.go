@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -27,13 +28,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/boot/kexec"
+	"github.com/u-root/u-root/pkg/dhclient"
 	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/u-root/pkg/uio"
-	"github.com/u-root/webboot/pkg/dhclient"
+	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 )
 
@@ -57,7 +61,7 @@ type Distro struct {
 
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
-	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
+	ifname   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
 	verbose  = flag.Bool("verbose", false, "Verbose output")
@@ -212,14 +216,67 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	ifRE := regexp.MustCompilePOSIX(*ifname)
+
+	ifnames, err := netlink.LinkList()
+	if err != nil {
+		log.Fatalf("Can't get list of link names: %v", err)
+	}
+
+	var filteredIfs []netlink.Link
+	for _, iface := range ifnames {
+		if ifRE.MatchString(iface.Attrs().Name) {
+			filteredIfs = append(filteredIfs, iface)
+		}
+	}
+
+	if len(filteredIfs) == 0 {
+		log.Fatalf("No interfaces match %s", *ifname)
+	}
+
+	packetTimeout := time.Duration(*timeout) * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), packetTimeout*time.Duration(1<<uint(*retry)))
+	defer cancel()
+
+	c := dhclient.Config{
+		Timeout: packetTimeout,
+		Retries: *retry,
+	}
+	if *verbose {
+		c.LogLevel = dhclient.LogSummary
+	}
+
 	//the Request function sets up a DHCP confifuration for all interfaces,
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
 		//ifname uses the regular expression ^[we].* to check for an interface starting with w or e such as
 		//wlan0/1, enx453243, or eth0/1
-		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
-	
+		//dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+
+		r := dhclient.SendRequests(ctx, filteredIfs, *ipv4, *ipv6, c)
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Printf("Done with dhclient: %v", ctx.Err())
+				return
+
+			case result, ok := <-r:
+				if !ok {
+					log.Printf("Configured all interfaces.")
+					return
+				}
+				if result.Err != nil {
+					log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, result.Err)
+				} else if err := result.Lease.Configure(); err != nil {
+					log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, err)
+				}
+			}
+		}
+
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
