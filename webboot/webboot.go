@@ -28,13 +28,21 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+	"context"	
+	"regexp"
+
 
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/boot/kexec"
 	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/u-root/pkg/uio"
-	"github.com/u-root/webboot/pkg/dhclient"
+	"github.com/u-root/u-root/pkg/dhclient"
 	"golang.org/x/sys/unix"
+	"github.com/vishvananda/netlink"
+
+
+
 )
 
 const (
@@ -57,7 +65,7 @@ type Distro struct {
 
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
-	ifName   = flag.String("interface", "^[we].*", "Name of the interface")
+	ifname   = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
 	verbose  = flag.Bool("verbose", false, "Verbose output")
@@ -212,13 +220,50 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+
+
+
+	ifRE := regexp.MustCompilePOSIX(*ifname)
+
+
+	ifnames, err := netlink.LinkList()
+	if err != nil {
+		log.Fatalf("Can't get list of link names: %v", err)
+	}
+
+	var filteredIfs []netlink.Link
+	for _, iface := range ifnames {
+		if ifRE.MatchString(iface.Attrs().Name) {
+			filteredIfs = append(filteredIfs, iface)
+		}
+	}
+
+
+
+
+	packetTimeout := time.Duration(*timeout) * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), packetTimeout*time.Duration(1<<uint(*retry)))
+	defer cancel()
+
+	c := dhclient.Config{
+		Timeout: packetTimeout,
+		Retries: *retry,
+	}
+	if *verbose {
+		c.LogLevel = dhclient.LogSummary
+	}
+
 	//the Request function sets up a DHCP confifuration for all interfaces,
 	//such as eth0, which is an ethernet interface.
 	if *ipv4 || *ipv6 {
 		//ifname uses the regular expression ^[we].* to check for an interface starting with w or e such as
 		//wlan0/1, enx453243, or eth0/1
-		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
+		//dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
+		dhclient.IfUp(*ifname)
+		dhclient.SendRequests(ctx, filteredIfs, *ipv4, *ipv6, c)
 	
 	}
 
