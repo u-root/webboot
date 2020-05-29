@@ -61,7 +61,7 @@ type Distro struct {
 
 var (
 	cmd      = flag.String("cmd", "", "Command line parameters to the second kernel")
-	ifname   = flag.String("interface", "^[we].*", "Name of the interface")
+	ifRE     = flag.String("interface", "^[we].*", "Name of the interface")
 	timeout  = flag.Int("timeout", 15, "Lease timeout in seconds")
 	retry    = flag.Int("retry", 5, "Max number of attempts for DHCP clients to send requests. -1 means infinity")
 	verbose  = flag.Bool("verbose", false, "Verbose output")
@@ -217,7 +217,7 @@ func main() {
 		}
 	}
 
-	ifRE := regexp.MustCompilePOSIX(*ifname)
+	ifRE := regexp.MustCompilePOSIX(*ifRE)
 
 	ifnames, err := netlink.LinkList()
 	if err != nil {
@@ -232,7 +232,7 @@ func main() {
 	}
 
 	if len(filteredIfs) == 0 {
-		log.Fatalf("No interfaces match %s", *ifname)
+		log.Fatalf("No interfaces match %s", *ifRE)
 	}
 
 	packetTimeout := time.Duration(*timeout) * time.Second
