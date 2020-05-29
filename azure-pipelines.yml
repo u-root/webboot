@@ -7,15 +7,28 @@ trigger:
 - master
 
 pool:
-  vmImage: 'Ubuntu-16.04'
+   vmImage: 'ubuntu-latest'
 
-variables:
-  GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.12' # Go installation path
-  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
-  modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
+steps: 
+- task: GoTool@0
+  inputs:
+    version: '1.13.5'
+- task: Go@0
+  inputs:
+    command: 'get'
+    arguments: '-d'
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
+- task: Go@0
+  inputs:
+    command: 'build'
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
+- task: CopyFiles@2
+  inputs:
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+- task: PublishBuildArtifacts@1
+  inputs:
+     artifactName: drop
 
-steps:
 - script: |
     echo $PATH
     set
@@ -37,12 +50,22 @@ steps:
     sudo apt install wireless-tools wpasupplicant
     ls -l /sbin
     ls -l /usr/sbin
+    echo HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
     echo $(build.repository.name)
+    export GOPATH=$(pwd)/go
+    export GO111MODULE=off
+    echo $GOPATH
+    echo $GO111MODULE
+    echo $(pwd)
     echo azure can really make me mad
+    ls -R
     PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/u-root
+    ls -R
     PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/NiChrome/...
+    ls -R
     PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/webboot
-    cd gopath/src/github.com/u-root/webboot
+    ls -R
+    cd go/src/github.com/u-root/webboot
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -u=-build=bb
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all -u=-build=bb
