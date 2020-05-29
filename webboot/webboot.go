@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -27,22 +28,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
-	"context"	
-	"regexp"
-
 
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/boot/kexec"
+	"github.com/u-root/u-root/pkg/dhclient"
 	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/u-root/pkg/uio"
-	"github.com/u-root/u-root/pkg/dhclient"
-	"golang.org/x/sys/unix"
 	"github.com/vishvananda/netlink"
-
-
-
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -221,11 +217,7 @@ func main() {
 		}
 	}
 
-
-
-
 	ifRE := regexp.MustCompilePOSIX(*ifname)
-
 
 	ifnames, err := netlink.LinkList()
 	if err != nil {
@@ -239,8 +231,9 @@ func main() {
 		}
 	}
 
-
-
+	if len(filteredIfs) == 0 {
+		log.Fatalf("No interfaces match %s", *ifname)
+	}
 
 	packetTimeout := time.Duration(*timeout) * time.Second
 
@@ -262,9 +255,28 @@ func main() {
 		//wlan0/1, enx453243, or eth0/1
 
 		//dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
-		dhclient.IfUp(*ifname)
-		dhclient.SendRequests(ctx, filteredIfs, *ipv4, *ipv6, c)
-	
+
+		r := dhclient.SendRequests(ctx, filteredIfs, *ipv4, *ipv6, c)
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Printf("Done with dhclient: %v", ctx.Err())
+				return
+
+			case result, ok := <-r:
+				if !ok {
+					log.Printf("Configured all interfaces.")
+					return
+				}
+				if result.Err != nil {
+					log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, result.Err)
+				} else if err := result.Lease.Configure(); err != nil {
+					log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, err)
+				}
+			}
+		}
+
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
