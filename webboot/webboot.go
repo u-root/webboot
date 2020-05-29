@@ -233,6 +233,7 @@ func main() {
 
 	if len(filteredIfs) == 0 {
 		log.Fatalf("No interfaces match %s", *ifRE)
+
 	}
 
 	packetTimeout := time.Duration(*timeout) * time.Second
