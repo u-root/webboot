@@ -43,7 +43,7 @@ const (
 	tcURL     = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
-	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.01.01/archlinux-2020.01.01-x86_64.iso"
+	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.05.01/archlinux-2020.05.01-x86_64.iso"
 	tcCmdLine = "cde"
 )
 
@@ -94,13 +94,14 @@ var (
 		"arch": &Distro{
 			"arch/boot/x86_64/vmlinuz",
 			"arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
+			// TODO: find an alternative for maintaining the label?
+			"memmap=768M!768M earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 loglevel=3 archisobasedir=arch archisolabel=ARCH_202005",
 			archURL,
 		},
 		"Arch": &Distro{
 			"/bzImage", // our own custom kernel, which has to be in the initramfs
 			"arch/boot/x86_64/archiso.img",
-			"memmap=1G!1G earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 root=/dev/pmem0 loglevel=3",
+			"memmap=768M!768M earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 loglevel=3 archisobasedir=arch archisolabel=ARCH_202005",
 			archURL,
 		},
 		"ubuntu": &Distro{
@@ -219,7 +220,6 @@ func main() {
 		//wlan0/1, enx453243, or eth0/1
 		dhclient.Request(*ifName, *timeout, *retry, *verbose, *ipv4, *ipv6)
 
-	
 	}
 
 	// Processes the URL to receive an io.ReadCloser, which holds the content of the downloaded file
