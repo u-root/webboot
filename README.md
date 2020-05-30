@@ -140,7 +140,7 @@ next OS to boot into, and for that second OS's kernel to know about it as well
 so that it knows where the ISO resides in RAM such that it can pick it up and
 load additional files from it, i.e., its root filesystem. The size for `memmap`
 needs to be chosen such that the ISO fits into it and it is sufficiently
-smaller then the memory assigned to the VM so that the first system has enough
+smaller than the memory assigned to the VM so that the first system has enough
 for itself to run.
 
 Refer to
@@ -164,12 +164,16 @@ correct interface, e.g., `eth0`:
 
 ### Supported Operating Systems
 
-- [ ] Arch Linux
+- [x] TinyCore Linux (remastering the ISO or reusing the webboot kernel for it)
+- [x] Arch Linux (PoC for a remastered ISO)
+- [x] SystemRescueCd (PoC for a remastered ISO)
+- [x] Manjaro (PoC for a remastered ISO)
 - [ ] Fedora
 - [ ] openSUSE
-- [ ] SystemRescueCd
-- [x] TinyCore Linux (reusing the webboot kernel for it)
+- [ ] Debian
 - [ ] Ubuntu
+
+TODO: look into other distros such as http://boot.slitaz.org/en/
 
 #### Issue: ISO structure
 
@@ -182,10 +186,10 @@ The following table lists how the distros structure the ISOs.
 
 | distro         | base dir                      | kernel      | initrd          | squashfs                              |
 | -------------- | ----------------------------- | ----------- | --------------- | ------------------------------------- |
+| TinyCore       | `/boot`                       | `vmlinuz64` | `corepure64.gz` |  N/A, uses `/cde` directory           |
 | Arch Linux     | `/arch/boot/x86_64`           | `vmlinuz`   | `archiso.img`   | `/arch/x86_64/airootfs.sfs`           |
 | SystemRescueCd | `/systemrescuecd/boot/x86_64` | `vmlinuz`   | `sysresccd.img` | `/systemrescuecd/x86_64/airootfs.sfs` |
 | openSUSE       | `/boot/x86_64/loader`         | `linux`     | `initrd`        | `/LiveOS/squashfs.img`                |
-| TinyCore       | `/boot`                       | `vmlinuz64` | `corepure64.gz` |  N/A, uses `/cde` directory           |
 | Ubuntu         | `/casper`                     | `vmlinuz`   | `initrd`        | `filesystem.squashfs`                 |
 
 For more details, see [distros.md](distros.md).
@@ -198,8 +202,13 @@ then boot into that.
 
 2) A much easier way would be to ask the distributors to include the modules for
 pmem support already in their initramfs, i.e., the nvdimm drivers, or build them
-into the kernel. For the latter, their config would need to include the
-following:
+into the kernel.
+
+The modules to include are `nd_e820`, `nd_pmem` and `nd_pmem`.
+See also https://cateee.net/lkddb/web-lkddb/X86_PMEM_LEGACY.html
+and https://cateee.net/lkddb/web-lkddb/BLK_DEV_PMEM.html.
+
+For the latter option, their config would need to include the following:
 
 ```
 CONFIG_X86_PMEM_LEGACY_DEVICE=y
@@ -215,3 +224,9 @@ could upstream patches.
 For a start, the first iteration is a remastered ISO for TinyCore, with a
 modified kernel as per 3). The result is stored in
 [a separate repository](https://github.com/u-root/webboot-distro/).
+
+For Arch, here are the [full steps](docs/remaster-arch-iso.md), also applicable
+to SystemRescueCd, just with different paths as per the table above.
+
+For Manjaro, which is based on Arch, the process is a bit different.
+Read the [steps and findings](docs/remaster-manjaro-iso.md) carefully.
