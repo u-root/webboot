@@ -168,8 +168,8 @@ correct interface, e.g., `eth0`:
 - [x] Arch Linux (PoC for a remastered ISO)
 - [x] SystemRescueCd (PoC for a remastered ISO)
 - [x] Manjaro (PoC for a remastered ISO)
-- [ ] Fedora
-- [ ] openSUSE
+- [x] Fedora
+- [x] openSUSE
 - [ ] Debian
 - [ ] Ubuntu
 
@@ -189,7 +189,9 @@ The following table lists how the distros structure the ISOs.
 | TinyCore       | `/boot`                       | `vmlinuz64` | `corepure64.gz` |  N/A, uses `/cde` directory           |
 | Arch Linux     | `/arch/boot/x86_64`           | `vmlinuz`   | `archiso.img`   | `/arch/x86_64/airootfs.sfs`           |
 | SystemRescueCd | `/systemrescuecd/boot/x86_64` | `vmlinuz`   | `sysresccd.img` | `/systemrescuecd/x86_64/airootfs.sfs` |
+| Fedora         | `/isolinux/`                  | `vmlinuz`   | `initrd.img`    | `/LiveOS/squashfs.img`                |
 | openSUSE       | `/boot/x86_64/loader`         | `linux`     | `initrd`        | `/LiveOS/squashfs.img`                |
+| Debian         | TODO                          | TODO        | TODO            | TODO                                  |
 | Ubuntu         | `/casper`                     | `vmlinuz`   | `initrd`        | `filesystem.squashfs`                 |
 
 For more details, see [distros.md](distros.md).
