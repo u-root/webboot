@@ -248,7 +248,7 @@ func main() {
 	}
 	if *dryrun == false {
 		k, i := wbpath(tmp, b.Kernel), wbpath(tmp, b.Initrd)
-		cmdline := string(cl) + " " + b.Cmdline
+		cmdline := strings.TrimSuffix(string(cl), "\n") + " " + b.Cmdline
 		image := &boot.LinuxImage{
 			Kernel:  uio.NewLazyFile(k),
 			Initrd:  uio.NewLazyFile(i),
