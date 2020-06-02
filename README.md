@@ -147,6 +147,53 @@ Refer to
 [u-root's documentation](https://github.com/u-root/u-root#testing-in-qemu) for
 more details on virtualization.
 
+### Testing with a USB stick
+
+You can try out webboot from a USB stick. That means that you could run it when
+starting a machine by choosing to boot from USB, which requires a bootloader.
+Although any bootloader would do, we will focus on one here named `syslinux`.
+Furthermore, we will focus on specific preconditions, although there are many
+different ways to create a bootable USB stick.
+
+In the root directory of this repository, there is an example configuration file
+named `syslinux.cfg.example`. If you look at it, you will see that it resembles
+webboot very much: It lists a kernel, an initrd, and extra arguments to append.
+
+Before you continue, please make sure to meet the following conditions:
+
+- your system can boot from MBR (possibly through UEFI CSM)
+- you have a USB stick with MBR partitioning, first partition formatted as VFAT
+- you have a directory `/mnt/usb` to mount the partition to
+- you have `syslinux` installed (use your package manager)
+- you have built a suitable Linux kernel using a config from this repository
+- you have built an initramfs that includes webboot, gzip-compressed
+
+To [install](https://wiki.syslinux.org/wiki/index.php?title=Install) syslinux as
+a bootloader and configure it, four steps are necessary:
+
+1. write a Volume Boot Record (VBR) to the stick
+2. write a Master Boot Record (MBR) to it
+3. mark the first partition as bootable
+4. copy the config file, Linux kernel and initcpio
+
+Now the following commands would need to be run as root:
+
+```sh
+syslinux -i /dev/sdb1
+dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/mbr.bin of=/dev/sdb
+parted /dev/sdb set 1 boot on
+# mount the stick and copy the files
+mount /dev/sdb1 /mnt/usb
+cp syslinux.cfg.example /mnt/usb/syslinux.cfg
+mkdir /mnt/usb/boot
+cp linux/arch/x86/boot/bzImage /mnt/usb/boot/webboot
+cp /tmp/initramfs.linux_amd64.cpio.gz /mnt/usb/boot/webboot.cpio.gz
+```
+
+You should be able to boot from the USB stick now. Depending on your firmware
+setup, it might be necessary to get into a boot menu or make changes in the
+settings.
+
 ### The `webboot` command
 
 `webboot [distribution]`
