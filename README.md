@@ -204,7 +204,7 @@ then boot into that.
 pmem support already in their initramfs, i.e., the nvdimm drivers, or build them
 into the kernel.
 
-The modules to include are `nd_e820`, `nd_pmem` and `nd_pmem`.
+The modules to include are `nd_e820`, `nd_btt` and `nd_pmem`.
 See also https://cateee.net/lkddb/web-lkddb/X86_PMEM_LEGACY.html
 and https://cateee.net/lkddb/web-lkddb/BLK_DEV_PMEM.html.
 
