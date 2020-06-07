@@ -44,6 +44,8 @@ const (
 	coreURL   = "http://tinycorelinux.net/10.x/x86/release/CorePlus-current.iso"
 	ubuURL    = "http://releases.ubuntu.com/18.04/ubuntu-18.04.3-desktop-amd64.iso"
 	archURL   = "http://mirror.rackspace.com/archlinux/iso/2020.05.01/archlinux-2020.05.01-x86_64.iso"
+	fedoraURL = "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Spins/x86_64/iso/Fedora-KDE-Live-x86_64-32-1.6.iso"
+	oSUSEURL  = "https://download.opensuse.org/distribution/leap/15.2/live/openSUSE-Leap-15.2-KDE-Live-x86_64-Media.iso"
 	tcCmdLine = "cde"
 )
 
@@ -103,6 +105,18 @@ var (
 			"arch/boot/x86_64/archiso.img",
 			"memmap=768M!768M earlyprintk=ttyS0,115200 console=ttyS0 console=tty0 loglevel=3 archisobasedir=arch archisolabel=ARCH_202005",
 			archURL,
+		},
+		"fedora": &Distro{
+			"isolinux/vmlinuz",
+			"isolinux/initrd.img",
+			"root=live:CDLABEL=Fedora-KDE-Live-32-1-6 rd.live.image",
+			fedoraURL,
+		},
+		"opensuse": &Distro{
+			"boot/x86_64/loader/linux",
+			"boot/x86_64/loader/initrd",
+			"root=live:CDLABEL=openSUSE_Leap_15.2_KDE_Live rd.live.image rd.live.overlay.persistent rd.live.overlay.cowfs=ext4",
+			oSUSEURL,
 		},
 		"ubuntu": &Distro{
 			"casper/vmlinuz",
@@ -248,7 +262,7 @@ func main() {
 	}
 	if *dryrun == false {
 		k, i := wbpath(tmp, b.Kernel), wbpath(tmp, b.Initrd)
-		cmdline := string(cl) + " " + b.Cmdline
+		cmdline := strings.TrimSuffix(string(cl), "\n") + " " + b.Cmdline
 		image := &boot.LinuxImage{
 			Kernel:  uio.NewLazyFile(k),
 			Initrd:  uio.NewLazyFile(i),
