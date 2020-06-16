@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/dustin/go-humanize v1.0.0
+	github.com/gizak/termui/v3 v3.1.0 // indirect
 	github.com/google/goexpect v0.0.0-20191001010744-5b6988669ffa
 	github.com/google/goterm v0.0.0-20190703233501-fc88cf888a3f
 	github.com/insomniacslk/dhcp v0.0.0-20200124232130-5214532ecf39
