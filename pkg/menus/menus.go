@@ -36,7 +36,7 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
 	l.Rows = listData
     // design the size and location of the menu
 	l.SetRect(0, *coord, 50, *coord+2+len(entries)) 
-    *coord += 4+len(entries)
+    *coord += 2+len(entries)
 	l.TextStyle.Fg = ui.ColorWhite
     ui.Render(l)      
     log.Printf("\n"+introwords+"\n\n")
@@ -105,8 +105,6 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
         }
     }
 
-    ui.Close()
-    return -1,nil
 }
 
 //GetInput will present an input window to user and return the user's input in to the input channel.
