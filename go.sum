@@ -75,6 +75,7 @@ github.com/u-root/u-root v6.0.1-0.20200130015605-4138a0a393c6+incompatible h1:sa
 github.com/u-root/u-root v6.0.1-0.20200130015605-4138a0a393c6+incompatible/go.mod h1:RYkpo8pTHrNjW08opNd/U6p/RJE7K0D8fXO0d47+3YY=
 github.com/u-root/webboot v0.0.0-20200208215454-ce4c217c7d49 h1:RnQ9nvs6bfwo4c+dtXQpXdZ6MvofnGiON5xLC3Atb10=
 github.com/u-root/webboot v0.0.0-20200208215454-ce4c217c7d49/go.mod h1:38OsLMQAx7EErHzjYvjWqdCa7hPA0MpHRzQqh2HrfUA=
+github.com/u-root/webboot v0.0.0-20200609000319-8d77eb2b25ec h1:I8E8E32roe1xWccA173IhF4/tvYYCLvmXbtnnecVCG8=
 github.com/vishvananda/netlink v1.0.0 h1:bqNY2lgheFIu1meHUFSH3d7vG93AFyqg3oGbJCOJgSM=
 github.com/vishvananda/netlink v1.0.0/go.mod h1:+SR5DhBJrl6ZM7CoCKvpw5BKroDKQ+PJqOg65H/2ktk=
 github.com/vishvananda/netlink v1.1.0 h1:1iyaYNBLmP6L0220aDnYQpo1QEV4t4hJ+xEEhhJH8j0=

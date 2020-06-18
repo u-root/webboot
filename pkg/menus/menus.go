@@ -20,6 +20,10 @@ type Entry interface {
 
 //GetChoose will present all entries into a menu with numbers, so that user can choose from them.
 func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
+	//open a new window
+	if err := ui.Init(); err != nil {
+        log.Fatalf("failed to initialize termui: %v", err)
+    }
     listData := []string{}//listData contains all choice's labels
     
     for i, e := range entries {
@@ -57,6 +61,7 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
         switch e.ID {
             // if user input q or control-c, exit the program. 
             case "q","<C-c>": 
+    			ui.Close()
                 return -1, nil
             // if user hit enter means he did his choise, so check waht the input is. if the input is not acceptable, show a warning.
             case "<Enter>": 
@@ -69,9 +74,12 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
                 if(p1.Text=="") { 
                     for i, en := range entries {
                         if en.IsDefault() {
+    						ui.Close()
                             return i, nil
 		                }
 	                }
+
+    				ui.Close()
 	                //if no one is default, choose the first one. 
                     return 0, nil 
                 }
@@ -82,6 +90,8 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
                     tempFlag = false
                     ui.Render(p1)
                 } else {
+
+   	 				ui.Close()
                     return c-1,err
                 }
             // as long as user do not hit enter or q or control-c, assuming that user is still inputing his choise
@@ -94,6 +104,8 @@ func GetChoose(coord *int, introwords string, entries []Entry) (int, error){
                 ui.Render(p1)        
         }
     }
+
+    ui.Close()
     return -1,nil
 }
 
