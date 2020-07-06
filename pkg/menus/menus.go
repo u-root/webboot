@@ -73,11 +73,10 @@ func DisplayMenu(menuTitle string, introwords string, location int, entries []En
 	}
 
 	if choose == "" {
-		for i, en := range entries {
+		for _, en := range entries {
 			if en.IsDefault() {
 				ui.Close()
-				err = en.Do()
-				return en, err
+				return en, nil
 			}
 		}
 	} else {
@@ -85,10 +84,6 @@ func DisplayMenu(menuTitle string, introwords string, location int, entries []En
 		ui.Close()
 		if err != nil {
 			return nil, fmt.Errorf("Error at convert input to number in desplay menu: %v", err)
-		}
-		err = entries[c-1].Do()
-		if err != nil {
-			return nil, fmt.Errorf("Error at Do() in desplay menu: %v", err)
 		}
 		return entries[c-1], nil
 	}
@@ -103,7 +98,7 @@ func GetInput(introwords string, location int, wid int, ht int, checkValidFunc f
 	intro := widgets.NewParagraph()
 	intro.Text = introwords
 	intro.Border = false
-	intro.SetRect(0, location, len(introwords), location+3)
+	intro.SetRect(0, location, len(introwords)+4, location+3)
 	intro.TextStyle.Fg = ui.ColorWhite
 	ui.Render(intro)
 	location += 3
@@ -138,7 +133,7 @@ func GetInput(introwords string, location int, wid int, ht int, checkValidFunc f
 			ui.Close()
 			ui.Close()
 			os.Exit(1)
-		// if user hit enter means he did his choice.
+		// If user hit enter means he did his choice.
 		// So check whether the input is valid or not by checkVilidFunc function.
 		// If the input is not acceptable, show a warning.
 		case "<Enter>":
@@ -152,6 +147,10 @@ func GetInput(introwords string, location int, wid int, ht int, checkValidFunc f
 			warning.Text = warningWords
 			ui.Render(input)
 			ui.Render(warning)
+		//If userhit backspace, remove the last input character
+		case "<Backspace>":
+			input.Text = input.Text[:len(input.Text)-1]
+			ui.Render(input)
 		// as long as user do not hit enter or q or control-c, assuming that user is still inputing his choice
 		default:
 			// clear warning when user input
