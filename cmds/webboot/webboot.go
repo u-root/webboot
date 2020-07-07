@@ -4,14 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/webboot/pkg/dhclient"
 	"github.com/u-root/webboot/pkg/menus"
 )
@@ -123,7 +121,10 @@ func (u DownloadOption) Do() error {
 		}
 		return false, "not able to find this distro. please try another."
 	}
-	isoLabel, err := menus.NewInputWindow("Please input the name of iso you want to download and install here:", 100, 1, isonameCheckFunc)
+	introwords := "Please input the name of iso you want to download and install here:"
+	wid := 100
+	ht := 1
+	isoLabel, err := menus.NewInputWindow(introwords, wid, ht, isonameCheckFunc)
 	if err != nil {
 		return err
 	}
@@ -159,11 +160,14 @@ func (u DownloadByLinkOption) Do() error {
 	stringCheckFunc := func(input string) (bool, string) {
 		return true, ""
 	}
-	isoLink, err := menus.NewInputWindow("Please input the link of iso you want to download and install here:", 100, 1, stringCheckFunc)
+	introwords := "Please input the link of iso you want to download and install here:"
+	wid := 100
+	ht := 1
+	isoLink, err := menus.NewInputWindow(introwords, wid, ht, stringCheckFunc)
 	if err != nil {
 		return err
 	}
-	isoName, err := menus.NewInputWindow("Please input the name of iso:", 100, 1, string_check_func)
+	isoName, err := menus.NewInputWindow("Please input the name of iso:", 100, 1, stringCheckFunc)
 	if err != nil {
 		return err
 	}
@@ -174,49 +178,16 @@ func (u DownloadByLinkOption) Do() error {
 		return err
 	}
 	verbose("iso is downloaded")
-	
+
 	return nil
 }
 
-// getKernel is to find the kernel of a ISO. if the path of ISO is given,
-// just check if the kernel is exist.
+// getKernel is to find the kernel of a ISO. 
 func getKernel(u *ISO) error {
 
-	verbose("try mount iso...")
-
-	isoName := u.name
-
-	diskFile, err := ioutil.TempDir("", "/mnt-iso")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(diskFile)
-
-	mountPath := filepath.Join(diskFile, isoName)
-	if mp, err := mount.Mount(u.path, mountPath, "iso9660", "", mount.ReadOnly); err != nil {
-		return fmt.Errorf("TryMount %s = %v, want nil", u.path, err)
-	}
-	verbose("mounted disk file is %s\n", mountPath)
-	// if kernel is given, check its validation
-	if u.kernel != "" {
-		walkfunc := func(path string, info os.FileInfo, err error) error {
-			if path == filepath.Join(mountPath, u.kernel) {
-				log.Printf("Kernel at %s is found\n", u.kernel)
-			}
-			return nil
-		}
-
-		verbose("\nfinding kernel...")
-		filepath.Walk(diskFile, walkfunc)
-		verbose("Kernel path is %s\n", u.kernel)
-	}
-
-	log.Println("\ntry unmount iso...")
-	if err := mp.Unmount(0); err != nil {
-		return fmt.Errorf("Unmount(%q) = %v, want nil", mountPath, err)
-	}
-
-	verbose("Done")
+	/*
+	* TODO: code this function after FindDevice is ready
+	*/
 	return nil
 }
 
@@ -232,7 +203,10 @@ func isoMenu(isos []ISO) error {
 	var downloadByLinkOption DownloadByLinkOption
 	entries = append(entries, downloadOption, downloadByLinkOption)
 
-	entry, err := menus.DisplayMenu("ISO Menu", "Choose an iso you want to boot (hit enter to choose the default - 1 is the default option) >", 0, entries)
+	menuTitle := "ISO Menu"
+	introwords := "Choose an iso you want to boot (hit enter to choose the default - 1 is the default option) >"
+	location := 0
+	entry, err := menus.DisplayMenu(menuTitle, introwords, location, entries)
 
 	// if index is exceed the length of entries or less than 0 means something wrong happened
 	if err != nil {
@@ -264,13 +238,17 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 
 // downloadIso will download a iso from URL and save it under savePath directory
 func downloadIso(isoPath, URL string) error {
-	log.Printf("Should begin to download here..., download url is %s\n", URL)
-	ifName, err := menus.NewInputWindow("Please input the name of the interface:", 100, 1, func(input string) (bool, string) {
+	verbose("Should begin to download here..., download url is %s\n", URL)
+	introwords := "Please input the name of the interface:"
+	wid := 100
+	ht := 1
+	interfaceNameCheckFunc := func(input string) (bool, string) {
 		if input[0] == 'e' || input[0] == 'w' {
 			return true, ""
 		}
 		return false, "not a valid interface name"
-	})
+	}
+	ifName, err := menus.NewInputWindow(introwords, wid, ht, interfaceNameCheckFunc)
 	if err != nil {
 		return err
 	}

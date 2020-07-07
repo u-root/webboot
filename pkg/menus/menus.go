@@ -28,6 +28,7 @@ func DisplayMenu(menuTitle string, introwords string, location int, entries []En
 	if err := ui.Init(); err != nil {
 		return nil, fmt.Errorf("failed to initialize termui: %v", err)
 	}
+	defer ui.Close()
 	// listData contains all choice's labels
 	listData := []string{}
 
@@ -68,26 +69,22 @@ func DisplayMenu(menuTitle string, introwords string, location int, entries []En
 	choose, err := GetInput(introwords, location, 100, 1, checkValidFunc)
 
 	if err != nil {
-		ui.Close()
 		return nil, fmt.Errorf("Error at input of desplay menu: %v", err)
 	}
 
 	if choose == "" {
 		for _, en := range entries {
 			if en.IsDefault() {
-				ui.Close()
 				return en, nil
 			}
 		}
 	} else {
 		c, err := strconv.Atoi(choose)
-		ui.Close()
 		if err != nil {
 			return nil, fmt.Errorf("Error at convert input to number in desplay menu: %v", err)
 		}
 		return entries[c-1], nil
 	}
-	ui.Close()
 	return nil, nil
 }
 
@@ -171,7 +168,7 @@ func NewInputWindow(introwords string, wid int, ht int, checkValidFunc func(stri
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("failed to initialize termui: %v", err)
 	}
+	defer ui.Close()
 	input, err := GetInput(introwords, 0, wid, ht, checkValidFunc)
-	ui.Close()
 	return input, err
 }
