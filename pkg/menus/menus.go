@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+    "strings"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -128,7 +129,6 @@ func GetInput(introwords string, location int, wid int, ht int, checkValidFunc f
 		// if user input q or control-c, exit the program.
 		case "q", "<C-c>":
 			ui.Close()
-			ui.Close()
 			os.Exit(1)
 		// If user hit enter means he did his choice.
 		// So check whether the input is valid or not by checkVilidFunc function.
@@ -171,4 +171,29 @@ func NewInputWindow(introwords string, wid int, ht int, checkValidFunc func(stri
 	defer ui.Close()
 	input, err := GetInput(introwords, 0, wid, ht, checkValidFunc)
 	return input, err
+}
+
+func DisplayResult(message []string) error{
+    if err := ui.Init(); err != nil {
+		return fmt.Errorf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+    
+    intro := widgets.NewParagraph()
+	intro.Text = strings.Join(message, "\n")
+	intro.Border = false
+	intro.SetRect(0, 0, 100, len(message)+3)
+	intro.TextStyle.Fg = ui.ColorWhite
+    
+	ui.Render(intro)
+    
+	uiEvents := ui.PollEvents()
+    for {
+		e := <-uiEvents
+		if e.Type != ui.KeyboardEvent {
+			continue
+		}
+        break
+    }
+    return nil
 }

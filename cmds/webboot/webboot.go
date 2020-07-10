@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/u-root/u-root/pkg/boot/diskboot"
+	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/webboot/pkg/dhclient"
 	"github.com/u-root/webboot/pkg/menus"
 )
@@ -44,16 +46,17 @@ var (
 	v       = flag.Bool("verbose", false, "Verbose output")
 	ipv4    = flag.Bool("ipv4", true, "use IPV4")
 	ipv6    = flag.Bool("ipv6", true, "use IPV6")
+	devGlob = flag.String("dev", "/sys/class/block/*", "Device glob")
 
 	verbose = func(string, ...interface{}) {}
 )
 
 // ISO type contains information of a iso file, incluing its name,
-// its filepath, the path to its kernel and if it should be choose by default.
+// its filepath, the path to its config files and if it should be choose by default.
 type ISO struct {
 	name      string
 	path      string
-	kernel    string
+	config    []*diskboot.Config
 	isDefault bool
 }
 
@@ -90,7 +93,6 @@ func (u ISO) Do() error {
 	if err := getKernel(&u); err != nil {
 		return err
 	}
-	verbose("isoPath is %s, isoKernel is %s", u.path, u.kernel)
 
 	return nil
 }
@@ -182,12 +184,14 @@ func (u DownloadByLinkOption) Do() error {
 	return nil
 }
 
-// getKernel is to find the kernel of a ISO. 
+// getKernel is to find the kernel of a ISO.
 func getKernel(u *ISO) error {
 
 	/*
 	* TODO: code this function after FindDevice is ready
-	*/
+	 */
+
+	menus.DisplayResult(strings.Fields(fmt.Sprintf("%+v", u)))
 	return nil
 }
 
@@ -275,6 +279,14 @@ func downloadIso(isoPath, URL string) error {
 	return nil
 }
 
+func cleanDevices(devices []*diskboot.Device) {
+	for _, device := range devices {
+		if err := device.Unmount(mount.MNT_FORCE); err != nil {
+			log.Printf("Error unmounting device %s: %v", device, err)
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -284,14 +296,30 @@ func main() {
 
 	var isos []ISO
 
+	var devices []*diskboot.Device
+
 	// If isoDir is not given, that means we need use findDevice to find the USB disk
 	// else we walk through the given folder to find all iso inside.
 	if *isoDir == "" {
+		devices = diskboot.FindDevices(*devGlob)
+		defer cleanDevices(devices)
+		verbose("Got devices: %#v", devices)
+		for _, device := range devices {
+			for _, iso := range device.Isos {
+				t_iso := ISO{
+					name:      iso.Name,
+					path:      iso.Path,
+					config:    iso.Config,
+					isDefault: false,
+				}
+				isos = append(isos, t_iso)
+			}
+		}
 
 	} else {
 		walkfunc := func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() == false && filepath.Ext(path) == ".iso" {
-				var iso = ISO{info.Name(), path, kernelPath[info.Name()], true}
+				var iso = ISO{info.Name(), path, nil, true}
 				isos = append(isos, iso)
 			}
 			return nil
@@ -299,9 +327,10 @@ func main() {
 		filepath.Walk(*isoDir, walkfunc)
 	}
 
-	err := isoMenu(isos)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
+	/*err := isoMenu(isos)
+		if err != nil {
+	        cleanDevices(devices)
+			log.Fatalf("%v", err)
+		}*/
 	return
 }
