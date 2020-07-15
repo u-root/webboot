@@ -103,3 +103,22 @@ func TestGetInputComplicated(t *testing.T) {
 		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning.Text)
 	}
 }
+
+func TestNewCustomInputWindow(t *testing.T) {
+	testText := "test"
+	uiEvents := make(chan ui.Event)
+	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
+
+	isValid := func(input string) (string, bool) {
+		return "", true
+	}
+
+	inputText, err := internalNewInputWindow("Test NewCustomInputWindow", 100, 2, isValid, uiEvents)
+
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	if testText != inputText {
+		t.Errorf("incorrect value for input. got: %v, want: %v", inputText, testText)
+	}
+}
