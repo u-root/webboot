@@ -20,7 +20,19 @@ func newParagraph(initText string, border bool, location int, wid int, ht int) *
 	return p
 }
 
-func processInput(input, warning *widgets.Paragraph, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, error) {
+// present an input box to user and return the user's input.
+// processInput will check validation of input using isValid function.
+func processInput(introwords string, location int, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, string, error) {
+	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
+	location += 2
+	input := newParagraph("", true, location, wid, ht+2)
+	location += ht + 2
+	warning := newParagraph("", false, location, wid, 3)
+
+	ui.Render(intro)
+	ui.Render(input)
+	ui.Render(warning)
+
 	// keep tracking all input from user
 	for {
 		e := <-uiEvents
@@ -29,11 +41,11 @@ func processInput(input, warning *widgets.Paragraph, isValid func(string) (strin
 		}
 		switch e.ID {
 		case "<C-d>":
-			return "", io.EOF
+			return input.Text, warning.Text, io.EOF
 		case "<Enter>":
 			warningWords, ok := isValid(input.Text)
 			if ok {
-				return input.Text, nil
+				return input.Text, warning.Text, nil
 			}
 			input.Text = ""
 			warning.Text = warningWords
@@ -56,27 +68,16 @@ func processInput(input, warning *widgets.Paragraph, isValid func(string) (strin
 	}
 }
 
-// present an input box to user and return the user's input.
-// GetInput will check validation of input using isValid function.
-func GetInput(introwords string, location int, wid int, ht int, isValid func(string) (string, bool)) (string, error) {
-	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
-	location += 2
-	input := newParagraph("", true, location, wid, ht+2)
-	location += ht + 2
-	warning := newParagraph("", false, location, wid, 3)
-
-	ui.Render(intro)
-	ui.Render(input)
-	ui.Render(warning)
-
-	uiEvents := ui.PollEvents()
-	return processInput(input, warning, isValid, uiEvents)
-}
-
 // create a new ui window and display an input box.
 func NewCustomInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool)) (string, error) {
 	uiEvents := ui.PollEvents()
 	return internalNewInputWindow(introwords, wid, ht, isValid, uiEvents)
+}
+
+// open a new input window with fixed width=100, hight=1
+func NewInputWindow(introwords string, isValid func(string) (string, bool)) (string, error) {
+	uiEvents := ui.PollEvents()
+	return internalNewInputWindow(introwords, 100, 1, isValid, uiEvents)
 }
 
 func internalNewInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, error) {
@@ -85,16 +86,7 @@ func internalNewInputWindow(introwords string, wid int, ht int, isValid func(str
 	}
 	defer ui.Close()
 
-	location := 0
-	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
-	location += 2
-	input := newParagraph("", true, location, wid, ht+2)
-	location += ht + 2
-	warning := newParagraph("", false, location, wid, 3)
+	input, _, err := processInput(introwords, 0, wid, ht, isValid, uiEvents)
 
-	ui.Render(intro)
-	ui.Render(input)
-	ui.Render(warning)
-
-	return processInput(input, warning, isValid, uiEvents)
+	return input, err
 }

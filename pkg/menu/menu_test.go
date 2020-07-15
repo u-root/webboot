@@ -30,18 +30,13 @@ func pressKey(ch chan ui.Event, input []string) {
 	}
 }
 
-func TestGetInputSimple(t *testing.T) {
+func TestProcessInputSimple(t *testing.T) {
 	if err := ui.Init(); err != nil {
 		t.Fatal(err)
 	}
 	defer ui.Close()
 
-	input := newParagraph("", true, 0, 50, 3)
-	warning := newParagraph("", false, 3, 50, 3)
-	ui.Render(input)
-	ui.Render(warning)
 	testText := "test"
-
 	uiEvents := make(chan ui.Event)
 	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
 
@@ -49,29 +44,25 @@ func TestGetInputSimple(t *testing.T) {
 		return "", true
 	}
 
-	inputText, err := processInput(input, warning, isValid, uiEvents)
+	input, warning, err := processInput("test processInput simple", 0, 50, 1, isValid, uiEvents)
 
 	if err != nil {
 		t.Errorf("ProcessInput failed: %v", err)
 	}
-	if inputText != testText {
-		t.Errorf("Incorrect value for input. got: %v, want: %v", inputText, testText)
+	if input != testText {
+		t.Errorf("Incorrect value for input. got: %v, want: %v", input, testText)
 	}
-	if warning.Text != "" {
-		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning.Text)
+	if warning != "" {
+		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning)
 	}
 }
 
-func TestGetInputComplicated(t *testing.T) {
+func TestProcessInputComplex(t *testing.T) {
 	if err := ui.Init(); err != nil {
 		t.Fatal(err)
 	}
 	defer ui.Close()
 
-	input := newParagraph("", true, 0, 50, 3)
-	warning := newParagraph("", false, 3, 50, 3)
-	ui.Render(input)
-	ui.Render(warning)
 	testText := "100"
 
 	uiEvents := make(chan ui.Event)
@@ -91,16 +82,15 @@ func TestGetInputComplicated(t *testing.T) {
 		return "", true
 	}
 
-	inputText, err := processInput(input, warning, isValid, uiEvents)
-
+	input, warning, err := processInput("test processInput complex", 0, 50, 1, isValid, uiEvents)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	if inputText != testText {
-		t.Errorf("Incorrect value for input. got: %v, want: %v", inputText, testText)
+	if input != testText {
+		t.Errorf("Incorrect value for input. got: %v, want: %v", input, testText)
 	}
-	if warning.Text != "" {
-		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning.Text)
+	if warning != "" {
+		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning)
 	}
 }
 
@@ -113,12 +103,12 @@ func TestNewCustomInputWindow(t *testing.T) {
 		return "", true
 	}
 
-	inputText, err := internalNewInputWindow("Test NewCustomInputWindow", 100, 2, isValid, uiEvents)
+	input, err := internalNewInputWindow("Test NewCustomInputWindow", 100, 2, isValid, uiEvents)
 
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	if testText != inputText {
-		t.Errorf("incorrect value for input. got: %v, want: %v", inputText, testText)
+	if testText != input {
+		t.Errorf("incorrect value for input. got: %v, want: %v", input, testText)
 	}
 }
