@@ -3,6 +3,7 @@ package menu
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	ui "github.com/gizak/termui/v3"
@@ -11,7 +12,20 @@ import (
 
 const menuWidth = 50
 
-// newParagraph returns a widgets.Paragraph struct with given initial text..
+type validCheck func(string) (string, string, bool)
+
+// Entry contains all the information needed for a boot entry.
+type Entry interface {
+	// Label returns the string will show in menu.
+	Label() string
+	// IsDefault returns true if the entry is default.
+	// If there is many default Entrys, choose the the first in the list.
+	IsDefault() bool
+	// Exec performs the following process after an entry is chosen
+	Exec() error
+}
+
+// newParagraph returns a widgets.Paragraph struct with given initial text.
 func newParagraph(initText string, border bool, location int, wid int, ht int) *widgets.Paragraph {
 	p := widgets.NewParagraph()
 	p.Text = initText
@@ -21,7 +35,7 @@ func newParagraph(initText string, border bool, location int, wid int, ht int) *
 	return p
 }
 
-// readKey reads a key from input stream
+// readKey reads a key from input stream.
 func readKey(uiEvents <-chan ui.Event) string {
 	for {
 		e := <-uiEvents
@@ -33,7 +47,7 @@ func readKey(uiEvents <-chan ui.Event) string {
 
 // processInput presents an input box to user and returns the user's input.
 // processInput will check validation of input using isValid function.
-func processInput(introwords string, location int, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, string, error) {
+func processInput(introwords string, location int, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, string, error) {
 	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
 	location += 2
 	input := newParagraph("", true, location, wid, ht+2)
@@ -51,12 +65,12 @@ func processInput(introwords string, location int, wid int, ht int, isValid func
 		case "<C-d>":
 			return input.Text, warning.Text, io.EOF
 		case "<Enter>":
-			warningWords, ok := isValid(input.Text)
+			inputString, warningString, ok := isValid(input.Text)
 			if ok {
-				return input.Text, warning.Text, nil
+				return inputString, warning.Text, nil
 			}
 			input.Text = ""
-			warning.Text = warningWords
+			warning.Text = warningString
 			ui.Render(input)
 			ui.Render(warning)
 		case "<Backspace>":
@@ -77,18 +91,16 @@ func processInput(introwords string, location int, wid int, ht int, isValid func
 }
 
 // NewCustomInputWindow creates a new ui window and displays an input box.
-func NewCustomInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool)) (string, error) {
-	uiEvents := ui.PollEvents()
-	return newInputWindow(introwords, wid, ht, isValid, uiEvents)
+func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck) (string, error) {
+	return newInputWindow(introwords, wid, ht, isValid, ui.PollEvents())
 }
 
-// NewInputWindow opens a new input window with fixed width=100, hight=1
-func NewInputWindow(introwords string, isValid func(string) (string, bool)) (string, error) {
-	uiEvents := ui.PollEvents()
-	return newInputWindow(introwords, 100, 1, isValid, uiEvents)
+// NewInputWindow opens a new input window with fixed width=100, hight=1.
+func NewInputWindow(introwords string, isValid validCheck) (string, error) {
+	return newInputWindow(introwords, 100, 1, isValid, ui.PollEvents())
 }
 
-func newInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, error) {
+func newInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("Failed to initialize termui: %v", err)
 	}
@@ -102,8 +114,7 @@ func newInputWindow(introwords string, wid int, ht int, isValid func(string) (st
 // DisplayResult opens a new window and displays a message.
 // each item in the message array will be displayed on a single line.
 func DisplayResult(message []string, wid int) (string, error) {
-	uiEvents := ui.PollEvents()
-	return displayResult(message, wid, uiEvents)
+	return displayResult(message, wid, ui.PollEvents())
 }
 
 func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string, error) {
@@ -126,4 +137,61 @@ func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string,
 		return p.Text, io.EOF
 	}
 	return p.Text, nil
+}
+
+// DisplayMenu presents all entries into a menu with numbers.
+// user inputs a number to choose from them.
+func DisplayMenu(menuTitle string, introwords string, entries []Entry) (Entry, error) {
+	return displayMenu(menuTitle, introwords, entries, ui.PollEvents())
+}
+
+func displayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
+	if err := ui.Init(); err != nil {
+		return nil, fmt.Errorf("Failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+	// listData contains all choice's labels
+	listData := []string{}
+
+	for i, e := range entries {
+		listData = append(listData, fmt.Sprintf("[%d] %s", i, e.Label()))
+	}
+
+	location := 0
+	l := widgets.NewList()
+	l.Title = menuTitle
+	l.Rows = listData
+	l.SetRect(0, location, menuWidth, location+len(entries)+2)
+	location += len(entries) + 2
+	l.TextStyle.Fg = ui.ColorWhite
+	ui.Render(l)
+
+	// we want user to choose from the menu, so the isValid will check :
+	// 1.input is a number; 2.input number does not exceed the number of options.
+	isValid := func(input string) (string, string, bool) {
+		if input == "" {
+			for i, en := range entries {
+				if en.IsDefault() {
+					return strconv.Itoa(i), "", true
+				}
+			}
+			return "", "No default option, please enter a choice", false
+		}
+		if c, err := strconv.Atoi(input); err != nil || c < 0 || c >= len(entries) {
+			return "", "Input is not a valid entry number.", false
+		}
+		return input, "", true
+	}
+
+	input, _, err := processInput(introwords, location, menuWidth, 1, isValid, uiEvents)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get input in displayMenu: %v", err)
+	}
+
+	choose, err := strconv.Atoi(input)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
+	}
+	return entries[choose], nil
 }
