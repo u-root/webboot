@@ -15,7 +15,7 @@ func TestNewParagraph(t *testing.T) {
 	testText := "newParagraph test"
 	p := newParagraph(testText, false, 0, 50, 3)
 	if testText != p.Text {
-		t.Errorf("incorrect value for p.Text. got: %v, want: %v", p.Text, testText)
+		t.Errorf("Incorrect value for p.Text. got: %v, want: %v", p.Text, testText)
 	}
 }
 
@@ -94,21 +94,19 @@ func TestProcessInputComplex(t *testing.T) {
 	}
 }
 
-func TestNewCustomInputWindow(t *testing.T) {
+func TestDisplayResult(t *testing.T) {
 	testText := "test"
 	uiEvents := make(chan ui.Event)
-	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
+	go pressKey(uiEvents, []string{"q"})
 
-	isValid := func(input string) (string, bool) {
-		return "", true
-	}
-
-	input, err := internalNewInputWindow("Test NewCustomInputWindow", 100, 2, isValid, uiEvents)
+	message := []string{"This is", "a", "TEST"}
+	testText = "This is\na\nTEST"
+	msg, err := displayResult(message, 50, uiEvents)
 
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	if testText != input {
-		t.Errorf("incorrect value for input. got: %v, want: %v", input, testText)
+	if testText != msg {
+		t.Errorf("Incorrect value for msg. got: %v, want: %v", msg, testText)
 	}
 }

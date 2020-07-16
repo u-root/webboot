@@ -3,6 +3,7 @@ package menu
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -10,7 +11,7 @@ import (
 
 const menuWidth = 50
 
-// return a paragraph object with given initial text.
+// newParagraph returns a widgets.Paragraph struct with given initial text..
 func newParagraph(initText string, border bool, location int, wid int, ht int) *widgets.Paragraph {
 	p := widgets.NewParagraph()
 	p.Text = initText
@@ -20,7 +21,17 @@ func newParagraph(initText string, border bool, location int, wid int, ht int) *
 	return p
 }
 
-// present an input box to user and return the user's input.
+// readKey reads a key from input stream
+func readKey(uiEvents <-chan ui.Event) string {
+	for {
+		e := <-uiEvents
+		if e.Type == ui.KeyboardEvent {
+			return e.ID
+		}
+	}
+}
+
+// processInput presents an input box to user and returns the user's input.
 // processInput will check validation of input using isValid function.
 func processInput(introwords string, location int, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, string, error) {
 	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
@@ -35,11 +46,8 @@ func processInput(introwords string, location int, wid int, ht int, isValid func
 
 	// keep tracking all input from user
 	for {
-		e := <-uiEvents
-		if e.Type != ui.KeyboardEvent {
-			continue
-		}
-		switch e.ID {
+		k := readKey(uiEvents)
+		switch k {
 		case "<C-d>":
 			return input.Text, warning.Text, io.EOF
 		case "<Enter>":
@@ -62,25 +70,25 @@ func processInput(introwords string, location int, wid int, ht int, isValid func
 				warning.Text = ""
 				ui.Render(warning)
 			}
-			input.Text += e.ID
+			input.Text += k
 			ui.Render(input)
 		}
 	}
 }
 
-// create a new ui window and display an input box.
+// NewCustomInputWindow creates a new ui window and displays an input box.
 func NewCustomInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool)) (string, error) {
 	uiEvents := ui.PollEvents()
-	return internalNewInputWindow(introwords, wid, ht, isValid, uiEvents)
+	return newInputWindow(introwords, wid, ht, isValid, uiEvents)
 }
 
-// open a new input window with fixed width=100, hight=1
+// NewInputWindow opens a new input window with fixed width=100, hight=1
 func NewInputWindow(introwords string, isValid func(string) (string, bool)) (string, error) {
 	uiEvents := ui.PollEvents()
-	return internalNewInputWindow(introwords, 100, 1, isValid, uiEvents)
+	return newInputWindow(introwords, 100, 1, isValid, uiEvents)
 }
 
-func internalNewInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, error) {
+func newInputWindow(introwords string, wid int, ht int, isValid func(string) (string, bool), uiEvents <-chan ui.Event) (string, error) {
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("Failed to initialize termui: %v", err)
 	}
@@ -89,4 +97,33 @@ func internalNewInputWindow(introwords string, wid int, ht int, isValid func(str
 	input, _, err := processInput(introwords, 0, wid, ht, isValid, uiEvents)
 
 	return input, err
+}
+
+// DisplayResult opens a new window and displays a message.
+// each item in the message array will be displayed on a single line.
+func DisplayResult(message []string, wid int) (string, error) {
+	uiEvents := ui.PollEvents()
+	return displayResult(message, wid, uiEvents)
+}
+
+func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string, error) {
+	if err := ui.Init(); err != nil {
+		return "", fmt.Errorf("Failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+
+	p := widgets.NewParagraph()
+	p.Text = strings.Join(message, "\n")
+	p.Border = false
+	p.SetRect(0, 0, wid, len(message)+3)
+	p.TextStyle.Fg = ui.ColorWhite
+
+	ui.Render(p)
+
+	// press any key to exit this window
+	k := readKey(uiEvents)
+	if k == "<C-d>" {
+		return p.Text, io.EOF
+	}
+	return p.Text, nil
 }
