@@ -22,7 +22,12 @@ type Entry interface {
 	// If there is many default Entrys, choose the the first in the list.
 	IsDefault() bool
 	// Exec performs the following process after an entry is chosen
-	Exec() error
+	Exec(<-chan ui.Event) error
+}
+
+// AlwaysValid is a special isValid function that check nothing
+func AlwaysValid(input string) (string, string, bool) {
+	return input, "", true
 }
 
 // newParagraph returns a widgets.Paragraph struct with given initial text.
@@ -90,17 +95,23 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	}
 }
 
-// NewCustomInputWindow creates a new ui window and displays an input box.
-func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck) (string, error) {
-	return newInputWindow(introwords, wid, ht, isValid, ui.PollEvents())
+// I think these two functions can be deleted. I find that almost all test(such as webboot.go test)
+// requires a custom uiEvent, so I think it might be better to give all UI functions a custom uiEvent.
+/*func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck) (string, error) {
+	return newCustomInputWindow(introwords, wid, ht, isValid, ui.PollEvents())
 }
+
+func NewInputWindow(introwords string, isValid validCheck) (string, error) {
+	return newInputWindow(introwords, isValid, ui.PollEvents())
+} */
 
 // NewInputWindow opens a new input window with fixed width=100, hight=1.
-func NewInputWindow(introwords string, isValid validCheck) (string, error) {
-	return newInputWindow(introwords, 100, 1, isValid, ui.PollEvents())
+func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+	return NewCustomInputWindow(introwords, 100, 1, isValid, uiEvents)
 }
 
-func newInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+// NewCustomInputWindow creates a new ui window and displays an input box.
+func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("Failed to initialize termui: %v", err)
 	}

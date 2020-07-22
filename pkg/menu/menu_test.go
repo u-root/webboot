@@ -1,9 +1,10 @@
 package menu
 
 import (
-	ui "github.com/gizak/termui/v3"
 	"strconv"
 	"testing"
+
+	ui "github.com/gizak/termui/v3"
 )
 
 type testEntry struct {
@@ -20,7 +21,7 @@ func (u *testEntry) IsDefault() bool {
 	return u.isDefault
 }
 
-func (u *testEntry) Exec() error {
+func (u *testEntry) Exec(uiEvents <-chan ui.Event) error {
 	return nil
 }
 
@@ -58,11 +59,7 @@ func TestProcessInputSimple(t *testing.T) {
 	uiEvents := make(chan ui.Event)
 	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
 
-	isValid := func(input string) (string, string, bool) {
-		return input, "", true
-	}
-
-	input, warning, err := processInput("test processInput simple", 0, 50, 1, isValid, uiEvents)
+	input, warning, err := processInput("test processInput simple", 0, 50, 1, AlwaysValid, uiEvents)
 
 	if err != nil {
 		t.Errorf("ProcessInput failed: %v", err)
