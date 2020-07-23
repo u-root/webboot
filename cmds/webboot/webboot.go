@@ -17,15 +17,22 @@ import (
 const (
 	downloadByLinkLabel = "Download by link"
 	tcURL               = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
+	wbtcpURL            = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
 )
 
 // bookmark record the list of iso webboot allow user to download
-var bookmark = map[string]BookMarkISO{
-	"tinycore": BookMarkISO{
+var bookmark = []*BookMarkISO{
+	&BookMarkISO{
 		isDefault: false,
 		url:       tcURL,
 		label:     "Download Tinycore v10.1",
 		isoName:   "TinyCorePure64-10.1.iso",
+	},
+	&BookMarkISO{
+		isDefault: false,
+		url:       wbtcpURL,
+		label:     "Webboot Tinycorepure",
+		isoName:   "TinyCorePure64.iso",
 	},
 }
 
@@ -38,6 +45,28 @@ type BookMarkISO struct {
 	isoName   string
 }
 
+// Label is the string this iso displays in the menu page.
+func (b *BookMarkISO) Label() string {
+	return b.label
+}
+
+// IsDefault is for mark whether this iso is a default choice.
+func (b *BookMarkISO) IsDefault() bool {
+	return b.isDefault
+}
+
+// Exec performs the following process after the entry is chosen
+func (b *BookMarkISO) Exec(_ <-chan ui.Event) error {
+	link := b.url
+	filename := b.isoName
+	fPath := filepath.Join("/tmp", filename)
+	if err := download(link, fPath); err != nil {
+		return err
+	}
+	// todo: boot the iso
+	return nil
+}
+
 // CachedISO contains information of the iso cached in the memory
 // expected to implement Entry interface
 type CachedISO struct {
@@ -46,6 +75,36 @@ type CachedISO struct {
 	path      string
 	isoName   string
 	// todo: information parsed from config file
+}
+
+// DownloadByBookmark is to implement "Download by bookmark" option in the menu
+type DownloadByBookmark struct{}
+
+// Label is the string this iso displays in the menu page.
+func (d *DownloadByBookmark) Label() string {
+	return "Download by link"
+}
+
+// IsDefault is for mark whether this iso is a default choice.
+// assume that DownloadByLink will not be a default option.
+func (d *DownloadByBookmark) IsDefault() bool {
+	return false
+}
+
+// Exec performs the following process after the entry is chosen
+func (d *DownloadByBookmark) Exec(uiEvents <-chan ui.Event) error {
+	entries := []menu.Entry{}
+	for _, e := range bookmark {
+		entries = append(entries, e)
+	}
+
+	chosen, err := menu.DisplayMenu("Bookmarks", "Input your choice", entries, uiEvents)
+	if err != nil {
+		return err
+	}
+
+	return chosen.Exec(uiEvents)
+	// todo: boot the iso
 }
 
 // DownloadByLink is to implement "Download by link" option in the menu
@@ -61,9 +120,6 @@ func (d *DownloadByLink) Label() string {
 func (d *DownloadByLink) IsDefault() bool {
 	return false
 }
-
-// DownloadByBookmark is to implement "Download by bookmark" option in the menu
-type DownloadByBookmark struct{}
 
 // Exec performs the following process after the entry is chosen
 func (d *DownloadByLink) Exec(uiEvents <-chan ui.Event) error {
@@ -98,7 +154,7 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 	switch u.Scheme {
 	case "file":
 		return os.Open(URL[7:])
-	case "http", "https:":
+	case "http", "https":
 		resp, err := http.Get(URL)
 		if err != nil {
 			return nil, err
