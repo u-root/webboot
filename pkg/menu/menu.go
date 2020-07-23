@@ -18,11 +18,8 @@ type validCheck func(string) (string, string, bool)
 type Entry interface {
 	// Label returns the string will show in menu.
 	Label() string
-	// IsDefault returns true if the entry is default.
-	// If there is many default Entrys, choose the the first in the list.
-	IsDefault() bool
 	// Exec performs the following process after an entry is chosen
-	Exec(<-chan ui.Event) error
+	Exec() error
 }
 
 // AlwaysValid is a special isValid function that check nothing
@@ -167,10 +164,8 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	// 1.input is a number; 2.input number does not exceed the number of options.
 	isValid := func(input string) (string, string, bool) {
 		if input == "" {
-			for i, en := range entries {
-				if en.IsDefault() {
-					return strconv.Itoa(i), "", true
-				}
+			if len(entries) > 0 {
+				return "0", "", true
 			}
 			return "", "No default option, please enter a choice", false
 		}
@@ -190,5 +185,5 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
 	}
-	return entries[choose], nil
+	return entries[choose], entries[choose].Exec()
 }
