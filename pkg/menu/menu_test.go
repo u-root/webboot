@@ -184,7 +184,7 @@ func TestDisplayMenu(t *testing.T) {
 			uiEvents := make(chan ui.Event)
 			go pressKey(uiEvents, tt.userInput)
 
-			chosen, err := displayMenu("test menu title", tt.name, tt.entries, uiEvents)
+			chosen, err := DisplayMenu("test menu title", tt.name, tt.entries, uiEvents)
 
 			if err != nil {
 				t.Errorf("Error: %v", err)

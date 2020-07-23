@@ -95,16 +95,6 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	}
 }
 
-// I think these two functions can be deleted. I find that almost all test(such as webboot.go test)
-// requires a custom uiEvent, so I think it might be better to give all UI functions a custom uiEvent.
-/*func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck) (string, error) {
-	return newCustomInputWindow(introwords, wid, ht, isValid, ui.PollEvents())
-}
-
-func NewInputWindow(introwords string, isValid validCheck) (string, error) {
-	return newInputWindow(introwords, isValid, ui.PollEvents())
-} */
-
 // NewInputWindow opens a new input window with fixed width=100, hight=1.
 func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
 	return NewCustomInputWindow(introwords, 100, 1, isValid, uiEvents)
@@ -152,11 +142,7 @@ func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string,
 
 // DisplayMenu presents all entries into a menu with numbers.
 // user inputs a number to choose from them.
-func DisplayMenu(menuTitle string, introwords string, entries []Entry) (Entry, error) {
-	return displayMenu(menuTitle, introwords, entries, ui.PollEvents())
-}
-
-func displayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
+func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
 	if err := ui.Init(); err != nil {
 		return nil, fmt.Errorf("Failed to initialize termui: %v", err)
 	}

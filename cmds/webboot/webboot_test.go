@@ -44,7 +44,7 @@ func TestDownload(t *testing.T) {
 	})
 }
 
-func TestDownloadByLink(t *testing.T) {
+func TestDownloadByLinkOption(t *testing.T) {
 	var entry menu.Entry = &DownloadByLink{}
 	url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	isoName := "test_download_by_link.iso"
@@ -55,6 +55,43 @@ func TestDownloadByLink(t *testing.T) {
 	input = append(input, strings.Split(isoName, "")...)
 	input = append(input, "<Enter>")
 	go pressKey(uiEvents, input)
+
+	if err := entry.Exec(uiEvents); err != nil {
+		t.Errorf("Error: Fail to execute, error msg: %+v", err)
+	}
+
+	if _, err := os.Stat(fPath); err != nil {
+		t.Errorf("Error: do not find downloaded file, error msg: %+v", err)
+	}
+
+	if err := os.Remove(fPath); err != nil {
+		t.Errorf("Error: can not remove test file, error msg: %+v", err)
+	}
+}
+
+func TestBookmarkISOOption(t *testing.T) {
+	var entry menu.Entry = bookmark[0]
+	fPath := "/tmp/TinyCorePure64-10.1.iso"
+
+	if err := entry.Exec(ui.PollEvents()); err != nil {
+		t.Errorf("Error: Fail to execute, error msg: %+v", err)
+	}
+
+	if _, err := os.Stat(fPath); err != nil {
+		t.Errorf("Error: do not find downloaded file, error msg: %+v", err)
+	}
+
+	if err := os.Remove(fPath); err != nil {
+		t.Errorf("Error: can not remove test file, error msg: %+v", err)
+	}
+}
+
+func TestDownloadByBookmarkOption(t *testing.T) {
+	var entry menu.Entry = &DownloadByBookmark{}
+	uiEvents := make(chan ui.Event)
+	input := []string{"1", "<Enter>"}
+	go pressKey(uiEvents, input)
+	fPath := "/tmp/TinyCorePure64.iso"
 
 	if err := entry.Exec(uiEvents); err != nil {
 		t.Errorf("Error: Fail to execute, error msg: %+v", err)
