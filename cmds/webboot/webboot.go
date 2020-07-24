@@ -24,6 +24,13 @@ func (b *BookMarkISO) Exec() error {
 	return nil
 }
 
+// Exec boots the cached iso.
+func (c *CachedISO) Exec() error {
+	// todo: boot the iso
+	log.Printf("ISO is cached at %s", c.path)
+	return nil
+}
+
 // Exec displays a menu of bookmarks
 func (d *DownloadByBookmark) Exec() error {
 	entries := []menu.Entry{}
@@ -35,9 +42,7 @@ func (d *DownloadByBookmark) Exec() error {
 	if err != nil {
 		return err
 	}
-
 	return nil
-	// todo: boot the iso
 }
 
 // Exec asks for link and name, then downloads the iso and boot it.
@@ -107,4 +112,22 @@ func download(URL, fPath string) error {
 		return fmt.Errorf("Fail to  close %s: %v", fPath, err)
 	}
 	return nil
+}
+
+func getCachedIsos(cachedDir string) []*CachedISO {
+	isos := []*CachedISO{}
+	walkfunc := func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() == false && filepath.Ext(path) == ".iso" {
+			// todo: mount the iso and parse the config
+			var iso *CachedISO = &CachedISO{
+				label: info.Name(),
+				path:  path,
+				// todo: configs
+			}
+			isos = append(isos, iso)
+		}
+		return nil
+	}
+	filepath.Walk(cachedDir, walkfunc)
+	return isos
 }

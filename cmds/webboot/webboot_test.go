@@ -105,3 +105,14 @@ func TestDownloadByBookmarkOption(t *testing.T) {
 		t.Errorf("Fail to remove test file, error msg: %+v", err)
 	}
 }
+
+func TestGetCachedIsos(t *testing.T) {
+	isos := getCachedIsos("/home/shiyux/Downloads/")
+	for _, iso := range isos {
+		t.Log(iso)
+		if _, err := os.Stat(iso.path); err != nil {
+			t.Errorf("Fail to find cached file, error msg: %+v", err)
+		}
+
+	}
+}

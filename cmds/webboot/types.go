@@ -38,11 +38,15 @@ func (b *BookMarkISO) Label() string {
 // CachedISO contains information of the iso cached in the memory
 // expected to implement Entry interface
 type CachedISO struct {
-	isDefault bool
-	label     string
-	path      string
-	name      string
+	label string
+	path  string
 	// todo: information parsed from config file
+	// configs: []*boot.LinuxImage
+}
+
+// Label is the string this iso displays in the menu page.
+func (c *CachedISO) Label() string {
+	return c.label
 }
 
 // DownloadByBookmark is to implement "Download by bookmark" option in the menu
