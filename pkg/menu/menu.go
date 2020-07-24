@@ -18,11 +18,13 @@ type validCheck func(string) (string, string, bool)
 type Entry interface {
 	// Label returns the string will show in menu.
 	Label() string
-	// IsDefault returns true if the entry is default.
-	// If there is many default Entrys, choose the the first in the list.
-	IsDefault() bool
 	// Exec performs the following process after an entry is chosen
 	Exec() error
+}
+
+// AlwaysValid is a special isValid function that check nothing
+func AlwaysValid(input string) (string, string, bool) {
+	return input, "", true
 }
 
 // newParagraph returns a widgets.Paragraph struct with given initial text.
@@ -90,17 +92,13 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	}
 }
 
-// NewCustomInputWindow creates a new ui window and displays an input box.
-func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck) (string, error) {
-	return newInputWindow(introwords, wid, ht, isValid, ui.PollEvents())
-}
-
 // NewInputWindow opens a new input window with fixed width=100, hight=1.
-func NewInputWindow(introwords string, isValid validCheck) (string, error) {
-	return newInputWindow(introwords, 100, 1, isValid, ui.PollEvents())
+func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+	return NewCustomInputWindow(introwords, 100, 1, isValid, uiEvents)
 }
 
-func newInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+// NewCustomInputWindow creates a new ui window and displays an input box.
+func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("Failed to initialize termui: %v", err)
 	}
@@ -141,11 +139,7 @@ func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string,
 
 // DisplayMenu presents all entries into a menu with numbers.
 // user inputs a number to choose from them.
-func DisplayMenu(menuTitle string, introwords string, entries []Entry) (Entry, error) {
-	return displayMenu(menuTitle, introwords, entries, ui.PollEvents())
-}
-
-func displayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
+func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
 	if err := ui.Init(); err != nil {
 		return nil, fmt.Errorf("Failed to initialize termui: %v", err)
 	}
@@ -170,10 +164,8 @@ func displayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	// 1.input is a number; 2.input number does not exceed the number of options.
 	isValid := func(input string) (string, string, bool) {
 		if input == "" {
-			for i, en := range entries {
-				if en.IsDefault() {
-					return strconv.Itoa(i), "", true
-				}
+			if len(entries) > 0 {
+				return "0", "", true
 			}
 			return "", "No default option, please enter a choice", false
 		}
@@ -193,5 +185,5 @@ func displayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
 	}
-	return entries[choose], nil
+	return entries[choose], entries[choose].Exec()
 }

@@ -1,9 +1,10 @@
 package menu
 
 import (
-	ui "github.com/gizak/termui/v3"
 	"strconv"
 	"testing"
+
+	ui "github.com/gizak/termui/v3"
 )
 
 type testEntry struct {
@@ -58,11 +59,7 @@ func TestProcessInputSimple(t *testing.T) {
 	uiEvents := make(chan ui.Event)
 	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
 
-	isValid := func(input string) (string, string, bool) {
-		return input, "", true
-	}
-
-	input, warning, err := processInput("test processInput simple", 0, 50, 1, isValid, uiEvents)
+	input, warning, err := processInput("test processInput simple", 0, 50, 1, AlwaysValid, uiEvents)
 
 	if err != nil {
 		t.Errorf("ProcessInput failed: %v", err)
@@ -130,9 +127,9 @@ func TestDisplayResult(t *testing.T) {
 }
 
 func TestDisplayMenu(t *testing.T) {
-	entry1 := &testEntry{label: "entry 1", isDefault: false}
-	entry2 := &testEntry{label: "entry 2", isDefault: true}
-	entry3 := &testEntry{label: "entry 3", isDefault: true}
+	entry1 := &testEntry{label: "entry 1"}
+	entry2 := &testEntry{label: "entry 2"}
+	entry3 := &testEntry{label: "entry 3"}
 
 	for _, tt := range []struct {
 		name      string
@@ -144,7 +141,7 @@ func TestDisplayMenu(t *testing.T) {
 			name:      "hit_enter",
 			entries:   []Entry{entry1, entry2, entry3},
 			userInput: []string{"<Enter>"},
-			want:      entry2,
+			want:      entry1,
 		},
 		{
 			name:      "hit_0",
@@ -168,7 +165,7 @@ func TestDisplayMenu(t *testing.T) {
 			name:      "error_input_then_hit_enter",
 			entries:   []Entry{entry1, entry2, entry3},
 			userInput: []string{"0", "a", "<Enter>", "<Enter>"},
-			want:      entry2,
+			want:      entry1,
 		},
 		{
 			name:      "exceed_the_bound_then_right_input",
@@ -187,7 +184,7 @@ func TestDisplayMenu(t *testing.T) {
 			uiEvents := make(chan ui.Event)
 			go pressKey(uiEvents, tt.userInput)
 
-			chosen, err := displayMenu("test menu title", tt.name, tt.entries, uiEvents)
+			chosen, err := DisplayMenu("test menu title", tt.name, tt.entries, uiEvents)
 
 			if err != nil {
 				t.Errorf("Error: %v", err)
