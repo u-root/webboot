@@ -24,11 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  name = "github.com/u-root/u-root"
-  revision="4138a0a393c69865073190c4a1f40233e78ebbc2"
-
 [prune]
   go-tests = true
   unused-packages = true
