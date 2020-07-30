@@ -53,7 +53,7 @@ func configureAll(ifs []netlink.Link, cl chan<- error, timeout int, retry int, v
 	if verbose {
 		c.LogLevel = dhclient.LogSummary
 	}
-	r := dhclient.SendRequests(ctx, ifs, ipv4, ipv6, c)
+	r := dhclient.SendRequests(ctx, ifs, ipv4, ipv6, c, 30*time.Second)
 
 	defer close(cl)
 

@@ -2,37 +2,24 @@
 
 
 [[projects]]
-  digest = "1:6f9339c912bbdda81302633ad7e99a28dfa5a639c864061f1929510a9a64aa74"
-  name = "github.com/dustin/go-humanize"
-  packages = ["."]
+  digest = "1:f913db46dd2604735e5fe8f08fcf1490509a208697b7d63ac301ff5a84ece948"
+  name = "github.com/gizak/termui"
+  packages = [
+    "v3",
+    "v3/drawille",
+    "v3/widgets",
+  ]
   pruneopts = "UT"
-  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
-  version = "v1.0.0"
+  revision = "4cca61d83fa2cc0f485c478ff768b0108f6591d6"
+  version = "v3.1.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:e74f7eed9dafa6a64740516513e0d7d39d3564ea135b8549615e652c03f5a281"
-  name = "github.com/google/goexpect"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5b6988669ffabaa2cf500d79322a7f938478569f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:5b66c432b11dc4996e583c298c03a3120c9f2e1c68d05b72adceff13595892c3"
-  name = "github.com/google/goterm"
-  packages = ["term"]
-  pruneopts = "UT"
-  revision = "fc88cf888a3fa99ecc23d1efc1a44284268457d3"
-
-[[projects]]
-  branch = "master"
-  digest = "1:27cb3c0197659ac554a4c156627c48673f65f880e29015bbe7a67e0596ec1ecc"
+  digest = "1:04996eea470cd1f3e12b3357614480a9eb6405752606615dd0c04fbfbcc1badc"
   name = "github.com/insomniacslk/dhcp"
   packages = [
     "dhcpv4",
     "dhcpv4/nclient4",
-    "dhcpv4/server4",
     "dhcpv6",
     "dhcpv6/nclient6",
     "iana",
@@ -40,7 +27,15 @@
     "rfc1035label",
   ]
   pruneopts = "UT"
-  revision = "5214532ecf392e5a8818355f3fff993aaef42c06"
+  revision = "e1b69ee5fb3318ca17418526efa5bc41c98ff29b"
+
+[[projects]]
+  digest = "1:38286a6220cf5b85bae83d5754bbfd7218c833b4fc8b56f5d168ea4bc073ad27"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "14e809f6d78fcf9f48ff9b70981472b64c05f754"
+  version = "v0.0.9"
 
 [[projects]]
   branch = "master"
@@ -59,72 +54,60 @@
   revision = "50f2db8cc0658568575938a39dbaa46172921d98"
 
 [[projects]]
-  digest = "1:abfa295c28a428a7c3e11f64131cbb2e02314bca3aaa1f5b91c8343e4b5f4557"
+  digest = "1:abf08734a6527df70ed361d7c369fb580e6840d8f7a6012e5f609fdfd93b4e48"
+  name = "github.com/mitchellh/go-wordwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8dd4f955dc90892fc8fa21dc8a133ba90d11f5891d0539dbb73156ce1f347d77"
+  name = "github.com/nsf/termbox-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "38ba6e5628f1d70bac606cfd210b9ad1a16c3027"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7c0cb63fd68300ad1d7715902a8204034428a2a73ff8428904a5846dbaf691b0"
   name = "github.com/u-root/u-root"
   packages = [
-    "pkg/bb",
     "pkg/boot",
     "pkg/boot/ibft",
     "pkg/boot/kexec",
     "pkg/boot/multiboot",
     "pkg/boot/multiboot/internal/trampoline",
     "pkg/cmdline",
-    "pkg/cp",
-    "pkg/cpio",
     "pkg/dhclient",
-    "pkg/golang",
-    "pkg/ldd",
-    "pkg/lockfile",
-    "pkg/loop",
-    "pkg/ls",
     "pkg/mount",
-    "pkg/qemu",
     "pkg/rand",
-    "pkg/sh",
+    "pkg/shlex",
     "pkg/ubinary",
     "pkg/uio",
-    "pkg/ulog",
-    "pkg/uroot",
-    "pkg/uroot/builder",
-    "pkg/uroot/initramfs",
   ]
   pruneopts = "UT"
-  revision = "4138a0a393c69865073190c4a1f40233e78ebbc2"
+  revision = "3441aaa6cf0c5aa20b77727c12584086f0a70d6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:448df293f374a344a3f6187757c25879da1be3b80c52342e56f4d3fa364df3dd"
+  digest = "1:b9ced4aa3fba2dd780bb972a0b7535adb618ecea5aaf5cf5df18d03cab446a7b"
   name = "github.com/vishvananda/netlink"
   packages = [
     ".",
     "nl",
   ]
   pruneopts = "UT"
-  revision = "261f000a62279dad96e606b071274e6ecae6001b"
+  revision = "bca67dfc8220b44ef582c9da4e9172bf1c9ec973"
 
 [[projects]]
   branch = "master"
-  digest = "1:975cb0c04431bf92e60b636a15897c4a3faba9f7dc04da505646630ac91d29d3"
+  digest = "1:f4426574338c0a0518623550d8c06355cbec9ba21ea5a6187b818aa3d3ed3b47"
   name = "github.com/vishvananda/netns"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0a2b9b5464df8343199164a0321edf3313202f7e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:722d250ffb0cadbb647e3c342c91bb9afffaa4756a7950a6c09be890a29f2081"
-  name = "golang.org/x/crypto"
-  packages = [
-    "chacha20",
-    "curve25519",
-    "ed25519",
-    "ed25519/internal/edwards25519",
-    "internal/subtle",
-    "poly1305",
-    "ssh",
-  ]
-  pruneopts = "UT"
-  revision = "69ecbb4d6d5dab05e49161c6e77ea40a030884e1"
+  revision = "db3c7e526aae966c4ccfa6c8189b693d6ac5d202"
 
 [[projects]]
   branch = "master"
@@ -132,79 +115,32 @@
   name = "golang.org/x/net"
   packages = ["bpf"]
   pruneopts = "UT"
-  revision = "6afb5195e5aab057fda82e27171243402346b0ad"
+  revision = "ab34263943818b32f575efc978a3d24e80b04bd7"
 
 [[projects]]
   branch = "master"
-  digest = "1:b440428414e73960aa16beeb3dd70d6e257fdb3b6b5f9abfb0a4200b9538b76e"
+  digest = "1:4196f59cc34072808c8e7c23c6ce2fffa50d9eff217e2feb734f4b08369a3bf1"
   name = "golang.org/x/sys"
   packages = [
-    "cpu",
+    "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "9fbb57f87de9ccfe3a99d4e3270ce8a926ebba4f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:22bcbe2280ed955f8207e503921c3999bd63de4b07daf41a5306e34e492e4f57"
-  name = "golang.org/x/tools"
-  packages = [
-    "go/ast/astutil",
-    "imports",
-    "internal/fastwalk",
-    "internal/gopathwalk",
-    "internal/imports",
-    "internal/module",
-    "internal/semver",
-  ]
-  pruneopts = "UT"
-  revision = "b4207ef4930765bb7d8205504a8e9217f20be1dd"
-
-[[projects]]
-  digest = "1:a222e924e8dfeca0eccb0e6e8958d233752df7d52b6996f03df2a13a542c30f4"
-  name = "google.golang.org/grpc"
-  packages = ["codes"]
-  pruneopts = "UT"
-  revision = "a89bee78ddf0f67f27c06b1b2b1b071c18408724"
-  version = "v1.27.0"
-
-[[projects]]
-  digest = "1:c978be1a6be1a7d81c9ab8834732fcfda1c7cdadae8324627a92e4542f2b4542"
-  name = "pack.ag/tftp"
-  packages = [
-    ".",
-    "netascii",
-  ]
-  pruneopts = "UT"
-  revision = "d0fca786a8ea95ad4515bb83b2c34a11ec6a3fc0"
-  version = "v1.0.0"
+  revision = "3e129f6d46b10b0e1da36b3deffcb55e09631b64"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/insomniacslk/dhcp/dhcpv4",
-    "github.com/insomniacslk/dhcp/dhcpv4/server4",
+    "github.com/gizak/termui/v3",
+    "github.com/gizak/termui/v3/widgets",
     "github.com/u-root/u-root/pkg/boot",
     "github.com/u-root/u-root/pkg/boot/kexec",
-    "github.com/u-root/u-root/pkg/boot/multiboot",
-    "github.com/u-root/u-root/pkg/cmdline",
-    "github.com/u-root/u-root/pkg/cp",
     "github.com/u-root/u-root/pkg/dhclient",
-    "github.com/u-root/u-root/pkg/golang",
-    "github.com/u-root/u-root/pkg/loop",
     "github.com/u-root/u-root/pkg/mount",
-    "github.com/u-root/u-root/pkg/qemu",
-    "github.com/u-root/u-root/pkg/sh",
     "github.com/u-root/u-root/pkg/uio",
-    "github.com/u-root/u-root/pkg/ulog",
-    "github.com/u-root/u-root/pkg/uroot",
-    "github.com/u-root/u-root/pkg/uroot/builder",
-    "github.com/u-root/u-root/pkg/uroot/initramfs",
     "github.com/vishvananda/netlink",
     "golang.org/x/sys/unix",
-    "pack.ag/tftp",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
