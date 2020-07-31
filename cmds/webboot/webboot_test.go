@@ -72,8 +72,7 @@ func TestDownloadByLinkOption(t *testing.T) {
 func TestBookmarkISOOption(t *testing.T) {
 	var entry menu.Entry = &BookMarkISO{
 		url:   "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso",
-		label: "Download Tinycore v10.1",
-		name:  "TinyCorePure64-10.1.iso",
+		label: "TinyCorePure64-10.1.iso",
 	}
 	fPath := "/tmp/TinyCorePure64-10.1.iso"
 
@@ -92,10 +91,10 @@ func TestBookmarkISOOption(t *testing.T) {
 
 func TestDownloadByBookmarkOption(t *testing.T) {
 	uiEvents := make(chan ui.Event)
-	input := []string{"1", "<Enter>", "0", "<Enter>"}
+	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
 	go pressKey(uiEvents, input)
-	fPath := "/tmp/TinyCorePure64.iso"
-	var entry menu.Entry = &DownloadByBookmark{uiEvents: uiEvents}
+	fPath := "/tmp/TinyCorePure64-10.1.iso"
+	var entry menu.Entry = &BookmarkGroup{uiEvents: uiEvents, entries: bookmarks, label: ""}
 
 	if err := entry.Exec(); err != nil {
 		t.Errorf("Fail to execute, error msg: %+v", err)
@@ -110,51 +109,17 @@ func TestDownloadByBookmarkOption(t *testing.T) {
 	}
 }
 
-func TestGetCachedIsos(t *testing.T) {
-	isos := getCachedIsos("./testdata/")
-	if len(isos) != 2 {
-		t.Errorf("Miss some cached iso, expect 2, find %v", len(isos))
-	}
-
-	for _, iso := range isos {
-		t.Log(iso)
-		if _, err := os.Stat(iso.path); err != nil {
-			t.Errorf("Fail to find cached file, error msg: %+v", err)
-		}
-
-	}
-}
-
 func TestInstallCachedISOOption(t *testing.T) {
-	cachedISO := []*CachedISO{
-		&CachedISO{
-			label: "test cached iso1",
-			group: "test group 1",
-		},
-		&CachedISO{
-			label: "test cached iso2",
-			group: "test group 1",
-		},
-		&CachedISO{
-			label: "test cached iso3",
-			group: "test group 2",
-		},
-		&CachedISO{
-			label: "test cached iso4",
-			group: "test group 2",
-		},
-	}
-
 	for _, tt := range []struct {
 		name      string
 		userInput []string
 	}{
 		{
-			name:      "hit first iso in the first group",
+			name:      "hit first iso in the first dir",
 			userInput: []string{"0", "<Enter>", "0", "<Enter>"},
 		},
 		{
-			name:      "hit second iso in the second group",
+			name:      "hit second iso in the second dir",
 			userInput: []string{"1", "<Enter>", "1", "<Enter>"},
 		},
 	} {
@@ -162,7 +127,7 @@ func TestInstallCachedISOOption(t *testing.T) {
 			uiEvents := make(chan ui.Event)
 			go pressKey(uiEvents, tt.userInput)
 
-			var entry menu.Entry = &InstallCachedISO{uiEvents: uiEvents, cachedISO: cachedISO}
+			var entry menu.Entry = &DirGroup{uiEvents: uiEvents, path: "./testdata/", label: ""}
 			err := entry.Exec()
 			if err != nil {
 				t.Errorf("Error: %v", err)
@@ -173,7 +138,7 @@ func TestInstallCachedISOOption(t *testing.T) {
 
 }
 
-func TestHierarchyMenu(t *testing.T) {
+func TestMainMenu(t *testing.T) {
 	url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	name := "test_download_by_link.iso"
 	downloadByLinkInput := []string{"2", "<Enter>"}
@@ -196,10 +161,10 @@ func TestHierarchyMenu(t *testing.T) {
 			userInput: []string{"0", "<Enter>", "1", "<Enter>", "0", "<Enter>"},
 		},
 		{
-			name:      "hit first bookmark in the second group",
-			userInput: []string{"1", "<Enter>", "1", "<Enter>", "0", "<Enter>"},
+			name:      "hit the second bookmark under Tinycore/TinyCorePure64",
+			userInput: []string{"1", "<Enter>", "0", "<Enter>", "0", "<Enter>", "1", "<Enter>"},
 			check: func() {
-				fPath := "/tmp/TinyCorePure64.iso"
+				fPath := "/tmp/Webboot_Tinycorepure.iso"
 				if _, err := os.Stat(fPath); err != nil {
 					t.Errorf("Fail to find downloaded file, error msg: %+v", err)
 				}
@@ -227,7 +192,7 @@ func TestHierarchyMenu(t *testing.T) {
 			uiEvents := make(chan ui.Event)
 			go pressKey(uiEvents, tt.userInput)
 
-			err := getHierachyMenu("./testdata/", uiEvents)
+			err := getMainMenu("./testdata/", uiEvents)
 			if err != nil {
 				t.Errorf("Error: %v", err)
 			}

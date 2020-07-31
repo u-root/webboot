@@ -12,19 +12,23 @@ const (
 
 // bookmark record the list of iso webboot allow user to download
 var (
-	bookmark = map[string]([]*BookMarkISO){
-		"bookmark Tinycore1": []*BookMarkISO{
-			&BookMarkISO{
-				url:   tcURL,
-				label: "Download Tinycore v10.1",
-				name:  "TinyCorePure64-10.1.iso",
-			},
-		},
-		"bookmark Tinycore2": []*BookMarkISO{
-			&BookMarkISO{
-				url:   wbtcpURL,
-				label: "Webboot Tinycorepure",
-				name:  "TinyCorePure64.iso",
+	bookmarks = []menu.Entry{
+		&BookmarkGroup{
+			label: "Tinycore",
+			entries: []menu.Entry{
+				&BookmarkGroup{
+					label: "TinyCorePure64",
+					entries: []menu.Entry{
+						&BookMarkISO{
+							url:   tcURL,
+							label: "TinyCorePure64-10.1.iso",
+						},
+						&BookMarkISO{
+							url:   wbtcpURL,
+							label: "Webboot_Tinycorepure.iso",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -35,7 +39,6 @@ var (
 type BookMarkISO struct {
 	url      string
 	label    string
-	name     string
 	uiEvents <-chan ui.Event
 }
 
@@ -49,7 +52,6 @@ func (b *BookMarkISO) Label() string {
 type CachedISO struct {
 	label string
 	path  string
-	group string
 	// todo: information parsed from config file
 	// configs: []*boot.LinuxImage
 }
@@ -59,18 +61,7 @@ func (c *CachedISO) Label() string {
 	return c.label
 }
 
-// DownloadByBookmark option will let user to choose a group
-// of the download bookmark
-type DownloadByBookmark struct {
-	uiEvents <-chan ui.Event
-}
-
-// Label is the string this option displays in the menu page.
-func (d *DownloadByBookmark) Label() string {
-	return "Download by bookmark"
-}
-
-// DownloadByLink option will ask user for the name and download link
+// DownloadByLink option asks user for the name and download link
 // of iso then download and boot it
 type DownloadByLink struct {
 	uiEvents <-chan ui.Event
@@ -81,27 +72,30 @@ func (d *DownloadByLink) Label() string {
 	return "Download by link"
 }
 
-// InstallCachedISO option will let user to choose a group
-// of the cached iso
-type InstallCachedISO struct {
-	uiEvents  <-chan ui.Event
-	cachedISO []*CachedISO
+// DirGroup option displays subdirectory or cached isos under a certain directory
+// InstallCachedISO option is a special DirGroup option
+// which represents the root of the cache directory
+type DirGroup struct {
+	label    string
+	uiEvents <-chan ui.Event
+	path     string
 }
 
-// Label is the string this options displays in the menu page.
-func (i *InstallCachedISO) Label() string {
-	return "Install cached ISO"
+// Label is the string this option displays in the menu page.
+func (g *DirGroup) Label() string {
+	return g.label
 }
 
-// Group option display cached isos or bookmarks
-// under a certain group
-type Group struct {
-	name     string
+// BookmarkGroup option displays bookmarks under a certain group
+// DownloadByBookmark option is a special BookmarkGroup option
+// which represents the root level of the bookmarks
+type BookmarkGroup struct {
+	label    string
 	uiEvents <-chan ui.Event
 	entries  []menu.Entry
 }
 
 // Label is the string this option displays in the menu page.
-func (g *Group) Label() string {
-	return g.name
+func (g *BookmarkGroup) Label() string {
+	return g.label
 }
