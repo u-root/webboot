@@ -20,3 +20,5 @@ require (
 	google.golang.org/grpc v1.27.1
 	pack.ag/tftp v1.0.0
 )
+
+replace github.com/u-root/webboot v0.0.0 => /gopath/github.com/u-root/webboot 
