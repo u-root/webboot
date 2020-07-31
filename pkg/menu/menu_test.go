@@ -21,10 +21,6 @@ func (u *testEntry) IsDefault() bool {
 	return u.isDefault
 }
 
-func (u *testEntry) Exec() error {
-	return nil
-}
-
 func TestNewParagraph(t *testing.T) {
 	if err := ui.Init(); err != nil {
 		t.Fatal(err)
