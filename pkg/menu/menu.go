@@ -18,8 +18,6 @@ type validCheck func(string) (string, string, bool)
 type Entry interface {
 	// Label returns the string will show in menu.
 	Label() string
-	// Exec performs the following process after an entry is chosen
-	Exec() error
 }
 
 // AlwaysValid is a special isValid function that check nothing
@@ -185,5 +183,5 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
 	}
-	return entries[choose], entries[choose].Exec()
+	return entries[choose], nil
 }
