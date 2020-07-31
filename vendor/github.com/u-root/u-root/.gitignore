@@ -1,0 +1,53 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+*~
+
+bazel-*
+
+/bbsh
+/bb
+/u-root
+!vendor/github.com/u-root
+integration/serial/
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+bin
+dev
+/buildbin
+tinycorelinux*
+*.swp
+go.cpio
+initramfs.cpio
+/init
+bzImage
+vmlinux
+*.patch
+
+# Python Virtual Env
+*.env
+*.venv
+
+# Vim swap files
+*.swp
+.*.swp
+
+# tools
+tools/checklicenses/checklicenses

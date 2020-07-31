@@ -63,9 +63,11 @@ steps:
     ls -R
     PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/NiChrome/...
     ls -R
-    PATH=$PATH:/usr/sbin:/sbin go get github.com/u-root/webboot
-    ls -R
-    cd go/src/github.com/u-root/webboot
+    echo I have no idea why they do this.
+    echo let us move it.
+    echo mv $(pwd) $GOPATH/src/github.com/u-root/webboot
+    mv $(pwd) $GOPATH/src/github.com/u-root/webboot
+    cd $GOPATH/src/github.com/u-root/webboot
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -u=-build=bb
     PATH=$PATH:/usr/sbin:/sbin go run github.com/u-root/webboot -c=all -u=-build=bb
