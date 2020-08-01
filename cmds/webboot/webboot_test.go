@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	ui "github.com/gizak/termui/v3"
+	"github.com/u-root/webboot/pkg/menu"
 )
 
 func pressKey(ch chan ui.Event, input []string) {
@@ -32,13 +33,13 @@ func TestDownload(t *testing.T) {
 		fPath := "/tmp/test_tinycore.iso"
 		url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 		if err := download(url, fPath); err != nil {
-			t.Errorf("Fail to download, get error %+v", err)
+			t.Errorf("Fail to download: %+v", err)
 		}
 		if _, err := os.Stat(fPath); err != nil {
-			t.Errorf("Fail to find downloaded file, error msg: %+v", err)
+			t.Errorf("Fail to find downloaded file: %+v", err)
 		}
 		if err := os.Remove(fPath); err != nil {
-			t.Errorf("Fail to remove test file, error msg: %+v", err)
+			t.Errorf("Fail to remove test file: %+v", err)
 		}
 	})
 }
@@ -81,21 +82,21 @@ func TestDownloadOption(t *testing.T) {
 			entry, err := downloadOption.exec(uiEvents)
 
 			if err != nil {
-				t.Errorf("Error: %v", err)
+				t.Errorf("Fail to execute downloadOption.exec(): %+v", err)
 			}
 			iso, ok := entry.(*ISO)
 			if !ok {
-				t.Errorf("Fail to transfor the entry to *ISO, error msg: %+v", err)
+				t.Errorf("Expected type *ISO, but get %T", entry)
 			}
 			if tt.want.label != iso.label || tt.want.path != iso.path {
 				t.Errorf("Incorrect return. get %+v, want %+v", entry, tt.want)
 			}
 			if _, err := os.Stat(iso.path); err != nil {
-				t.Errorf("Fail to find downloaded file, error msg: %+v", err)
+				t.Errorf("Fail to find downloaded file: %+v", err)
 			}
 
 			if err := os.Remove(iso.path); err != nil {
-				t.Errorf("Fail to remove test file, error msg: %+v", err)
+				t.Errorf("Fail to remove test file: %+v", err)
 			}
 		})
 	}
@@ -104,15 +105,66 @@ func TestDownloadOption(t *testing.T) {
 
 func TestISOOption(t *testing.T) {
 	iso := &ISO{
-		label: "TinyCorePure64-10.1.iso",
-		path:  "./testdata/Tinycore/TinyCorePure64-10.1.iso",
+		label: "TinyCorePure64.iso",
+		path:  "./testdata/dirlevel1/dirlevel2/TinyCorePure64.iso",
 	}
 
 	if err := iso.exec(); err != nil {
-		t.Errorf("Fail to execute, error msg: %+v", err)
+		t.Errorf("Fail to execute iso.exec(): %+v", err)
 	}
 
 	if _, err := os.Stat(iso.path); err != nil {
-		t.Errorf("Fail to find the iso file, error msg: %+v", err)
+		t.Errorf("Fail to find the iso file: %+v", err)
 	}
+}
+
+func TestDirOption(t *testing.T) {
+	// list of entries that would be hit in order in this test
+	chosenEntries := []menu.Entry{
+		&DirOption{
+			label: "root dir",
+			path:  "./testdata",
+		},
+		&DirOption{
+			label: "dirlevel1",
+			path:  "./testdata/dirlevel1",
+		},
+		&DirOption{
+			label: "dirlevel2",
+			path:  "./testdata/dirlevel1/dirlevel2",
+		},
+		&ISO{
+			label: "TinyCorePure64.iso",
+			path:  "./testdata/dirlevel1/dirlevel2/TinyCorePure64.iso",
+		},
+	}
+
+	uiEvents := make(chan ui.Event)
+	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
+	go pressKey(uiEvents, input)
+
+	entry := chosenEntries[0]
+	for i, e := range chosenEntries {
+		if entry.Label() != e.Label() {
+			t.Errorf("Get wrong chosen entry. get %+v, want %+v", entry, e)
+		}
+		// when i=3 the entry should be an ISO option which do no contains uiEvent as input
+		var err error = nil
+		if i < 3 {
+			dirOption, ok := entry.(*DirOption)
+			if !ok {
+				t.Errorf("Expected type *DirOption, but get %T of entry %+v", entry, entry)
+			}
+			entry, err = dirOption.exec(uiEvents)
+		} else {
+			_, ok := entry.(*ISO)
+			if !ok {
+				t.Errorf("Expected type *ISO, but get %T of entry %+v", entry, entry)
+			}
+		}
+		if err != nil {
+			t.Errorf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
+		}
+	}
+
 }
