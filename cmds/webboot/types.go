@@ -32,3 +32,17 @@ type DownloadOption struct {
 func (d *DownloadOption) Label() string {
 	return "Download an ISO"
 }
+
+// DirOption represents a directory under cache directory
+// DirOption options displays it's sub-directory or iso files
+// "Use Cached ISO" option is a special DirGroup Entry
+// which represents the root of the cache directory
+type DirOption struct {
+	label string
+	path  string
+}
+
+// Label is the string this option displays in the menu page.
+func (d *DirOption) Label() string {
+	return d.label
+}
