@@ -2,13 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
-	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 
@@ -52,8 +47,14 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	}
 
 	fpath := filepath.Join("/tmp", filename)
-	if err = download(link, fpath); err != nil {
-		return nil, err
+	// if download link is not valid, ask again until the link is rights
+	for err = download(link, fpath); err != nil; err = download(link, fpath) {
+		if _, derr := menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
+			return nil, derr
+		}
+		if link, err = menu.NewInputWindow("Enter URL:", menu.AlwaysValid, uiEvents); err != nil {
+			return nil, err
+		}
 	}
 
 	return &ISO{label: filename, path: fpath}, nil
@@ -86,50 +87,6 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	return menu.DisplayMenu("Distros", "Choose an option", entries, uiEvents)
 }
 
-func linkOpen(URL string) (io.ReadCloser, error) {
-	u, err := url.Parse(URL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	switch u.Scheme {
-	case "file":
-		return os.Open(URL[7:])
-	case "http", "https":
-		resp, err := http.Get(URL)
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
-		}
-		return resp.Body, nil
-	}
-	return nil, fmt.Errorf("%q: linkopen only supports file://, https://, and http:// schemes", URL)
-}
-
-// download will download a file from URL and save it as fPath
-// todo: add a download progress bar
-func download(URL, fPath string) error {
-	isoReader, err := linkOpen(URL)
-	if err != nil {
-		return err
-	}
-	defer isoReader.Close()
-	f, err := os.Create(fPath)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(f, isoReader); err != nil {
-		return fmt.Errorf("Fail to copy iso to a persistent memory device: %v", err)
-	}
-	if err = f.Close(); err != nil {
-		return fmt.Errorf("Fail to  close %s: %v", fPath, err)
-	}
-	verbose("%q is downloaded at %q\n", URL, fPath)
-	return nil
-}
-
 func main() {
 	flag.Parse()
 	if *v {
@@ -137,6 +94,8 @@ func main() {
 	}
 
 	entries := []menu.Entry{
+		// "Use Cached ISO" option is a special DirGroup Entry
+		// which represents the root of the cache directory
 		&DirOption{
 			label: "Use Cached ISO",
 			// todo: replace ./testdata with cache directory
@@ -157,19 +116,19 @@ func main() {
 		switch entry.(type) {
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents()); err != nil {
-				log.Fatal(err)
+				log.Fatalf("Download option failed:%v", err)
 			}
 		case *ISO:
 			if err = entry.(*ISO).exec(); err != nil {
-				log.Fatal(err)
+				log.Fatalf("ISO option failed:%v", err)
 			}
 			entry = nil
 		case *DirOption:
 			if entry, err = entry.(*DirOption).exec(ui.PollEvents()); err != nil {
-				log.Fatal(err)
+				log.Fatalf("Directory option failed:%v", err)
 			}
 		default:
-			log.Fatalf("Meet an unknow type %T!\n", entry)
+			log.Fatalf("Unknown type %T!\n", entry)
 		}
 	}
 }
