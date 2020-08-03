@@ -35,8 +35,6 @@ func (d *DownloadOption) Label() string {
 
 // DirOption represents a directory under cache directory
 // DirOption options displays it's sub-directory or iso files
-// "Use Cached ISO" option is a special DirGroup Entry
-// which represents the root of the cache directory
 type DirOption struct {
 	label string
 	path  string
