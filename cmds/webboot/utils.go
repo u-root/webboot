@@ -40,15 +40,13 @@ func download(URL, fPath string) error {
 	}
 	defer isoReader.Close()
 	f, err := os.Create(fPath)
+	defer f.Close()
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(f, isoReader); err != nil {
+	if _, err = io.Copy(f, isoReader); err != nil {
 		return fmt.Errorf("Fail to copy iso to a persistent memory device: %v", err)
 	}
-	if err = f.Close(); err != nil {
-		return fmt.Errorf("Fail to  close %s: %v", fPath, err)
-	}
-	verbose("%q is downloaded at %q\n", URL, fPath)
+	verbose("%s is downloaded\n", fPath)
 	return nil
 }

@@ -20,7 +20,7 @@ var (
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec() error {
 	// todo: boot the iso
-	verbose("ISO is at %s\n", i.path)
+	log.Printf("ISO is at %s\n", i.path)
 	return nil
 }
 
@@ -99,6 +99,7 @@ func main() {
 	cachedDir := *dir
 	if cachedDir == "" {
 		// todo: find the cache directory by check block devices
+		log.Fatal("Please provide a valid dir argument")
 	}
 	entries := []menu.Entry{
 		// "Use Cached ISO" option is a special DirGroup Entry

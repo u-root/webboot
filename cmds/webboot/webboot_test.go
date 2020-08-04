@@ -33,13 +33,13 @@ func TestDownload(t *testing.T) {
 		fPath := "/tmp/test_tinycore.iso"
 		url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 		if err := download(url, fPath); err != nil {
-			t.Errorf("Fail to download: %+v", err)
+			t.Fatalf("Fail to download: %+v", err)
 		}
 		if _, err := os.Stat(fPath); err != nil {
-			t.Errorf("Fail to find downloaded file: %+v", err)
+			t.Fatalf("Fail to find downloaded file: %+v", err)
 		}
 		if err := os.Remove(fPath); err != nil {
-			t.Errorf("Fail to remove test file: %+v", err)
+			t.Fatalf("Fail to remove test file: %+v", err)
 		}
 	})
 }
@@ -110,11 +110,11 @@ func TestISOOption(t *testing.T) {
 	}
 
 	if err := iso.exec(); err != nil {
-		t.Errorf("Fail to execute iso.exec(): %+v", err)
+		t.Fatalf("Fail to execute iso.exec(): %+v", err)
 	}
 
 	if _, err := os.Stat(iso.path); err != nil {
-		t.Errorf("Fail to find the iso file: %+v", err)
+		t.Fatalf("Fail to find the iso file: %+v", err)
 	}
 }
 
@@ -134,17 +134,14 @@ func TestDirOption(t *testing.T) {
 		if dirOption, ok := entry.(*DirOption); ok {
 			entry, err = dirOption.exec(uiEvents)
 			if err != nil {
-				t.Errorf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
-				break
+				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			}
 		} else if iso, ok := entry.(*ISO); ok {
 			if iso.label != wanted.label || iso.path != wanted.path {
-				t.Errorf("Get wrong chosen iso. get %+v, want %+v", iso, wanted)
+				t.Fatalf("Get wrong chosen iso. get %+v, want %+v", iso, wanted)
 			}
-			break
 		} else {
-			t.Errorf("Unknow type, get a %T of entry %+v", entry, entry)
-			break
+			t.Fatalf("Unknown type. got entry %+v of type %T, wanted DirOption or ISO", entry, entry)
 		}
 	}
 }

@@ -87,7 +87,11 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 			if k == "<Space>" {
 				input.Text += " "
 			} else if k[0:1] != "<" {
-				// if the key is not begin at '<', it is the alphabet we want.
+				// the termui will use a string begin at '<' to indicate a special key
+				// for exaple the left arrow key will be parsed to <Left>.
+				// other special key like Delete, F1,etc will be treat in this way too.
+				// so if the key is not begin at '<' it means it's a alphabet or number or '.' .etc,
+				// which can be directly added to the end of input.Text
 				input.Text += k
 			}
 			ui.Render(input)
