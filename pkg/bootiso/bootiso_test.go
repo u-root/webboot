@@ -1,20 +1,14 @@
 package bootiso
 
 import (
-	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 )
 
-func TestParseConfigFromISO(t *testing.T) {
-	isoPath, err := getIsoPath()
-	if err != nil {
-		t.Error(err)
-	}
+var isoPath string = "testdata/TinyCorePure64.iso"
 
+func TestParseConfigFromISO(t *testing.T) {
 	configOpts, err := ParseConfigFromISO(isoPath)
 	if err != nil {
 		t.Error(err)
@@ -34,50 +28,9 @@ func TestParseConfigFromISO(t *testing.T) {
 	}
 }
 
-func downloadTestISO(isoPath string) error {
-	resp, err := http.Get("https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso")
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
-	}
-
-	file, err := os.Create(isoPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, resp.Body)
-	return err
-}
-
-func getIsoPath() (string, error) {
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return homedir + "/TinyCorePure64.iso", nil
-}
-
 func TestMain(m *testing.M) {
-	// Need a test ISO at the home directory
-	isoPath, err := getIsoPath()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if _, err := os.Stat(isoPath); err == nil {
-		fmt.Println("ISO file was found.")
-	} else if os.IsNotExist(err) {
-		fmt.Print("No ISO found. Downloading...")
-		err := downloadTestISO(isoPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Print("DONE!\n")
+	if _, err := os.Stat(isoPath); err != nil {
+		log.Fatal("ISO file was not found in the testdata directory.")
 	}
 
 	os.Exit(m.Run())
