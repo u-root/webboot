@@ -119,52 +119,32 @@ func TestISOOption(t *testing.T) {
 }
 
 func TestDirOption(t *testing.T) {
-	// list of entries that would be hit in order in this test
-	chosenEntries := []menu.Entry{
-		&DirOption{
-			label: "root dir",
-			path:  "./testdata",
-		},
-		&DirOption{
-			label: "dirlevel1",
-			path:  "./testdata/dirlevel1",
-		},
-		&DirOption{
-			label: "dirlevel2",
-			path:  "./testdata/dirlevel1/dirlevel2",
-		},
-		&ISO{
-			label: "TinyCorePure64.iso",
-			path:  "./testdata/dirlevel1/dirlevel2/TinyCorePure64.iso",
-		},
+	wanted := &ISO{
+		label: "TinyCorePure64.iso",
+		path:  "testdata/dirlevel1/dirlevel2/TinyCorePure64.iso",
 	}
 
 	uiEvents := make(chan ui.Event)
 	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
 	go pressKey(uiEvents, input)
 
-	entry := chosenEntries[0]
-	for i, e := range chosenEntries {
-		if entry.Label() != e.Label() {
-			t.Errorf("Get wrong chosen entry. get %+v, want %+v", entry, e)
-		}
-		// when i=3 the entry should be an ISO option which do no contains uiEvent as input
-		var err error = nil
-		if i < 3 {
-			dirOption, ok := entry.(*DirOption)
-			if !ok {
-				t.Errorf("Expected type *DirOption, but get %T of entry %+v", entry, entry)
-			}
+	var entry menu.Entry = &DirOption{label: "root dir", path: "./testdata"}
+	var err error = nil
+	for {
+		if dirOption, ok := entry.(*DirOption); ok {
 			entry, err = dirOption.exec(uiEvents)
-		} else {
-			_, ok := entry.(*ISO)
-			if !ok {
-				t.Errorf("Expected type *ISO, but get %T of entry %+v", entry, entry)
+			if err != nil {
+				t.Errorf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
+				break
 			}
-		}
-		if err != nil {
-			t.Errorf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
+		} else if iso, ok := entry.(*ISO); ok {
+			if iso.label != wanted.label || iso.path != wanted.path {
+				t.Errorf("Get wrong chosen iso. get %+v, want %+v", iso, wanted)
+			}
+			break
+		} else {
+			t.Errorf("Unknow type, get a %T of entry %+v", entry, entry)
+			break
 		}
 	}
-
 }

@@ -14,6 +14,7 @@ import (
 var (
 	v       = flag.Bool("verbose", false, "Verbose output")
 	verbose = func(string, ...interface{}) {}
+	dir     = flag.String("dir", "", "Path of cached directory")
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -48,7 +49,9 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 
 	fpath := filepath.Join("/tmp", filename)
 	// if download link is not valid, ask again until the link is rights
-	for err = download(link, fpath); err != nil; err = download(link, fpath) {
+	err = download(link, fpath)
+	for err != nil {
+		err = download(link, fpath)
 		if _, derr := menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
 			return nil, derr
 		}
@@ -93,13 +96,16 @@ func main() {
 		verbose = log.Printf
 	}
 
+	cachedDir := *dir
+	if cachedDir == "" {
+		// todo: find the cache directory by check block devices
+	}
 	entries := []menu.Entry{
 		// "Use Cached ISO" option is a special DirGroup Entry
 		// which represents the root of the cache directory
 		&DirOption{
 			label: "Use Cached ISO",
-			// todo: replace ./testdata with cache directory
-			path: "./testdata",
+			path:  cachedDir,
 		},
 		&DownloadOption{},
 	}
