@@ -23,6 +23,7 @@ func ParseConfigFromISO(isoPath string) ([]boot.OSImage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating mount dir: %v", err)
 	}
+	defer os.RemoveAll(tmp)
 
 	loopdev, err := loop.New(isoPath, "iso9660", "")
 	if err != nil {
@@ -68,6 +69,7 @@ func BootFromPmem(isoPath string, configLabel string) error {
 	if err != nil {
 		return fmt.Errorf("Error creating temp directory: %v", err)
 	}
+	defer os.RemoveAll(tmp)
 
 	if _, err := mount.Mount("/dev/pmem0", tmp, "iso9660", "", unix.MS_RDONLY|unix.MS_NOATIME); err != nil {
 		return fmt.Errorf("Error mounting pmem0 to temp directory: %v", err)
