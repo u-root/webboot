@@ -7,7 +7,22 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
+
+// WriteCounter counts the number of bytes written to it. It implements to the io.Writer
+type WriteCounter struct {
+	Total uint64
+}
+
+func (wc *WriteCounter) Write(p []byte) (int, error) {
+	n := len(p)
+	wc.Total += uint64(n)
+	// print how many bytes have been writen to the file
+	fmt.Printf("\r%s", strings.Repeat(" ", 40))
+	fmt.Printf("\rDownloading... %v bytes complete", wc.Total)
+	return n, nil
+}
 
 func linkOpen(URL string) (io.ReadCloser, error) {
 	u, err := url.Parse(URL)
@@ -32,7 +47,6 @@ func linkOpen(URL string) (io.ReadCloser, error) {
 }
 
 // download will download a file from URL and save it as fPath
-// todo: add a download progress bar
 func download(URL, fPath string) error {
 	isoReader, err := linkOpen(URL)
 	if err != nil {
@@ -40,13 +54,15 @@ func download(URL, fPath string) error {
 	}
 	defer isoReader.Close()
 	f, err := os.Create(fPath)
-	defer f.Close()
 	if err != nil {
 		return err
 	}
-	if _, err = io.Copy(f, isoReader); err != nil {
+	defer f.Close()
+	counter := &WriteCounter{}
+	if _, err = io.Copy(f, io.TeeReader(isoReader, counter)); err != nil {
 		return fmt.Errorf("Fail to copy iso to a persistent memory device: %v", err)
 	}
-	verbose("%s is downloaded\n", fPath)
+	fmt.Println("\nDone!")
+	verbose("%q is downloaded at %q\n", URL, fPath)
 	return nil
 }
