@@ -28,6 +28,15 @@ func (i *ISO) exec() error {
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
 func (d *DownloadOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
+	for {
+		ok, err := setUpNetwork(uiEvents)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			break
+		}
+	}
 	validIsoName := func(input string) (string, string, bool) {
 		re := regexp.MustCompile(`[\w]+.iso`)
 		if re.Match([]byte(input)) {

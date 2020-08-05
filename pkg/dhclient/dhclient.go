@@ -6,7 +6,7 @@ package dhclient
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -15,12 +15,14 @@ import (
 )
 
 // Request sets up the dhcp configurations for all of the ifNames.
-func Request(ifName string, timeout int, retry int, verbose bool, ipv4 bool, ipv6 bool) {
+func Request(ifName string, timeout int, retry int, verbose bool, ipv4 bool, ipv6 bool, cl chan string) {
 	ifRE := regexp.MustCompilePOSIX(ifName)
 
 	ifnames, err := netlink.LinkList()
 	if err != nil {
-		log.Fatalf("Can't get list of link names: %v", err)
+		cl <- fmt.Sprintf("Can't get list of link names: %v", err)
+		close(cl)
+		return
 	}
 
 	var filteredIfs []netlink.Link
@@ -31,16 +33,16 @@ func Request(ifName string, timeout int, retry int, verbose bool, ipv4 bool, ipv
 	}
 
 	if len(filteredIfs) == 0 {
-		log.Fatalf("No interfaces match %s", ifName)
+		cl <- fmt.Sprintf("No interfaces match %s", ifName)
+		close(cl)
+		return
 	}
 
-	cl := make(chan error)
 	go configureAll(filteredIfs, cl, timeout, retry, verbose, ipv4, ipv6)
-	result := <-cl
-	log.Printf("Configuring DHCP returns with error: %v", result)
+
 }
 
-func configureAll(ifs []netlink.Link, cl chan<- error, timeout int, retry int, verbose bool, ipv4 bool, ipv6 bool) {
+func configureAll(ifs []netlink.Link, cl chan<- string, timeout int, retry int, verbose bool, ipv4 bool, ipv6 bool) {
 	packetTimeout := time.Duration(timeout) * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), packetTimeout*time.Duration(1<<uint(retry)))
@@ -60,21 +62,21 @@ func configureAll(ifs []netlink.Link, cl chan<- error, timeout int, retry int, v
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Done with dhclient: %v", ctx.Err())
+			cl <- fmt.Sprintf("Done with dhclient: %v", ctx.Err())
 			return
 
 		case result, ok := <-r:
 			if !ok {
-				log.Printf("Configured all interfaces.")
+				cl <- fmt.Sprintf("Configured all interfaces")
 				return
 			}
 			if result.Err != nil {
-				log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, result.Err)
+				cl <- fmt.Sprintf("Could not configure %s: %v", result.Interface.Attrs().Name, result.Err)
 			} else if err := result.Lease.Configure(); err != nil {
-				log.Printf("Could not configure %s: %v", result.Interface.Attrs().Name, err)
+				cl <- fmt.Sprintf("Could not configure %s: %v", result.Interface.Attrs().Name, err)
 			} else {
-				cl <- nil
-				log.Printf("Configured %s with %s", result.Interface.Attrs().Name, result.Lease)
+				cl <- fmt.Sprintf("Configured %s with %s", result.Interface.Attrs().Name, result.Lease)
+				cl <- fmt.Sprintf("Successful")
 			}
 		}
 	}
