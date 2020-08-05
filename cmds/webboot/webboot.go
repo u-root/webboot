@@ -103,9 +103,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("Fail to find the USB stick: %+v", err)
 		}
-		if mp == nil {
-			log.Fatalf("Do not find the cache directory.")
-		}
 		cachedDir = filepath.Join(mp.Path, "Image")
 	}
 	entries := []menu.Entry{
