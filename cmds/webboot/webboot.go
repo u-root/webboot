@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+<<<<<<< HEAD
 	"io/ioutil"
+=======
+>>>>>>> 7b8ddb9... Add a download progress bar
 	"log"
 	"path/filepath"
 	"regexp"
@@ -63,6 +66,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	return &ISO{label: filename, path: fpath}, nil
 }
 
+<<<<<<< HEAD
 // DirOption's exec displays subdirectory or cached isos under the path directory
 func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	entries := []menu.Entry{}
@@ -90,6 +94,8 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	return menu.DisplayMenu("Distros", "Choose an option", entries, uiEvents)
 }
 
+=======
+>>>>>>> 7b8ddb9... Add a download progress bar
 func main() {
 	flag.Parse()
 	if *v {
