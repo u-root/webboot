@@ -141,6 +141,7 @@ func TestDirOption(t *testing.T) {
 			if iso.label != wanted.label || iso.path != wanted.path {
 				t.Fatalf("Get wrong chosen iso. get %+v, want %+v", iso, wanted)
 			}
+			break
 		} else {
 			t.Fatalf("Unknown type. got entry %+v of type %T, wanted DirOption or ISO", entry, entry)
 		}
@@ -162,9 +163,6 @@ func TestGetCachedDirectory(t *testing.T) {
 	mp, err := getCachedDirectory()
 	if err != nil {
 		t.Fatalf("Fail to find the USB stick: %+v", err)
-	}
-	if mp == nil {
-		t.Fatalf("Do not find the cache directory")
 	}
 	checklist := []string{
 		filepath.Join(mp.Path, "/Image/tinycore1/TinyCorePure64.iso"),
