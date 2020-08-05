@@ -97,9 +97,16 @@ func main() {
 	}
 
 	cachedDir := *dir
+
 	if cachedDir == "" {
-		// todo: find the cache directory by check block devices
-		log.Fatal("Please provide a valid dir argument")
+		mp, err := getCachedDirectory()
+		if err != nil {
+			log.Fatalf("Fail to find the USB stick: %+v", err)
+		}
+		if mp == nil {
+			log.Fatalf("Do not find the cache directory.")
+		}
+		cachedDir = filepath.Join(mp.Path, "Image")
 	}
 	entries := []menu.Entry{
 		// "Use Cached ISO" option is a special DirGroup Entry
