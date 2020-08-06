@@ -23,6 +23,16 @@ func (i *ISO) Label() string {
 	return i.label
 }
 
+// Config represents one kind of configure of booting an iso
+type Config struct {
+	label string
+}
+
+// Label is the string this iso displays in the menu page.
+func (c *Config) Label() string {
+	return c.label
+}
+
 // DownloadOption let user download an iso then boot it
 // expected to implement Entry interface
 type DownloadOption struct {
