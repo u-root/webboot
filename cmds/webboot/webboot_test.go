@@ -104,21 +104,6 @@ func TestDownloadOption(t *testing.T) {
 
 }
 
-func TestISOOption(t *testing.T) {
-	iso := &ISO{
-		label: "TinyCorePure64.iso",
-		path:  "./testdata/dirlevel1/dirlevel2/TinyCorePure64.iso",
-	}
-
-	if err := iso.exec(); err != nil {
-		t.Fatalf("Fail to execute iso.exec(): %+v", err)
-	}
-
-	if _, err := os.Stat(iso.path); err != nil {
-		t.Fatalf("Fail to find the iso file: %+v", err)
-	}
-}
-
 func TestDirOption(t *testing.T) {
 	wanted := &ISO{
 		label: "TinyCorePure64.iso",

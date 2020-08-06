@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	ui "github.com/gizak/termui/v3"
+	"github.com/u-root/webboot/pkg/bootiso"
 	"github.com/u-root/webboot/pkg/menu"
 )
 
@@ -15,13 +16,32 @@ var (
 	v       = flag.Bool("verbose", false, "Verbose output")
 	verbose = func(string, ...interface{}) {}
 	dir     = flag.String("dir", "", "Path of cached directory")
-	network = flag.Bool("network", true, "Should  or not set up network")
+	network = flag.Bool("network", true, "Should or not set up network")
+	boot    = flag.Bool("boot", true, "Should or not boot the iso. May trun it off for test.")
 )
 
 // ISO's exec downloads the iso and boot it.
-func (i *ISO) exec() error {
-	// todo: boot the iso
-	log.Printf("ISO is at %s\n", i.path)
+func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
+	verbose("Intent to boot %s", i.path)
+	configs, err := bootiso.ParseConfigFromISO(i.path)
+	if err != nil {
+		return err
+	}
+	verbose("Get configs: %+v", configs)
+	if boot {
+		entries := []menu.Entry{}
+		for _, config := range configs {
+			entries = append(entries, &Config{label: config.Label()})
+		}
+		if c, err := menu.DisplayMenu("Configs", "Choose an option", entries, uiEvents); err == nil {
+			if err := bootiso.BootFromPmem(i.path, c.Label()); err != nil {
+				return err
+			}
+			return nil
+		} else {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -142,7 +162,7 @@ func main() {
 				log.Fatalf("Download option failed:%v", err)
 			}
 		case *ISO:
-			if err = entry.(*ISO).exec(); err != nil {
+			if err = entry.(*ISO).exec(ui.PollEvents(), *boot); err != nil {
 				log.Fatalf("ISO option failed:%v", err)
 			}
 			entry = nil
