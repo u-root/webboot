@@ -80,7 +80,7 @@ func TestDownloadOption(t *testing.T) {
 			go pressKey(uiEvents, input)
 
 			downloadOption := DownloadOption{}
-			entry, err := downloadOption.exec(uiEvents)
+			entry, err := downloadOption.exec(uiEvents, false)
 
 			if err != nil {
 				t.Errorf("Fail to execute downloadOption.exec(): %+v", err)
@@ -148,8 +148,8 @@ func TestDirOption(t *testing.T) {
 	}
 }
 
-// This test may not work for every one.
-// because the test need a usb stick that contains a /Image folder
+// This test should be run in the sudo mode.
+// The test need a usb stick that contains a /Image folder
 // which structure is
 // +-- Image
 // |  +-- tinycore1
