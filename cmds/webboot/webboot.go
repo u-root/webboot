@@ -15,6 +15,7 @@ var (
 	v       = flag.Bool("verbose", false, "Verbose output")
 	verbose = func(string, ...interface{}) {}
 	dir     = flag.String("dir", "", "Path of cached directory")
+	network = flag.Bool("network", true, "Should  or not set up network")
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -27,14 +28,16 @@ func (i *ISO) exec() error {
 // DownloadOption's exec lets user input the name of the iso they want
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
-func (d *DownloadOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
-	for {
-		ok, err := setUpNetwork(uiEvents)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			break
+func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool) (menu.Entry, error) {
+	if network {
+		for {
+			ok, err := setUpNetwork(uiEvents)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				break
+			}
 		}
 	}
 	validIsoName := func(input string) (string, string, bool) {
@@ -135,7 +138,7 @@ func main() {
 	for entry != nil {
 		switch entry.(type) {
 		case *DownloadOption:
-			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents()); err != nil {
+			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network); err != nil {
 				log.Fatalf("Download option failed:%v", err)
 			}
 		case *ISO:
