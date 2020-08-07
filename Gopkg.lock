@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  revision = "18fe4ce5a8550e0d0919b680ad3c080a5455bddf"
+  version = "v4.0.2"
+
+[[projects]]
   name = "github.com/gizak/termui"
   packages = ["v3","v3/drawille","v3/widgets"]
   revision = "4cca61d83fa2cc0f485c478ff768b0108f6591d6"
@@ -11,7 +17,7 @@
   branch = "master"
   name = "github.com/insomniacslk/dhcp"
   packages = ["dhcpv4","dhcpv4/nclient4","dhcpv6","dhcpv6/nclient6","iana","interfaces","rfc1035label"]
-  revision = "e1b69ee5fb3318ca17418526efa5bc41c98ff29b"
+  revision = "3f14f7f8bd9cd69eb47abcc82768498a03d1e74a"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -45,15 +51,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/rekby/gpt"
+  packages = ["."]
+  revision = "7da10aec5566349f29875dad4a59c8341b01e00a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/u-root/u-root"
-  packages = ["pkg/boot","pkg/boot/ibft","pkg/boot/kexec","pkg/boot/multiboot","pkg/boot/multiboot/internal/trampoline","pkg/cmdline","pkg/dhclient","pkg/mount","pkg/rand","pkg/shlex","pkg/ubinary","pkg/uio"]
-  revision = "7e94f53175016e60e42bb893cbc531420961b406"
+  packages = ["pkg/boot","pkg/boot/ibft","pkg/boot/kexec","pkg/boot/multiboot","pkg/boot/multiboot/internal/trampoline","pkg/boot/syslinux","pkg/cmdline","pkg/curl","pkg/dhclient","pkg/mount","pkg/mount/block","pkg/mount/loop","pkg/pci","pkg/rand","pkg/shlex","pkg/ubinary","pkg/uio"]
+  revision = "ad067b0a53cbe49d5b0c000ccb1acbe9ee0da08c"
 
 [[projects]]
   branch = "master"
   name = "github.com/vishvananda/netlink"
   packages = [".","nl"]
-  revision = "bca67dfc8220b44ef582c9da4e9172bf1c9ec973"
+  revision = "98629f7ffc4b05a38794a4aa327ac810602a6d2e"
 
 [[projects]]
   branch = "master"
@@ -71,11 +83,17 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["internal/unsafeheader","unix"]
-  revision = "3e129f6d46b10b0e1da36b3deffcb55e09631b64"
+  revision = "5acd03effb828bdfdbad4e129e7daf84af6670b4"
+
+[[projects]]
+  branch = "master"
+  name = "pack.ag/tftp"
+  packages = [".","netascii"]
+  revision = "07909dfbde3c4e388a7e353351191fbb987ce5a5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9219dd5b62b7ec119f52a0500dbd2cafc46a70b0a5cb957a47876946481905bb"
+  inputs-digest = "b525c409ed670e6e28beda119aacd48cbb64a49b413df16f3266b1dc0b9e3330"
   solver-name = "gps-cdcl"
   solver-version = 1
