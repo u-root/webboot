@@ -36,3 +36,7 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/sys"
+
+[[override]]
+  name = "github.com/insomniacslk/dhcp"
+  revision = "e1b69ee5fb3318ca17418526efa5bc41c98ff29b"
