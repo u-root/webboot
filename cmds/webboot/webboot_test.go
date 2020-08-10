@@ -111,7 +111,7 @@ func TestDirOption(t *testing.T) {
 	}
 
 	uiEvents := make(chan ui.Event)
-	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
+	input := []string{"1", "<Enter>", "1", "<Enter>", "1", "<Enter>"}
 	go pressKey(uiEvents, input)
 
 	var entry menu.Entry = &DirOption{label: "root dir", path: "./testdata"}
@@ -158,6 +158,36 @@ func TestGetCachedDirectory(t *testing.T) {
 	for _, path := range checklist {
 		if _, err = os.Stat(path); err != nil {
 			t.Fatalf("Get wrong cache directory, do not find file %s", path)
+		}
+	}
+}
+func TestBackOption(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	input := []string{"1", "<Enter>", "1", "<Enter>", "0", "<Enter>", "1", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
+	go pressKey(uiEvents, input)
+
+	var entry menu.Entry = &DirOption{path: "./testdata"}
+	var currentPath string = ""
+	var err error = nil
+	for i := 0; i < 9; i++ {
+		if dirOption, ok := entry.(*DirOption); ok {
+			currentPath = dirOption.path
+			entry, err = dirOption.exec(uiEvents)
+			if err != nil {
+				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
+			}
+		} else if _, ok := entry.(*BackOption); ok {
+			backTo, _ := filepath.Split(currentPath)
+			entry = &DirOption{path: backTo[:len(backTo)-1]}
+		} else {
+			t.Fatalf("Unknown type. got entry %+v of type %T, wanted DirOption or BackOption", entry, entry)
+		}
+	}
+	if dirOption, ok := entry.(*DirOption); !ok {
+		t.Fatalf("Incorrect result, want a DirOption, get %T", entry)
+	} else {
+		if dirOption.path != "testdata" {
+			t.Fatalf("Get incorrect dir option, want \"datatest\", get %s", dirOption.path)
 		}
 	}
 }

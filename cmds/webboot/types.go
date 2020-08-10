@@ -43,6 +43,16 @@ func (d *DownloadOption) Label() string {
 	return "Download an ISO"
 }
 
+// UseCacheOption let user boot a cached iso
+// expected to implement Entry interface
+type UseCacheOption struct {
+}
+
+// Label is the string this iso displays in the menu page.
+func (u *UseCacheOption) Label() string {
+	return "Use Cached ISO"
+}
+
 // DirOption represents a directory under cache directory
 // DirOption options displays it's sub-directory or iso files
 type DirOption struct {
@@ -53,4 +63,14 @@ type DirOption struct {
 // Label is the string this option displays in the menu page.
 func (d *DirOption) Label() string {
 	return d.label
+}
+
+// BackOption let user back to the upper menu
+// expected to implement Entry interface
+type BackOption struct {
+}
+
+// Label is the string this iso displays in the menu page.
+func (b *BackOption) Label() string {
+	return "Go Back"
 }
