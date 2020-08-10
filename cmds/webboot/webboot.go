@@ -128,23 +128,23 @@ func main() {
 		verbose = log.Printf
 	}
 
-	cachedDir := *dir
-
-	if cachedDir == "" {
-		mp, err := getCachedDirectory()
-		if err != nil {
-			log.Fatalf("Fail to find the USB stick: %+v", err)
-		}
-		cachedDir = filepath.Join(mp.Path, "Image")
-	}
 	entries := []menu.Entry{
-		// "Use Cached ISO" option is a special DirGroup Entry
-		// which represents the root of the cache directory
-		&DirOption{
-			label: "Use Cached ISO",
-			path:  cachedDir,
-		},
 		&DownloadOption{},
+	}
+
+	if *dir == "" {
+		mp, err := getCachedDirectory()
+		if err == nil {
+			entries = append(entries, &DirOption{
+				label: "Use Cached ISO",
+				path:  filepath.Join(mp.Path, "Image"),
+			})
+		}
+	} else {
+		entries = append(entries, &DirOption{
+			label: "Use Cached ISO",
+			path:  *dir,
+		})
 	}
 
 	entry, err := menu.DisplayMenu("Webboot", "Choose an ISO:", entries, ui.PollEvents())
