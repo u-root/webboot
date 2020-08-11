@@ -12,3 +12,10 @@ See TestDownloadOption for an example:
  - use go pressKey(uiEvents, input) to translate the intented test input to keyboard events and push them to the uiEvents chanel.
  - use the uiEvents channel by call downloadOption.exec(uiEvents). (Main function will always call ui.PollEvents() to get the sandard input channel) 
  - all functions involving in ui input will provide a argument to indicate the input chanel.
+
+ ### Hint
+ If want to set up a cached directory in side the USB stick, the file structure of USB stick should be
++-- USB root
+|  +-- Images (<--- the cache directory. It must be named as "Images")
+|     +-- subdirectories or iso files
+...

@@ -3,17 +3,13 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	ui "github.com/gizak/termui/v3"
-	"github.com/u-root/u-root/pkg/mount"
-	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/dhclient"
 	"github.com/u-root/webboot/pkg/menu"
 )
@@ -73,31 +69,6 @@ func download(URL, fPath string) error {
 	fmt.Println("\nDone!")
 	verbose("%q is downloaded at %q\n", URL, fPath)
 	return nil
-}
-
-// getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
-// and return it's mount point.
-func getCachedDirectory() (*mount.MountPoint, error) {
-	blockDevs, err := block.GetBlockDevices()
-	if err != nil {
-		return nil, fmt.Errorf("No available block devices to boot from")
-	}
-
-	mountPoints, err := ioutil.TempDir("", "temp-device-")
-	if err != nil {
-		return nil, fmt.Errorf("Cannot create tmpdir: %v", err)
-	}
-
-	for _, device := range blockDevs {
-		mp, err := mount.TryMount(filepath.Join("/dev/", device.Name), filepath.Join(mountPoints, device.Name), "", mount.ReadOnly)
-		if err != nil {
-			continue
-		}
-		if _, err = os.Stat(filepath.Join(mp.Path, "Image")); err == nil {
-			return mp, nil
-		}
-	}
-	return nil, fmt.Errorf("Do not find the cache directory")
 }
 
 //	-ifName:  Name of the interface

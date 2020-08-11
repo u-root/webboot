@@ -2,12 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 
 	ui "github.com/gizak/termui/v3"
+	"github.com/u-root/u-root/pkg/mount"
+	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/bootiso"
 	"github.com/u-root/webboot/pkg/menu"
 )
@@ -16,8 +20,8 @@ var (
 	v       = flag.Bool("verbose", false, "Verbose output")
 	verbose = func(string, ...interface{}) {}
 	dir     = flag.String("dir", "", "Path of cached directory")
-	network = flag.Bool("network", true, "Should or not set up network")
-	boot    = flag.Bool("boot", true, "Should or not boot the iso. May trun it off for test.")
+	network = flag.Bool("network", true, "If network is false we will not set up network")
+	dryRun  = flag.Bool("dry_run", true, "If dry_run is true we won't boot the iso.")
 )
 
 var cacheDir = ""
@@ -30,38 +34,19 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		return err
 	}
 	verbose("Get configs: %+v", configs)
-	if boot {
-		entries := []menu.Entry{}
-		for _, config := range configs {
-			entries = append(entries, &Config{label: config.Label()})
-		}
-		if c, err := menu.DisplayMenu("Configs", "Choose an option", entries, uiEvents); err == nil {
-			if err := bootiso.BootFromPmem(i.path, c.Label()); err != nil {
-				return err
-			}
-			return nil
-		} else {
-			return err
-		}
+	if !boot {
+		return nil
 	}
-	return nil
-}
 
-// UseCacheOption's exec displays all possible cache directory
-// if the -dir args is valid show it in the menu
-// if it's able to find a cached diretory in the USB stick, show it too
-func (u *UseCacheOption) exec(uiEvents <-chan ui.Event, dir string) (menu.Entry, error) {
-	// filefath.Join an empty string to make sure the format of path is consistent
-	cacheDir = filepath.Join(dir, "")
-	if cacheDir == "" {
-		mp, err := getCachedDirectory()
-		if err != nil {
-			verbose("Fail to find the USB stick: %+v", err)
-			return menu.DisplayMenu("Webboot", "Choose an option:", []menu.Entry{&BackOption{}}, uiEvents)
-		}
-		cacheDir = filepath.Join(mp.Path, "Image")
+	entries := []menu.Entry{}
+	for _, config := range configs {
+		entries = append(entries, &Config{label: config.Label()})
 	}
-	return &DirOption{path: cacheDir}, nil
+	c, err := menu.DisplayMenu("Configs", "Choose an option", entries, uiEvents)
+	if err == nil {
+		err = bootiso.BootFromPmem(i.path, c.Label())
+	}
+	return err
 }
 
 // DownloadOption's exec lets user input the name of the iso they want
@@ -116,13 +101,13 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool) (menu.Entr
 
 // DirOption's exec displays subdirectory or cached isos under the path directory
 func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
-	entries := []menu.Entry{&BackOption{}}
+	entries := []menu.Entry{}
 	readerInfos, err := ioutil.ReadDir(d.path)
 	if err != nil {
 		return nil, err
 	}
 
-	// check the directory, if there is a subdirectory, add another DirOption option
+	// check the directory, if there is a subdirectory, add a DirOption option to next menu
 	// if there is iso file, add an ISO option
 	for _, info := range readerInfos {
 		if info.IsDir() {
@@ -138,18 +123,59 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 			entries = append(entries, iso)
 		}
 	}
+	entries = append(entries, &BackOption{})
 	return menu.DisplayMenu("Distros", "Choose an option", entries, uiEvents)
 }
 
-func getMainMenu() menu.Entry {
-	entries := []menu.Entry{
-		&UseCacheOption{},
-		&DownloadOption{},
+// getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
+// and return the path of cache dir.
+// the cache dir should locate at the root of USB stick  and be named as "Images"
+// +-- USB root
+// |  +-- Images (<--- the cache directory)
+// |     +-- subdirectories or iso files
+// ...
+func getCachedDirectory() (string, error) {
+	blockDevs, err := block.GetBlockDevices()
+	if err != nil {
+		return "", fmt.Errorf("No available block devices to boot from")
 	}
+
+	mountPoints, err := ioutil.TempDir("", "temp-device-")
+	if err != nil {
+		return "", fmt.Errorf("Cannot create tmpdir: %v", err)
+	}
+
+	for _, device := range blockDevs {
+		mp, err := mount.TryMount(filepath.Join("/dev/", device.Name), filepath.Join(mountPoints, device.Name), "", mount.ReadOnly)
+		if err != nil {
+			continue
+		}
+		cachePath := filepath.Join(mp.Path, "Images")
+		if _, err = os.Stat(cachePath); err == nil {
+			return cachePath, nil
+		}
+	}
+	return "", fmt.Errorf("Do not find the cache directory: Expected a /Images under at the root of a block device(USB)")
+}
+
+func getMainMenu(cacheDir string) menu.Entry {
+	entries := []menu.Entry{}
+	if cacheDir != "" {
+		// UseCacheOption is a special DirOption represents the root of cache dir
+		entries = append(entries, &DirOption{label: "Use Cached ISO", path: cacheDir})
+	}
+	entries = append(entries, &DownloadOption{})
+
 	entry, err := menu.DisplayMenu("Webboot", "Choose an option:", entries, ui.PollEvents())
 	if err != nil {
 		log.Fatal(err)
 	}
+	return entry
+}
+
+func goBackDir(currentPath string) menu.Entry {
+	backTo := filepath.Dir(currentPath)
+	entry := &DirOption{path: backTo}
 	return entry
 }
 
@@ -158,42 +184,48 @@ func main() {
 	if *v {
 		verbose = log.Printf
 	}
+	cacheDir = *dir
+	if cacheDir != "" {
+		// call filepath.Clean to make sure the format of path is consistent
+		// we should check the cacheDir != "" before call filepath.Clean, because filepath.Clean("") = "."
+		cacheDir = filepath.Clean(cacheDir)
+	} else {
+		if cachePath, err := getCachedDirectory(); err != nil {
+			verbose("Fail to find the USB stick: %+v", err)
+		} else {
+			cacheDir = cachePath
+		}
+	}
+	entry := getMainMenu(cacheDir)
 
-	entry := getMainMenu()
-	var err error = nil
+	var err error
 	// check the chosen entry of each level
 	// and call it's exec() to get the next level's chosen entry.
 	// repeat this process until there is no next level
 	for entry != nil {
 		switch entry.(type) {
-		case *UseCacheOption:
-			if entry, err = entry.(*UseCacheOption).exec(ui.PollEvents(), *dir); err != nil {
-				log.Fatalf("Use Cached ISO option failed:%v", err)
-			}
-			if _, ok := entry.(*BackOption); ok {
-				entry = getMainMenu()
-			}
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network); err != nil {
 				log.Fatalf("Download option failed:%v", err)
 			}
 		case *ISO:
-			if err = entry.(*ISO).exec(ui.PollEvents(), *boot); err != nil {
+			if err = entry.(*ISO).exec(ui.PollEvents(), *dryRun); err != nil {
 				log.Fatalf("ISO option failed:%v", err)
 			}
+			entry = nil
 		case *DirOption:
 			dirOption := entry.(*DirOption)
 			if entry, err = dirOption.exec(ui.PollEvents()); err != nil {
 				log.Fatalf("Directory option failed:%v", err)
 			}
 			if _, ok := entry.(*BackOption); ok {
+				// if dirOption.path == cacheDir means current dir is the root of cache dir
+				// and it should go back to the main menu.
 				if dirOption.path == cacheDir {
-					entry = getMainMenu()
+					entry = getMainMenu(cacheDir)
 					break
 				}
-				backTo, _ := filepath.Split(dirOption.path)
-				// last char of backTo will be '/'
-				entry = &DirOption{path: backTo[:len(backTo)-1]}
+				entry = goBackDir(dirOption.path)
 			}
 		default:
 			log.Fatalf("Unknown type %T!\n", entry)
