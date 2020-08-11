@@ -1,5 +1,7 @@
 package main
 
+import "github.com/u-root/webboot/pkg/menu"
+
 const (
 	tcURL    = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	wbtcpURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
@@ -17,8 +19,9 @@ type ISO struct {
 	path  string
 }
 
+var _ = menu.Entry(&ISO{})
+
 // Label is the string this iso displays in the menu page.
-// expected to implement Entry interface
 func (i *ISO) Label() string {
 	return i.label
 }
@@ -28,37 +31,32 @@ type Config struct {
 	label string
 }
 
+var _ = menu.Entry(&Config{})
+
 // Label is the string this iso displays in the menu page.
 func (c *Config) Label() string {
 	return c.label
 }
 
 // DownloadOption let user download an iso then boot it
-// expected to implement Entry interface
 type DownloadOption struct {
 }
+
+var _ = menu.Entry(&DownloadOption{})
 
 // Label is the string this iso displays in the menu page.
 func (d *DownloadOption) Label() string {
 	return "Download an ISO"
 }
 
-// UseCacheOption let user boot a cached iso
-// expected to implement Entry interface
-type UseCacheOption struct {
-}
-
-// Label is the string this iso displays in the menu page.
-func (u *UseCacheOption) Label() string {
-	return "Use Cached ISO"
-}
-
 // DirOption represents a directory under cache directory
-// DirOption options displays it's sub-directory or iso files
+// it displays it's sub-directory or iso files
 type DirOption struct {
 	label string
 	path  string
 }
+
+var _ = menu.Entry(&DirOption{})
 
 // Label is the string this option displays in the menu page.
 func (d *DirOption) Label() string {
@@ -66,9 +64,10 @@ func (d *DirOption) Label() string {
 }
 
 // BackOption let user back to the upper menu
-// expected to implement Entry interface
 type BackOption struct {
 }
+
+var _ = menu.Entry(&BackOption{})
 
 // Label is the string this iso displays in the menu page.
 func (b *BackOption) Label() string {

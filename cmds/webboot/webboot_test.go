@@ -111,7 +111,7 @@ func TestDirOption(t *testing.T) {
 	}
 
 	uiEvents := make(chan ui.Event)
-	input := []string{"1", "<Enter>", "1", "<Enter>", "1", "<Enter>"}
+	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
 	go pressKey(uiEvents, input)
 
 	var entry menu.Entry = &DirOption{label: "root dir", path: "./testdata"}
@@ -133,61 +133,34 @@ func TestDirOption(t *testing.T) {
 	}
 }
 
-// This test should be run in the sudo mode.
-// The test need a usb stick that contains a /Image folder
-// which structure is
-// +-- Image
-// |  +-- tinycore1
-// |  |  +-- TinyCorePure64.iso
-// |  |  +-- TinyCorePure64 (copy).iso
-// |  +-- tinycore2
-// |     +-- TinyCorePure64-10.1.iso
-// |     +-- TinyCorePure64-10.1 (copy).iso
-// ...
-func TestGetCachedDirectory(t *testing.T) {
-	mp, err := getCachedDirectory()
-	if err != nil {
-		t.Fatalf("Fail to find the USB stick: %+v", err)
-	}
-	checklist := []string{
-		filepath.Join(mp.Path, "/Image/tinycore1/TinyCorePure64.iso"),
-		filepath.Join(mp.Path, "/Image/tinycore1/TinyCorePure64 (copy).iso"),
-		filepath.Join(mp.Path, "/Image/tinycore2/TinyCorePure64-10.1.iso"),
-		filepath.Join(mp.Path, "/Image/tinycore2/TinyCorePure64-10.1 (copy).iso"),
-	}
-	for _, path := range checklist {
-		if _, err = os.Stat(path); err != nil {
-			t.Fatalf("Get wrong cache directory, do not find file %s", path)
-		}
-	}
-}
-func TestBackOption(t *testing.T) {
-	uiEvents := make(chan ui.Event)
-	input := []string{"1", "<Enter>", "1", "<Enter>", "0", "<Enter>", "1", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
-	go pressKey(uiEvents, input)
+func TestGoBackDir(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		currentPath string
+		want        *DirOption
+	}{
+		{
+			name:        "path1",
+			currentPath: "./testdata/dirlevel1",
+			want:        &DirOption{path: "./testdata"},
+		},
+		{
+			name:        "path2",
+			currentPath: "./testdata/dirlevel1/dirlevel2",
+			want:        &DirOption{path: "./testdata/dirlevel1"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			entry := goBackDir(tt.currentPath)
+			if backDir, ok := entry.(*DirOption); !ok {
+				t.Errorf("Incorrect return. want a DirOption, get %T", entry)
 
-	var entry menu.Entry = &DirOption{path: "./testdata"}
-	var currentPath string = ""
-	var err error = nil
-	for i := 0; i < 9; i++ {
-		if dirOption, ok := entry.(*DirOption); ok {
-			currentPath = dirOption.path
-			entry, err = dirOption.exec(uiEvents)
-			if err != nil {
-				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
+			} else {
+				if filepath.Clean(tt.want.path) != filepath.Clean(backDir.path) {
+					t.Fatalf("Incorrect return. want %+v, get %+v", tt.want, backDir)
+				}
 			}
-		} else if _, ok := entry.(*BackOption); ok {
-			backTo, _ := filepath.Split(currentPath)
-			entry = &DirOption{path: backTo[:len(backTo)-1]}
-		} else {
-			t.Fatalf("Unknown type. got entry %+v of type %T, wanted DirOption or BackOption", entry, entry)
-		}
+		})
 	}
-	if dirOption, ok := entry.(*DirOption); !ok {
-		t.Fatalf("Incorrect result, want a DirOption, get %T", entry)
-	} else {
-		if dirOption.path != "testdata" {
-			t.Fatalf("Get incorrect dir option, want \"datatest\", get %s", dirOption.path)
-		}
-	}
+
 }

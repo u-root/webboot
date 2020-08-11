@@ -112,7 +112,7 @@ func TestDisplayResult(t *testing.T) {
 
 	message := []string{"This is", "a", "TEST"}
 	testText = "This is\na\nTEST"
-	msg, err := displayResult(message, 50, uiEvents)
+	msg, err := DisplayResult(message, uiEvents)
 
 	if err != nil {
 		t.Errorf("Error: %v", err)
