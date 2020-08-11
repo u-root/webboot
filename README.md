@@ -91,7 +91,12 @@ Nevertheless, to keep it all simple, we build it as a non-modular kernel with
 Wi-fi firmware built-in. We no longer build the initramfs into the kernel, as
 that's not needed.
 
-To build, first, be sure you're in a directory you want to be in!
+Make sure the kernel configuration includes the firmware for your network device.
+For instance, the Thinkpad x240 with Intel Corporation Wireless 7260 uses
+iwlwifi-7260-17.ucode. If you look at the kernel config file, this firmware name
+is included under `CONFIG_EXTRA_FIRMWARE=`.
+
+To build, first be sure you're in a directory you want to be in!
 You can actually do the work in the webboot root directory because the
 `.gitignore` file ignores the two directories you create when following the
 instructions here.
@@ -106,11 +111,11 @@ sudo apt install libssl-dev build-essential
 #### Fetching, configuring and compiling the kernel
 
 ```sh
-git clone --depth 1 -b v4.12.7 \
+git clone --depth 1 -b v5.6.14 \
   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git linux
 git clone \
   git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/linux-firmware.git
-cp config-4.12.7 linux/.config
+cp config-5.6.14 linux/.config
 (cd linux && make bzImage)
 go run .
 ```
