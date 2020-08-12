@@ -18,8 +18,6 @@ type validCheck func(string) (string, string, bool)
 type Entry interface {
 	// Label returns the string will show in menu.
 	Label() string
-	// Exec performs the following process after an entry is chosen
-	Exec() error
 }
 
 // AlwaysValid is a special isValid function that check nothing
@@ -86,7 +84,16 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 				warning.Text = ""
 				ui.Render(warning)
 			}
-			input.Text += k
+			if k == "<Space>" {
+				input.Text += " "
+			} else if k[0:1] != "<" {
+				// the termui will use a string begin at '<' to indicate a special key
+				// for exaple the left arrow key will be parsed to <Left>.
+				// other special key like Delete, F1,etc will be treat in this way too.
+				// so if the key is not begin at '<' it means it's a alphabet or number or '.' .etc,
+				// which can be directly added to the end of input.Text
+				input.Text += k
+			}
 			ui.Render(input)
 		}
 	}
@@ -94,7 +101,7 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 
 // NewInputWindow opens a new input window with fixed width=100, hight=1.
 func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
-	return NewCustomInputWindow(introwords, 100, 1, isValid, uiEvents)
+	return NewCustomInputWindow(introwords, 80, 1, isValid, uiEvents)
 }
 
 // NewCustomInputWindow creates a new ui window and displays an input box.
@@ -111,20 +118,28 @@ func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck
 
 // DisplayResult opens a new window and displays a message.
 // each item in the message array will be displayed on a single line.
-func DisplayResult(message []string, wid int) (string, error) {
-	return displayResult(message, wid, ui.PollEvents())
-}
-
-func displayResult(message []string, wid int, uiEvents <-chan ui.Event) (string, error) {
+func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	if err := ui.Init(); err != nil {
 		return "", fmt.Errorf("Failed to initialize termui: %v", err)
 	}
 	defer ui.Close()
 
+	var wid int = menuWidth
+
+	// if a message is longer then width of the window, split it to shorter lines
+	text := []string{}
+	for _, m := range message {
+		for len(m) > wid {
+			text = append(text, m[0:wid])
+			m = m[wid:len(m)]
+		}
+		text = append(text, m)
+	}
+
 	p := widgets.NewParagraph()
-	p.Text = strings.Join(message, "\n")
+	p.Text = strings.Join(text, "\n")
 	p.Border = false
-	p.SetRect(0, 0, wid, len(message)+3)
+	p.SetRect(0, 0, wid+2, len(text)+3)
 	p.TextStyle.Fg = ui.ColorWhite
 
 	ui.Render(p)
@@ -185,5 +200,5 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
 	}
-	return entries[choose], entries[choose].Exec()
+	return entries[choose], nil
 }

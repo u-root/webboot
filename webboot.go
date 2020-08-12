@@ -72,7 +72,8 @@ func main() {
 			"-files", extraBinMust("wpa_action"),
 			"-files", extraBinMust("wpa_cli"),
 			"-files", extraBinMust("wpa_passphrase"),
-			"-files", filepath.Join(currentDir, "webboot","webboot")+":bbin/webboot")
+			// "-files", filepath.Join(currentDir, "cmds", "oldwebboot", "oldwebboot")+":bbin/webboot",
+			"-files", filepath.Join(currentDir, "cmds", "webboot", "webboot")+":bbin/new_webboot")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
@@ -84,7 +85,8 @@ func main() {
 		{args: []string{"date"}},
 		{args: []string{"ls"}},
 		{args: []string{"pwd"}},
-		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "webboot")},
+		// {args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "oldwebboot")},
+		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "webboot")},
 		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds)},
 	}
 

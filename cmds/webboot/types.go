@@ -1,66 +1,56 @@
 package main
 
-import ui "github.com/gizak/termui/v3"
-
 const (
 	tcURL    = "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 	wbtcpURL = "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/TinyCorePure64.iso"
 )
 
 // bookmark record the list of iso webboot allow user to download
-var bookmark = []*BookMarkISO{
-	&BookMarkISO{
-		url:   tcURL,
-		label: "Download Tinycore v10.1",
-		name:  "TinyCorePure64-10.1.iso",
-	},
-	&BookMarkISO{
-		url:   wbtcpURL,
-		label: "Webboot Tinycorepure",
-		name:  "TinyCorePure64.iso",
-	},
+var bookmarks = map[string]string{
+	"TinyCorePure64-10.1.iso": tcURL,
+	"TinyCorePure64.iso":      wbtcpURL,
 }
 
-// BookMarkISO contains information of the iso user want to download
+// ISO contains information of the iso user want to boot
+type ISO struct {
+	label string
+	path  string
+}
+
+// Label is the string this iso displays in the menu page.
 // expected to implement Entry interface
-type BookMarkISO struct {
-	url      string
-	label    string
-	name     string
-	uiEvents <-chan ui.Event
+func (i *ISO) Label() string {
+	return i.label
+}
+
+// Config represents one kind of configure of booting an iso
+type Config struct {
+	label string
 }
 
 // Label is the string this iso displays in the menu page.
-func (b *BookMarkISO) Label() string {
-	return b.label
+func (c *Config) Label() string {
+	return c.label
 }
 
-// CachedISO contains information of the iso cached in the memory
+// DownloadOption let user download an iso then boot it
 // expected to implement Entry interface
-type CachedISO struct {
-	isDefault bool
-	label     string
-	path      string
-	name      string
-	// todo: information parsed from config file
-}
-
-// DownloadByBookmark is to implement "Download by bookmark" option in the menu
-type DownloadByBookmark struct {
-	uiEvents <-chan ui.Event
+type DownloadOption struct {
 }
 
 // Label is the string this iso displays in the menu page.
-func (d *DownloadByBookmark) Label() string {
-	return "Download by bookmark"
+func (d *DownloadOption) Label() string {
+	return "Download an ISO"
 }
 
-// DownloadByLink is to implement "Download by link" option in the menu
-type DownloadByLink struct {
-	uiEvents <-chan ui.Event
+// DirOption represents a directory under cache directory
+// DirOption options displays it's sub-directory or iso files
+type DirOption struct {
+	label string
+	path  string
 }
 
-// Label is the string this iso displays in the menu page.
-func (d *DownloadByLink) Label() string {
-	return "Download by link"
+// Label is the string this option displays in the menu page.
+func (d *DirOption) Label() string {
+	return d.label
 }
