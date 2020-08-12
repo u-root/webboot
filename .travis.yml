@@ -1,0 +1,11 @@
+language: go
+go:
+  - 1.14.x
+before_install:
+  - sudo apt-get install wireless-tools
+  - sudo apt-get install wpasupplicant
+install:
+  - go get -u github.com/u-root/u-root
+  - go get -u github.com/u-root/NiChrome/...
+script:
+  - bash travis.sh
