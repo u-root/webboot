@@ -22,11 +22,6 @@ func (u *testEntry) IsDefault() bool {
 }
 
 func TestNewParagraph(t *testing.T) {
-	if err := ui.Init(); err != nil {
-		t.Fatal(err)
-	}
-	defer ui.Close()
-
 	testText := "newParagraph test"
 	p := newParagraph(testText, false, 0, 50, 3)
 	if testText != p.Text {
@@ -46,11 +41,6 @@ func pressKey(ch chan ui.Event, input []string) {
 }
 
 func TestProcessInputSimple(t *testing.T) {
-	if err := ui.Init(); err != nil {
-		t.Fatal(err)
-	}
-	defer ui.Close()
-
 	testText := "test"
 	uiEvents := make(chan ui.Event)
 	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
@@ -69,13 +59,7 @@ func TestProcessInputSimple(t *testing.T) {
 }
 
 func TestProcessInputComplex(t *testing.T) {
-	if err := ui.Init(); err != nil {
-		t.Fatal(err)
-	}
-	defer ui.Close()
-
 	testText := "100"
-
 	uiEvents := make(chan ui.Event)
 	// mock user input:
 	// first input is bad input "bad"
@@ -112,7 +96,7 @@ func TestDisplayResult(t *testing.T) {
 
 	message := []string{"This is", "a", "TEST"}
 	testText = "This is\na\nTEST"
-	msg, err := displayResult(message, 50, uiEvents)
+	msg, err := DisplayResult(message, uiEvents)
 
 	if err != nil {
 		t.Errorf("Error: %v", err)
@@ -126,6 +110,15 @@ func TestDisplayMenu(t *testing.T) {
 	entry1 := &testEntry{label: "entry 1"}
 	entry2 := &testEntry{label: "entry 2"}
 	entry3 := &testEntry{label: "entry 3"}
+	entry4 := &testEntry{label: "entry 4"}
+	entry5 := &testEntry{label: "entry 5"}
+	entry6 := &testEntry{label: "entry 6"}
+	entry7 := &testEntry{label: "entry 7"}
+	entry8 := &testEntry{label: "entry 8"}
+	entry9 := &testEntry{label: "entry 9"}
+	entry10 := &testEntry{label: "entry 10"}
+	entry11 := &testEntry{label: "entry 11"}
+	entry12 := &testEntry{label: "entry 12"}
 
 	for _, tt := range []struct {
 		name      string
@@ -133,12 +126,6 @@ func TestDisplayMenu(t *testing.T) {
 		userInput []string
 		want      Entry
 	}{
-		{
-			name:      "hit_enter",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"<Enter>"},
-			want:      entry1,
-		},
 		{
 			name:      "hit_0",
 			entries:   []Entry{entry1, entry2, entry3},
@@ -158,10 +145,10 @@ func TestDisplayMenu(t *testing.T) {
 			want:      entry3,
 		},
 		{
-			name:      "error_input_then_hit_enter",
+			name:      "error_input_then_right_input",
 			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"0", "a", "<Enter>", "<Enter>"},
-			want:      entry1,
+			userInput: []string{"0", "a", "<Enter>", "1", "<Enter>"},
+			want:      entry2,
 		},
 		{
 			name:      "exceed_the_bound_then_right_input",
@@ -174,6 +161,41 @@ func TestDisplayMenu(t *testing.T) {
 			entries:   []Entry{entry1, entry2, entry3},
 			userInput: []string{"2", "a", "<Backspace>", "<Enter>"},
 			want:      entry3,
+		},
+		{
+			name:    "<pageDown>_<pageUp>_<pageDown>_hit_11",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// hit <pageDown> -> <pageUp> -> <pageDown> current page is : 0~9
+			userInput: []string{"<PageDown>", "<pageUp>", "<PageDown>", "1", "1", "<Enter>"},
+			want:      entry12,
+		},
+		{
+			name:    "<Left>_<Right>_exceed_the_bound_then_right_input",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// hit <Left> -> <Right> current page is : 10~11 because the first <Left> should do nothing
+			userInput: []string{"<Left>", "<Right>", "8", "<Enter>", "1", "0", "<Enter>"},
+			want:      entry11,
+		},
+		{
+			name:    "<Down>_<Down>_<Up>_exceed_the_bound_then_right_input",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// hit <Down> -> <Down> -> <Up> current page is : 1~10
+			userInput: []string{"<Down>", "<Down>", "<Up>", "0", "<Enter>", "1", "<Enter>"},
+			want:      entry2,
+		},
+		{
+			name:    "<Down>_<End>_then_right_input",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// hit <Down> -> <End> current page is : 2~11 because the <End> will move to the last page
+			userInput: []string{"<Down>", "<End>", "4", "<Enter>"},
+			want:      entry5,
+		},
+		{
+			name:    "<Down>_<Home>_then_right_input",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// hit <Down> -> <Home> current page is : 0~9 because the <End> will move to the first page
+			userInput: []string{"<Down>", "<Home>", "0", "<Enter>"},
+			want:      entry1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -191,5 +213,4 @@ func TestDisplayMenu(t *testing.T) {
 
 		})
 	}
-
 }
