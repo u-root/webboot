@@ -11,6 +11,7 @@ import (
 )
 
 const menuWidth = 50
+const menuHeight = 12
 
 type validCheck func(string) (string, string, bool)
 
@@ -18,6 +19,20 @@ type validCheck func(string) (string, string, bool)
 type Entry interface {
 	// Label returns the string will show in menu.
 	Label() string
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // AlwaysValid is a special isValid function that check nothing
@@ -61,6 +76,8 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	// keep tracking all input from user
 	for {
 		k := readKey(uiEvents)
+		warning.Text = ""
+		ui.Render(warning)
 		switch k {
 		case "<C-d>":
 			return input.Text, warning.Text, io.EOF
@@ -74,27 +91,21 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 			ui.Render(input)
 			ui.Render(warning)
 		case "<Backspace>":
-			if len(input.Text) == 0 {
-				continue
+			if len(input.Text) > 0 {
+				input.Text = input.Text[:len(input.Text)-1]
+				ui.Render(input)
 			}
-			input.Text = input.Text[:len(input.Text)-1]
+		case "<Space>":
+			input.Text += " "
 			ui.Render(input)
 		default:
-			if warning.Text != "" {
-				warning.Text = ""
-				ui.Render(warning)
-			}
-			if k == "<Space>" {
-				input.Text += " "
-			} else if k[0:1] != "<" {
-				// the termui will use a string begin at '<' to indicate a special key
-				// for exaple the left arrow key will be parsed to <Left>.
-				// other special key like Delete, F1,etc will be treat in this way too.
-				// so if the key is not begin at '<' it means it's a alphabet or number or '.' .etc,
-				// which can be directly added to the end of input.Text
+			// the termui use a string begin at '<' to represent some special keys
+			// for example the 'F1' key will be parsed to "<F1>" string .
+			// we should do nothing when meet these special keys, we only care about alphabets and digits.
+			if k[0:1] != "<" {
 				input.Text += k
+				ui.Render(input)
 			}
-			ui.Render(input)
 		}
 	}
 }
@@ -152,6 +163,106 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	return p.Text, nil
 }
 
+// parsingMenuOption parses the user's operation in the menu page, such as page up, page down, selection. etc
+func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widgets.Paragraph, uiEvents <-chan ui.Event) (int, error) {
+
+	if len(labels) == 0 {
+		return 0, fmt.Errorf("No Entry in the menu")
+	}
+
+	// first, last always point to the first and last entry in current menu page
+	first := 0
+	last := min(10, len(labels))
+	listData := labels[first:last]
+	menu.Rows = listData
+	ui.Render(menu)
+
+	// keep tracking all input from user
+	for {
+		k := readKey(uiEvents)
+		warning.Text = ""
+		ui.Render(warning)
+		switch k {
+		case "<C-d>":
+			return 0, io.EOF
+		case "<Enter>":
+			choose := input.Text
+			input.Text = ""
+			ui.Render(input)
+			c, err := strconv.Atoi(choose)
+			// input is vilid when:
+			// 1.input is a number;
+			// 2.the number does not exceed the index in the current page.
+			if err == nil && c >= first && c < last {
+				return c, nil
+			}
+			warning.Text = "Please enter a valid entry number."
+			ui.Render(warning)
+		case "<Backspace>":
+			if len(input.Text) > 0 {
+				input.Text = input.Text[:len(input.Text)-1]
+				ui.Render(input)
+			}
+		case "<Left>", "<PageUp>":
+			// page up
+			first = max(0, first-10)
+			last = min(first+10, len(labels))
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<Right>", "<PageDown>":
+			// page down
+			if first+10 >= len(labels) {
+				continue
+			}
+			first = first + 10
+			last = min(first+10, len(labels))
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<Up>":
+			// move one line up
+			first = max(0, first-1)
+			last = min(first+10, len(labels))
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<Down>":
+			// move one line down
+			last = min(last+1, len(labels))
+			first = max(0, last-10)
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<Home>":
+			// first page
+			first = 0
+			last = min(first+10, len(labels))
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<End>":
+			// last page
+			last = len(labels)
+			first = max(0, last-10)
+			listData := labels[first:last]
+			menu.Rows = listData
+			ui.Render(menu)
+		case "<Space>":
+			input.Text += " "
+			ui.Render(input)
+		default:
+			// the termui use a string begin at '<' to represent some special keys
+			// for example the 'F1' key will be parsed to "<F1>" string .
+			// we should do nothing when meet these special keys, we only care about alphabets and digits.
+			if k[0:1] != "<" {
+				input.Text += k
+				ui.Render(input)
+			}
+		}
+	}
+}
+
 // DisplayMenu presents all entries into a menu with numbers.
 // user inputs a number to choose from them.
 func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
@@ -167,38 +278,26 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	}
 
 	location := 0
-	l := widgets.NewList()
-	l.Title = menuTitle
-	l.Rows = listData
-	l.SetRect(0, location, menuWidth, location+len(entries)+2)
-	location += len(entries) + 2
-	l.TextStyle.Fg = ui.ColorWhite
-	ui.Render(l)
+	menu := widgets.NewList()
+	menu.Title = menuTitle
+	// menus's hight always be 12, which could diplay 10 entrys in one page
+	menu.SetRect(0, location, menuWidth, location+menuHeight)
+	location += menuHeight
+	menu.TextStyle.Fg = ui.ColorWhite
 
-	// we want user to choose from the menu, so the isValid will check :
-	// 1.input is a number; 2.input number does not exceed the number of options.
-	isValid := func(input string) (string, string, bool) {
-		if input == "" {
-			if len(entries) > 0 {
-				return "0", "", true
-			}
-			return "", "No default option, please enter a choice", false
-		}
-		if c, err := strconv.Atoi(input); err != nil || c < 0 || c >= len(entries) {
-			return "", "Input is not a valid entry number.", false
-		}
-		return input, "", true
-	}
+	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
+	location += 2
+	input := newParagraph("", true, location, menuWidth, 3)
+	location += 3
+	warning := newParagraph("", false, location, menuWidth, 3)
 
-	input, _, err := processInput(introwords, location, menuWidth, 1, isValid, uiEvents)
+	ui.Render(intro)
+	ui.Render(input)
+	ui.Render(warning)
 
+	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get input in displayMenu: %v", err)
+		return nil, fmt.Errorf("Fail to get the choose from menu: %+v", err)
 	}
-
-	choose, err := strconv.Atoi(input)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to convert input to number in desplayMenu: %v", err)
-	}
-	return entries[choose], nil
+	return entries[chooseIndex], nil
 }
