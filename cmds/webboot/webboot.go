@@ -24,8 +24,6 @@ var (
 	dryRun  = flag.Bool("dry_run", true, "If dry_run is true we won't boot the iso.")
 )
 
-var cacheDir = ""
-
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	verbose("Intent to boot %s", i.path)
@@ -173,18 +171,12 @@ func getMainMenu(cacheDir string) menu.Entry {
 	return entry
 }
 
-func goBackDir(currentPath string) menu.Entry {
-	backTo := filepath.Dir(currentPath)
-	entry := &DirOption{path: backTo}
-	return entry
-}
-
 func main() {
 	flag.Parse()
 	if *v {
 		verbose = log.Printf
 	}
-	cacheDir = *dir
+	cacheDir := *dir
 	if cacheDir != "" {
 		// call filepath.Clean to make sure the format of path is consistent
 		// we should check the cacheDir != "" before call filepath.Clean, because filepath.Clean("") = "."
@@ -225,7 +217,7 @@ func main() {
 					entry = getMainMenu(cacheDir)
 					break
 				}
-				entry = goBackDir(dirOption.path)
+				entry = &DirOption{path: filepath.Dir(dirOption.path)}
 			}
 		default:
 			log.Fatalf("Unknown type %T!\n", entry)
