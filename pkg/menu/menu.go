@@ -170,11 +170,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 		return 0, fmt.Errorf("No Entry in the menu")
 	}
 
+	menuTitle := menu.Title + "---%v/%v"
+
 	// first, last always point to the first and last entry in current menu page
 	first := 0
 	last := min(10, len(labels))
 	listData := labels[first:last]
 	menu.Rows = listData
+	menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 	ui.Render(menu)
 
 	// keep tracking all input from user
@@ -209,6 +212,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<Right>", "<PageDown>":
 			// page down
@@ -219,6 +223,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<Up>", "<MouseWheelUp>":
 			// move one line up
@@ -226,6 +231,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<Down>", "<MouseWheelDown>":
 			// move one line down
@@ -233,6 +239,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			first = max(0, last-10)
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<Home>":
 			// first page
@@ -240,6 +247,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<End>":
 			// last page
@@ -247,6 +255,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			first = max(0, last-10)
 			listData := labels[first:last]
 			menu.Rows = listData
+			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
 		case "<Space>":
 			input.Text += " "
