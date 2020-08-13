@@ -133,34 +133,34 @@ func TestDirOption(t *testing.T) {
 	}
 }
 
-func TestGoBackDir(t *testing.T) {
-	for _, tt := range []struct {
-		name        string
-		currentPath string
-		want        *DirOption
-	}{
-		{
-			name:        "path1",
-			currentPath: "./testdata/dirlevel1",
-			want:        &DirOption{path: "./testdata"},
-		},
-		{
-			name:        "path2",
-			currentPath: "./testdata/dirlevel1/dirlevel2",
-			want:        &DirOption{path: "./testdata/dirlevel1"},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			entry := goBackDir(tt.currentPath)
-			if backDir, ok := entry.(*DirOption); !ok {
-				t.Errorf("Incorrect return. want a DirOption, get %T", entry)
+func TestBackOption(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	input := []string{"0", "<Enter>", "1", "<Enter>"}
+	go pressKey(uiEvents, input)
 
-			} else {
-				if filepath.Clean(tt.want.path) != filepath.Clean(backDir.path) {
-					t.Fatalf("Incorrect return. want %+v, get %+v", tt.want, backDir)
-				}
+	var entry menu.Entry = &DirOption{path: "./testdata"}
+	var err error = nil
+	for i := 0; i < 2; i++ {
+		if dirOption, ok := entry.(*DirOption); ok {
+			currentPath := dirOption.path
+			entry, err = dirOption.exec(uiEvents)
+			if err != nil {
+				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			}
-		})
-	}
+			if _, ok := entry.(*BackOption); ok {
+				backTo := filepath.Dir(currentPath)
+				entry = &DirOption{path: backTo}
+			}
+		} else {
+			t.Fatalf("Unknown type. got entry %+v of type %T, wanted DirOption", entry, entry)
+		}
 
+	}
+	if dirOption, ok := entry.(*DirOption); !ok {
+		t.Fatalf("Incorrect result, want a DirOption, get %T", entry)
+	} else {
+		if dirOption.path != "testdata" {
+			t.Fatalf("Get incorrect dir option, want \"datatest\", get %s", dirOption.path)
+		}
+	}
 }
