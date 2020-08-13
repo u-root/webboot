@@ -54,7 +54,7 @@ func newParagraph(initText string, border bool, location int, wid int, ht int) *
 func readKey(uiEvents <-chan ui.Event) string {
 	for {
 		e := <-uiEvents
-		if e.Type == ui.KeyboardEvent {
+		if e.Type == ui.KeyboardEvent || e.Type == ui.MouseEvent {
 			return e.ID
 		}
 	}
@@ -220,14 +220,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			listData := labels[first:last]
 			menu.Rows = listData
 			ui.Render(menu)
-		case "<Up>":
+		case "<Up>", "<MouseWheelUp>":
 			// move one line up
 			first = max(0, first-1)
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
 			ui.Render(menu)
-		case "<Down>":
+		case "<Down>", "<MouseWheelDown>":
 			// move one line down
 			last = min(last+1, len(labels))
 			first = max(0, last-10)

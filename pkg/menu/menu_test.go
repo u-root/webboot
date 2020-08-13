@@ -197,6 +197,13 @@ func TestDisplayMenu(t *testing.T) {
 			userInput: []string{"<Down>", "<Home>", "0", "<Enter>"},
 			want:      entry1,
 		},
+		{
+			name:    "<MouseWheelDown>_<MouseWheelDown>_<MouseWheelUp>_then_right_input",
+			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
+			// scroll mouse wheel <MouseWheelDown> -> <MouseWheelDown> -> <MouseWheelUp> current page is : 1~10
+			userInput: []string{"<MouseWheelDown>", "<MouseWheelDown>", "<MouseWheelUp>", "10", "<Enter>"},
+			want:      entry11,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			uiEvents := make(chan ui.Event)
