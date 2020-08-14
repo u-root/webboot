@@ -48,11 +48,11 @@ func TestDownload(t *testing.T) {
 func TestDownloadOption(t *testing.T) {
 	bookmarkIso := &ISO{
 		label: "TinyCorePure64-10.1.iso",
-		path:  "/tmp/TinyCorePure64-10.1.iso",
+		path:  "testdata/Downloaded/TinyCorePure64-10.1.iso",
 	}
 	downloadByLinkIso := &ISO{
 		label: "test_download_by_link.iso",
-		path:  "/tmp/test_download_by_link.iso",
+		path:  "testdata/Downloaded/test_download_by_link.iso",
 	}
 	downloadLink := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 
@@ -80,7 +80,7 @@ func TestDownloadOption(t *testing.T) {
 			go pressKey(uiEvents, input)
 
 			downloadOption := DownloadOption{}
-			entry, err := downloadOption.exec(uiEvents, false)
+			entry, err := downloadOption.exec(uiEvents, false, "./testdata")
 
 			if err != nil {
 				t.Errorf("Fail to execute downloadOption.exec(): %+v", err)
@@ -95,8 +95,7 @@ func TestDownloadOption(t *testing.T) {
 			if _, err := os.Stat(iso.path); err != nil {
 				t.Errorf("Fail to find downloaded file: %+v", err)
 			}
-
-			if err := os.Remove(iso.path); err != nil {
+			if err := os.RemoveAll("./testdata/Downloaded"); err != nil {
 				t.Errorf("Fail to remove test file: %+v", err)
 			}
 		})

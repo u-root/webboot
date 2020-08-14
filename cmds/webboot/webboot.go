@@ -50,7 +50,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 // DownloadOption's exec lets user input the name of the iso they want
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
-func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool) (menu.Entry, error) {
+func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir string) (menu.Entry, error) {
 	if network {
 		for {
 			ok, err := setUpNetwork(uiEvents)
@@ -80,8 +80,17 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool) (menu.Entr
 			return nil, err
 		}
 	}
-
-	fpath := filepath.Join("/tmp", filename)
+	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
+	var fpath string
+	if cacheDir == "" {
+		fpath = filepath.Join(os.TempDir(), filename)
+	} else {
+		downloadDir := filepath.Join(cacheDir, "Downloaded")
+		if err = os.MkdirAll(downloadDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("Fail to create the downloaded dir :%v", err)
+		}
+		fpath = filepath.Join(downloadDir, filename)
+	}
 	// if download link is not valid, ask again until the link is rights
 	err = download(link, fpath)
 	for err != nil {
@@ -177,6 +186,10 @@ func main() {
 		verbose = log.Printf
 	}
 	cacheDir := *dir
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		menu.DisplayResult([]string{fmt.Sprintf("the cache dir %v does not exist", cacheDir)}, ui.PollEvents())
+		cacheDir = ""
+	}
 	if cacheDir != "" {
 		// call filepath.Clean to make sure the format of path is consistent
 		// we should check the cacheDir != "" before call filepath.Clean, because filepath.Clean("") = "."
@@ -197,11 +210,11 @@ func main() {
 	for entry != nil {
 		switch entry.(type) {
 		case *DownloadOption:
-			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network); err != nil {
+			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
 				log.Fatalf("Download option failed:%v", err)
 			}
 		case *ISO:
-			if err = entry.(*ISO).exec(ui.PollEvents(), *dryRun); err != nil {
+			if err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
 				log.Fatalf("ISO option failed:%v", err)
 			}
 			entry = nil
