@@ -163,3 +163,33 @@ func TestBackOption(t *testing.T) {
 		}
 	}
 }
+
+func TestBackOptionInDownload(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		input []string
+	}{
+		{
+			name:  "go_back_from_input_iso_name",
+			input: []string{"<Enter>"},
+		},
+		{
+			name:  "go_back_from_input_url",
+			input: []string{"a", ".", "i", "s", "o", "<Enter>", "<Enter>"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			go pressKey(uiEvents, tt.input)
+
+			d := &DownloadOption{}
+			if entry, err := d.exec(uiEvents, false, ""); err != nil {
+				t.Fatalf("Fail to execute download options's exec(): %+v", err)
+			} else {
+				if _, ok := entry.(*BackOption); !ok {
+					t.Fatalf("Get incorrect return, want a BackOprion, get %T", entry)
+				}
+			}
+		})
+	}
+}

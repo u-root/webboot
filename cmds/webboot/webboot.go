@@ -64,22 +64,29 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 	validIsoName := func(input string) (string, string, bool) {
 		re := regexp.MustCompile(`[\w]+.iso`)
-		if re.Match([]byte(input)) {
+		if input == "" || re.Match([]byte(input)) {
 			return input, "", true
 		}
 		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
 	}
-	filename, err := menu.NewInputWindow("Enter ISO name", validIsoName, uiEvents)
+	filename, err := menu.NewInputWindow("Enter ISO name (Enter an empty string to go back):", validIsoName, uiEvents)
 	if err != nil {
 		return nil, err
+	}
+	if filename == "" {
+		return &BackOption{}, nil
 	}
 
 	link, ok := bookmarks[filename]
 	if !ok {
-		if link, err = menu.NewInputWindow("Enter URL:", menu.AlwaysValid, uiEvents); err != nil {
+		if link, err = menu.NewInputWindow("Enter URL (Enter an empty string to go back):", menu.AlwaysValid, uiEvents); err != nil {
 			return nil, err
 		}
 	}
+	if link == "" {
+		return &BackOption{}, nil
+	}
+
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
 	var fpath string
 	if cacheDir == "" {
@@ -212,6 +219,9 @@ func main() {
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
 				log.Fatalf("Download option failed:%v", err)
+			}
+			if _, ok := entry.(*BackOption); ok {
+				entry = getMainMenu(cacheDir)
 			}
 		case *ISO:
 			if err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
