@@ -64,26 +64,29 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 	validIsoName := func(input string) (string, string, bool) {
 		re := regexp.MustCompile(`[\w]+.iso`)
-		if input == "" || re.Match([]byte(input)) {
+		if input == "" {
+			return "", bookmarkList, false
+		}
+		if re.Match([]byte(input)) {
 			return input, "", true
 		}
 		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
 	}
-	filename, err := menu.NewInputWindow("Enter ISO name (Enter an empty string to go back):", validIsoName, uiEvents)
+	filename, err := menu.NewInputWindow("Enter ISO name (Enter <Esc> to go back):", validIsoName, uiEvents)
 	if err != nil {
 		return nil, err
 	}
-	if filename == "" {
+	if filename == "<Esc>" {
 		return &BackOption{}, nil
 	}
 
 	link, ok := bookmarks[filename]
 	if !ok {
-		if link, err = menu.NewInputWindow("Enter URL (Enter an empty string to go back):", menu.AlwaysValid, uiEvents); err != nil {
+		if link, err = menu.NewInputWindow("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); err != nil {
 			return nil, err
 		}
 	}
-	if link == "" {
+	if link == "<Esc>" {
 		return &BackOption{}, nil
 	}
 
@@ -192,6 +195,12 @@ func main() {
 	if *v {
 		verbose = log.Printf
 	}
+
+	bookmarkList = "We provide these isos' link:"
+	for key := range bookmarks {
+		bookmarkList += "\n" + key
+	}
+
 	cacheDir := *dir
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		menu.DisplayResult([]string{fmt.Sprintf("the cache dir %v does not exist", cacheDir)}, ui.PollEvents())

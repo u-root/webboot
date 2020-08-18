@@ -13,6 +13,8 @@ var bookmarks = map[string]string{
 	"TinyCorePure64.iso":      wbtcpURL,
 }
 
+var bookmarkList string
+
 // ISO contains information of the iso user want to boot
 type ISO struct {
 	label string
