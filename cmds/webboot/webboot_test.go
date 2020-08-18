@@ -171,11 +171,11 @@ func TestBackOptionInDownload(t *testing.T) {
 	}{
 		{
 			name:  "go_back_from_input_iso_name",
-			input: []string{"<Enter>"},
+			input: []string{"<Escape>"},
 		},
 		{
 			name:  "go_back_from_input_url",
-			input: []string{"a", ".", "i", "s", "o", "<Enter>", "<Enter>"},
+			input: []string{"a", ".", "i", "s", "o", "<Enter>", "<Escape>"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

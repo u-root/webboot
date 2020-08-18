@@ -67,7 +67,7 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	location += 2
 	input := newParagraph("", true, location, wid, ht+2)
 	location += ht + 2
-	warning := newParagraph("", false, location, wid, 3)
+	warning := newParagraph("", false, location, wid, 15)
 
 	ui.Render(intro)
 	ui.Render(input)
@@ -95,6 +95,8 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 				input.Text = input.Text[:len(input.Text)-1]
 				ui.Render(input)
 			}
+		case "<Escape>":
+			return "<Esc>", "", nil
 		case "<Space>":
 			input.Text += " "
 			ui.Render(input)
