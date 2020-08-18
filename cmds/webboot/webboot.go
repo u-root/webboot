@@ -51,17 +51,12 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
 func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir string) (menu.Entry, error) {
-	if network {
-		for {
-			ok, err := setUpNetwork(uiEvents)
-			if err != nil {
-				return nil, err
-			}
-			if ok {
-				break
-			}
+	if network && !connected() {
+		if err := setupNetwork(uiEvents); err != nil {
+			return nil, err
 		}
 	}
+
 	validIsoName := func(input string) (string, string, bool) {
 		re := regexp.MustCompile(`[\w]+.iso`)
 		if input == "" {
