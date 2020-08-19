@@ -12,6 +12,8 @@ import (
 
 const menuWidth = 50
 const menuHeight = 12
+const resultHeight = 20
+const resultWidth = 70
 
 type validCheck func(string) (string, string, bool)
 
@@ -137,7 +139,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	}
 	defer ui.Close()
 
-	var wid int = menuWidth
+	var wid int = resultWidth
 
 	// if a message is longer then width of the window, split it to shorter lines
 	text := []string{}
@@ -150,17 +152,29 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	}
 
 	p := widgets.NewParagraph()
-	p.Text = strings.Join(text, "\n")
-	p.Border = false
-	p.SetRect(0, 0, wid+2, len(text)+3)
+	p.Border = true
+	p.SetRect(0, 0, wid+2, resultHeight+3)
 	p.TextStyle.Fg = ui.ColorWhite
 
-	ui.Render(p)
+	hint := "(Press any key to continue, press <Esc> to exit.)"
+	msgLength := len(text)
+	currentLine := 0
 
-	// press any key to exit this window
-	k := readKey(uiEvents)
-	if k == "<C-d>" {
-		return p.Text, io.EOF
+	for currentLine < msgLength {
+		// display the page number
+		p.Title = fmt.Sprintf("Message---%v/%v", currentLine, msgLength)
+		p.Text = strings.Join(text[currentLine:min(msgLength, currentLine+resultHeight)], "\n") + "\n" + hint
+		currentLine += resultHeight
+		ui.Render(p)
+		k := readKey(uiEvents)
+		switch k {
+		case "<C-d>":
+			return p.Text, io.EOF
+		case "<Escape>":
+			return p.Text, nil
+		default:
+			continue
+		}
 	}
 	return p.Text, nil
 }

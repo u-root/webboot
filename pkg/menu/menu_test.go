@@ -90,20 +90,59 @@ func TestProcessInputComplex(t *testing.T) {
 }
 
 func TestDisplayResult(t *testing.T) {
-	testText := "test"
-	uiEvents := make(chan ui.Event)
-	go pressKey(uiEvents, []string{"q"})
+	for _, tt := range []struct {
+		name      string
+		msg       []string
+		userInput []string
+		want      string
+	}{
+		{
+			name:      "short_message",
+			msg:       []string{"short message"},
+			userInput: []string{"q"},
+			want:      "short message\n(Press any key to continue, press <Esc> to exit.)",
+		},
+		{
+			name: "long_message_escape",
+			msg: []string{"long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message"},
+			userInput: []string{"<Escape>"},
+			// input is <Escape>, the return would be the first page's message
+			// which is 20 "long message" and a hint
+			want: "long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
+				"long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
+				"(Press any key to continue, press <Esc> to exit.)",
+		},
+		{
+			name: "long message",
+			msg: []string{"long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message",
+				"long message", "long message", "long message", "long message", "long message", "long message", "long message", "long message"},
+			userInput: []string{"a", "a"},
+			// input did not contains <Escape>, so the return would be the second page's message
+			// which is 11 "long message" and a hint
+			want: "long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
+				"long message\n(Press any key to continue, press <Esc> to exit.)",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			go pressKey(uiEvents, tt.userInput)
+			msg, err := DisplayResult(tt.msg, uiEvents)
 
-	message := []string{"This is", "a", "TEST"}
-	testText = "This is\na\nTEST"
-	msg, err := DisplayResult(message, uiEvents)
+			if err != nil {
+				t.Errorf("Error: %v", err)
+			}
+			if tt.want != msg {
+				t.Errorf("Incorrect value for msg. got: %v, want: %v", msg, tt.want)
+			}
 
-	if err != nil {
-		t.Errorf("Error: %v", err)
+		})
 	}
-	if testText != msg {
-		t.Errorf("Incorrect value for msg. got: %v, want: %v", msg, testText)
-	}
+
 }
 
 func TestDisplayMenu(t *testing.T) {
