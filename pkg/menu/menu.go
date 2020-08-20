@@ -78,8 +78,6 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	// keep tracking all input from user
 	for {
 		k := readKey(uiEvents)
-		warning.Text = ""
-		ui.Render(warning)
 		switch k {
 		case "<C-d>":
 			return input.Text, warning.Text, io.EOF
@@ -199,8 +197,6 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 	// keep tracking all input from user
 	for {
 		k := readKey(uiEvents)
-		warning.Text = ""
-		ui.Render(warning)
 		switch k {
 		case "<C-d>":
 			return 0, io.EOF
