@@ -212,10 +212,6 @@ func main() {
 	}
 
 	cacheDir := *dir
-	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
-		menu.DisplayResult([]string{fmt.Sprintf("the cache dir %v does not exist", cacheDir)}, ui.PollEvents())
-		cacheDir = ""
-	}
 	if cacheDir != "" {
 		// call filepath.Clean to make sure the format of path is consistent
 		// we should check the cacheDir != "" before call filepath.Clean, because filepath.Clean("") = "."
