@@ -22,7 +22,7 @@ var (
 	verbose = func(string, ...interface{}) {}
 	dir     = flag.String("dir", "", "Path of cached directory")
 	network = flag.Bool("network", true, "If network is false we will not set up network")
-	dryRun  = flag.Bool("dry_run", true, "If dry_run is true we won't boot the iso.")
+	dryRun  = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
 )
 
 // ISO's exec downloads the iso and boot it.
