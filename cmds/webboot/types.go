@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/u-root/NiChrome/pkg/wifi"
 	"github.com/u-root/webboot/pkg/menu"
+	"github.com/u-root/webboot/pkg/wifi"
 )
 
 const (
