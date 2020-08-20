@@ -45,16 +45,13 @@ func TestProcessInputSimple(t *testing.T) {
 	uiEvents := make(chan ui.Event)
 	go pressKey(uiEvents, []string{"t", "e", "s", "t", "<Enter>"})
 
-	input, warning, err := processInput("test processInput simple", 0, 50, 1, AlwaysValid, uiEvents)
+	input, _, err := processInput("test processInput simple", 0, 50, 1, AlwaysValid, uiEvents)
 
 	if err != nil {
 		t.Errorf("ProcessInput failed: %v", err)
 	}
 	if input != testText {
 		t.Errorf("Incorrect value for input. got: %v, want: %v", input, testText)
-	}
-	if warning != "" {
-		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning)
 	}
 }
 
@@ -77,15 +74,12 @@ func TestProcessInputComplex(t *testing.T) {
 		return input, "", true
 	}
 
-	input, warning, err := processInput("test processInput complex", 0, 50, 1, isValid, uiEvents)
+	input, _, err := processInput("test processInput complex", 0, 50, 1, isValid, uiEvents)
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
 	if input != testText {
 		t.Errorf("Incorrect value for input. got: %v, want: %v", input, testText)
-	}
-	if warning != "" {
-		t.Errorf("Incorrect value for warning. got: %v, want nothing", warning)
 	}
 }
 

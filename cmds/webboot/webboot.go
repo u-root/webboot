@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/u-root/u-root/pkg/mount"
@@ -64,6 +65,20 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 		if re.Match([]byte(input)) {
 			return input, "", true
+		}
+
+		if re2, err := regexp.Compile(input); err == nil {
+			hint := []string{}
+			for key := range bookmarks {
+				if re2.Match([]byte(key)) {
+					hint = append(hint, key)
+				}
+			}
+			if len(hint) == 1 {
+				return hint[0], "", true
+			} else if len(hint) > 1 {
+				return "", strings.Join(hint, "\n"), false
+			}
 		}
 		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
 	}
@@ -178,7 +193,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 	}
 	entries = append(entries, &DownloadOption{})
 
-	entry, err := menu.DisplayMenu("Webboot", "Choose an option:", entries, ui.PollEvents())
+	entry, err := menu.DisplayMenu("Webboot", "Choose an option:(press Ctrl-d to exit)", entries, ui.PollEvents())
 	if err != nil {
 		log.Fatal(err)
 	}
