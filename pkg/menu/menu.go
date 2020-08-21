@@ -178,7 +178,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 }
 
 // parsingMenuOption parses the user's operation in the menu page, such as page up, page down, selection. etc
-func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widgets.Paragraph, uiEvents <-chan ui.Event) (int, error) {
+func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widgets.Paragraph, uiEvents <-chan ui.Event, customWarning ...string) (int, error) {
 
 	if len(labels) == 0 {
 		return 0, fmt.Errorf("No Entry in the menu")
@@ -209,6 +209,13 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			// 1.input is a number;
 			// 2.the number does not exceed the index in the current page.
 			if err == nil && c >= first && c < last {
+				// if there is not specific warning for this entry, return it
+				// elsewise show the warning and continue
+				if len(customWarning) > c && customWarning[c] != "" {
+					warning.Text = customWarning[c]
+					ui.Render(warning)
+					continue
+				}
 				return c, nil
 			}
 			warning.Text = "Please enter a valid entry number."
@@ -286,7 +293,10 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 
 // DisplayMenu presents all entries into a menu with numbers.
 // user inputs a number to choose from them.
-func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event) (Entry, error) {
+// customWarning allow self-defined warnings in the menu
+// for example the wifi menu want to show specific warning when user hit a specific entry,
+// because some wifi's type may not be supported.
+func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
 	if err := ui.Init(); err != nil {
 		return nil, fmt.Errorf("Failed to initialize termui: %v", err)
 	}
@@ -316,7 +326,7 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 	ui.Render(input)
 	ui.Render(warning)
 
-	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents)
+	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents, customWarning...)
 	if err != nil {
 		return nil, fmt.Errorf("Fail to get the choose from menu: %+v", err)
 	}
