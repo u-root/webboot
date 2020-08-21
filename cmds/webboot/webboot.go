@@ -173,7 +173,7 @@ func getCachedDirectory() (string, error) {
 	}
 
 	for _, device := range blockDevs {
-		mp, err := mount.TryMount(filepath.Join("/dev/", device.Name), filepath.Join(mountPoints, device.Name), "", mount.ReadOnly)
+		mp, err := mount.TryMount(filepath.Join("/dev/", device.Name), filepath.Join(mountPoints, device.Name), "", 0)
 		if err != nil {
 			continue
 		}
