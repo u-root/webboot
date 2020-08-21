@@ -114,13 +114,17 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	// if download link is not valid, ask again until the link is rights
 	err = download(link, fpath)
 	for err != nil {
-		err = download(link, fpath)
-		if _, derr := menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
+		var derr error
+		if _, derr = menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
 			return nil, derr
 		}
-		if link, err = menu.NewInputWindow("Enter URL:", menu.AlwaysValid, uiEvents); err != nil {
-			return nil, err
+		if link, derr = menu.NewInputWindow("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); derr != nil {
+			return nil, derr
 		}
+		if link == "<Esc>" {
+			return &BackOption{}, nil
+		}
+		err = download(link, fpath)
 	}
 
 	return &ISO{label: filename, path: fpath}, nil
