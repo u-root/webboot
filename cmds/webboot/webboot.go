@@ -59,14 +59,9 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 
 	validIsoName := func(input string) (string, string, bool) {
-		re := regexp.MustCompile(`[\w]+.iso`)
 		if input == "" {
 			return "", bookmarkList, false
 		}
-		if re.Match([]byte(input)) {
-			return input, "", true
-		}
-
 		if re2, err := regexp.Compile(input); err == nil {
 			hint := []string{}
 			for key := range bookmarks {
@@ -80,6 +75,11 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 				return "", strings.Join(hint, "\n"), false
 			}
 		}
+		re := regexp.MustCompile(`[\w]+.iso`)
+		if re.Match([]byte(input)) {
+			return input, "", true
+		}
+
 		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
 	}
 	filename, err := menu.NewInputWindow("Enter ISO name (Enter <Esc> to go back):", validIsoName, uiEvents)
