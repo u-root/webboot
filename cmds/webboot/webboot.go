@@ -227,6 +227,16 @@ func main() {
 			cacheDir = cachePath
 		}
 	}
+
+	if err := menu.Init(); err != nil {
+		log.Fatalf(err.Error())
+	}
+	defer menu.Close()
+
+	// Suppress output, else it might overlap with the menu
+	log.SetOutput(ioutil.Discard)
+	os.Stdout = nil
+
 	entry := getMainMenu(cacheDir)
 
 	var err error

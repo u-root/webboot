@@ -37,6 +37,18 @@ func max(a, b int) int {
 	return b
 }
 
+func Init() error {
+	return ui.Init()
+}
+
+func Clear() {
+	ui.Clear()
+}
+
+func Close() {
+	ui.Close()
+}
+
 // AlwaysValid is a special isValid function that check nothing
 func AlwaysValid(input string) (string, string, bool) {
 	return input, "", true
@@ -119,27 +131,18 @@ func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Ev
 
 // NewCustomInputWindow creates a new ui window and displays an input box.
 func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
-	if err := ui.Init(); err != nil {
-		return "", fmt.Errorf("Failed to initialize termui: %v", err)
-	}
-	defer ui.Close()
-
+	defer ui.Clear()
 	input, _, err := processInput(introwords, 0, wid, ht, isValid, uiEvents)
-
 	return input, err
 }
 
 // DisplayResult opens a new window and displays a message.
 // each item in the message array will be displayed on a single line.
 func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
-	if err := ui.Init(); err != nil {
-		return "", fmt.Errorf("Failed to initialize termui: %v", err)
-	}
-	defer ui.Close()
-
-	var wid int = resultWidth
+	defer ui.Clear()
 
 	// if a message is longer then width of the window, split it to shorter lines
+	var wid int = resultWidth
 	text := []string{}
 	for _, m := range message {
 		for len(m) > wid {
@@ -297,13 +300,10 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 // for example the wifi menu want to show specific warning when user hit a specific entry,
 // because some wifi's type may not be supported.
 func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
-	if err := ui.Init(); err != nil {
-		return nil, fmt.Errorf("Failed to initialize termui: %v", err)
-	}
-	defer ui.Close()
+	defer ui.Clear()
+
 	// listData contains all choice's labels
 	listData := []string{}
-
 	for i, e := range entries {
 		listData = append(listData, fmt.Sprintf("[%d] %s", i, e.Label()))
 	}
