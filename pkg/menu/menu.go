@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -331,4 +332,57 @@ func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents 
 		return nil, fmt.Errorf("Fail to get the choose from menu: %+v", err)
 	}
 	return entries[chooseIndex], nil
+}
+
+type Progress struct {
+	paragraph *widgets.Paragraph
+	animated  bool
+	sigTerm   chan bool
+	ackTerm   chan bool
+}
+
+func NewProgress(text string, animated bool) Progress {
+	paragraph := widgets.NewParagraph()
+	paragraph.Border = true
+	paragraph.SetRect(0, 0, resultWidth, 10)
+	paragraph.TextStyle.Fg = ui.ColorWhite
+	paragraph.Title = "Operation Running"
+	paragraph.Text = text
+	ui.Render(paragraph)
+
+	progress := Progress{paragraph, animated, make(chan bool), make(chan bool)}
+	if animated {
+		go progress.animate()
+	}
+	return progress
+}
+
+func (p *Progress) Update(text string) {
+	p.paragraph.Text = text
+	ui.Render(p.paragraph)
+}
+
+func (p *Progress) animate() {
+	counter := 0
+	for {
+		select {
+		case <-p.sigTerm:
+			p.ackTerm <- true
+			return
+		default:
+			time.Sleep(time.Second)
+			pText := p.paragraph.Text
+			p.Update(pText + strings.Repeat(".", counter%4))
+			p.paragraph.Text = pText
+			counter++
+		}
+	}
+}
+
+func (p *Progress) Close() {
+	if p.animated {
+		p.sigTerm <- true
+		<-p.ackTerm
+	}
+	ui.Clear()
 }
