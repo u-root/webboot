@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -233,9 +234,9 @@ func main() {
 	}
 	defer menu.Close()
 
-	// Suppress output, else it might overlap with the menu
-	log.SetOutput(ioutil.Discard)
-	os.Stdout = nil
+	// Buffer the log output, else it might overlap with the menu
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
 
 	entry := getMainMenu(cacheDir)
 

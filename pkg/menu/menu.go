@@ -41,10 +41,6 @@ func Init() error {
 	return ui.Init()
 }
 
-func Clear() {
-	ui.Clear()
-}
-
 func Close() {
 	ui.Close()
 }
