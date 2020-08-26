@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -154,12 +155,14 @@ func (w *IWLWorker) Connect(a ...string) error {
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
 		cmd := exec.CommandContext(ctx, "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr //For an easier time debugging
 		cmd.Run()
 	}()
 
 	// dhclient might never return on incorrect passwords or identity
 	go func() {
 		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr //For an easier time debugging
 		if err := cmd.Run(); err != nil {
 			c <- err
 		} else {
