@@ -4,13 +4,15 @@
 
 package wifi
 
+import "io"
+
 type Option struct {
 	Essid     string
 	AuthSuite SecProto
 }
 
 type WiFi interface {
-	Scan() ([]Option, error)
-	GetID() (string, error)
-	Connect(a ...string) error
+	Scan(stdout, stderr io.Writer) ([]Option, error)
+	GetID(stdout, stderr io.Writer) (string, error)
+	Connect(stdout, stderr io.Writer, a ...string) error
 }

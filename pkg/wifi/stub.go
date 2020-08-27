@@ -4,6 +4,8 @@
 
 package wifi
 
+import "io"
+
 var _ = WiFi(&StubWorker{})
 
 type StubWorker struct {
@@ -11,18 +13,18 @@ type StubWorker struct {
 	ID      string
 }
 
-func (w *StubWorker) Scan() ([]Option, error) {
+func NewStubWorker(stdout, stderr io.Writer, id string, options ...Option) (WiFi, error) {
+	return &StubWorker{ID: id, Options: options}, nil
+}
+
+func (w *StubWorker) Scan(stdout, stderr io.Writer) ([]Option, error) {
 	return w.Options, nil
 }
 
-func (w *StubWorker) GetID() (string, error) {
+func (w *StubWorker) GetID(stdout, stderr io.Writer) (string, error) {
 	return w.ID, nil
 }
 
-func (*StubWorker) Connect(a ...string) error {
+func (*StubWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	return nil
-}
-
-func NewStubWorker(id string, options ...Option) (WiFi, error) {
-	return &StubWorker{ID: id, Options: options}, nil
 }

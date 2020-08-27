@@ -6,6 +6,7 @@ package wifi
 
 import (
 	"fmt"
+	"io"
 	"syscall"
 	"unsafe"
 )
@@ -16,7 +17,7 @@ type NativeWorker struct {
 	Range     IWRange
 }
 
-func NewNativeWorker(i string) (WiFi, error) {
+func NewNativeWorker(stdout, stderr io.Writer, i string) (WiFi, error) {
 	s, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_IP)
 	if err != nil {
 		return nil, err
@@ -24,15 +25,15 @@ func NewNativeWorker(i string) (WiFi, error) {
 	return &NativeWorker{FD: s, Interface: i}, nil
 }
 
-func (w *NativeWorker) Scan() ([]Option, error) {
+func (w *NativeWorker) Scan(stdout, stderr io.Writer) ([]Option, error) {
 	return nil, fmt.Errorf("Not Yet")
 }
 
-func (w *NativeWorker) GetID() (string, error) {
+func (w *NativeWorker) GetID(stdout, stderr io.Writer) (string, error) {
 	return "", fmt.Errorf("Not Yet")
 }
 
-func (w *NativeWorker) Connect(a ...string) error {
+func (w *NativeWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(w.FD), SIOCGIWRANGE, uintptr(unsafe.Pointer(&w.Range)))
 	return err
 }
