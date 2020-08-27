@@ -7,21 +7,30 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+
+	"github.com/u-root/webboot/pkg/menu"
 )
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer
 type WriteCounter struct {
-	Total uint64
+	total    float64
+	progress menu.Progress
+}
+
+func NewWriteCounter() WriteCounter {
+	return WriteCounter{0, menu.NewProgress("", false)}
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
-	wc.Total += uint64(n)
+	wc.total += float64(n)
 	// print how many bytes have been writen to the file
-	fmt.Printf("\r%s", strings.Repeat(" ", 40))
-	fmt.Printf("\rDownloading... %v bytes complete", wc.Total)
+	wc.progress.Update(fmt.Sprintf("\rDownloading... %.3f MB complete", wc.total/1000000))
 	return n, nil
+}
+
+func (wc *WriteCounter) Close() {
+	wc.progress.Close()
 }
 
 func linkOpen(URL string) (io.ReadCloser, error) {
@@ -58,11 +67,13 @@ func download(URL, fPath string) error {
 		return err
 	}
 	defer f.Close()
-	counter := &WriteCounter{}
-	if _, err = io.Copy(f, io.TeeReader(isoReader, counter)); err != nil {
+
+	counter := NewWriteCounter()
+	if _, err = io.Copy(f, io.TeeReader(isoReader, &counter)); err != nil {
 		return fmt.Errorf("Fail to copy iso to a persistent memory device: %v", err)
 	}
-	fmt.Println("\nDone!")
+	counter.Close()
+
 	verbose("%q is downloaded at %q\n", URL, fPath)
 	return nil
 }

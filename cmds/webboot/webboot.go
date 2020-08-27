@@ -44,7 +44,9 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	}
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err == nil {
+		progress := menu.NewProgress("Booting", true)
 		err = bootiso.BootFromPmem(i.path, c.Label())
+		progress.Close()
 	}
 	return err
 }
