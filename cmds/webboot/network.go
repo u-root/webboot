@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +12,11 @@ import (
 	"github.com/u-root/webboot/pkg/wifi"
 	"github.com/vishvananda/netlink"
 )
+
+// Collect stdout and stderr from the network setup.
+// Declare globally because wifi.Connect() triggers
+// go routines that might still be running after return.
+var wifiStdout, wifiStderr bytes.Buffer
 
 func connected() bool {
 	client := http.Client{
@@ -74,13 +80,13 @@ func selectNetworkInterface(uiEvents <-chan ui.Event) (string, error) {
 }
 
 func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
-	worker, err := wifi.NewIWLWorker(iface)
+	worker, err := wifi.NewIWLWorker(&wifiStdout, &wifiStderr, iface)
 	if err != nil {
 		return err
 	}
 
 	for {
-		networkScan, err := worker.Scan()
+		networkScan, err := worker.Scan(&wifiStdout, &wifiStderr)
 		if err != nil {
 			return err
 		}
@@ -123,7 +129,7 @@ func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network 
 		setupParams = append(setupParams, credentials...)
 	}
 
-	if err := worker.Connect(setupParams...); err != nil {
+	if err := worker.Connect(&wifiStdout, &wifiStderr, setupParams...); err != nil {
 		return err
 	}
 

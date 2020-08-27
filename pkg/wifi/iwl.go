@@ -5,10 +5,11 @@
 package wifi
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -54,19 +55,26 @@ type IWLWorker struct {
 	Interface string
 }
 
-func NewIWLWorker(i string) (WiFi, error) {
-	if o, err := exec.Command("ip", "link", "set", "dev", i, "up").CombinedOutput(); err != nil {
-		return &IWLWorker{""}, fmt.Errorf("ip link set dev %v up: %v (%v)", i, string(o), err)
+func NewIWLWorker(stdout, stderr io.Writer, i string) (WiFi, error) {
+	cmd := exec.Command("ip", "link", "set", "dev", i, "up")
+	cmd.Stdout, cmd.Stderr = stdout, stderr
+	if err := cmd.Run(); err != nil {
+		return &IWLWorker{""}, err
 	}
 	return &IWLWorker{i}, nil
 }
 
-func (w *IWLWorker) Scan() ([]Option, error) {
-	o, err := exec.Command("iwlist", w.Interface, "scanning").CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("iwlist: %v (%v)", string(o), err)
+func (w *IWLWorker) Scan(stdout, stderr io.Writer) ([]Option, error) {
+	// Need a local copy of exec's output to parse out the Iwlist
+	var execOutput bytes.Buffer
+	stdoutTee := io.MultiWriter(&execOutput, stdout)
+
+	cmd := exec.Command("iwlist", w.Interface, "scanning")
+	cmd.Stdout, cmd.Stderr = stdoutTee, stderr
+	if err := cmd.Run(); err != nil {
+		return nil, err
 	}
-	return parseIwlistOut(o), nil
+	return parseIwlistOut(execOutput.Bytes()), nil
 }
 
 /*
@@ -127,15 +135,19 @@ func parseIwlistOut(o []byte) []Option {
 	return res
 }
 
-func (w *IWLWorker) GetID() (string, error) {
-	o, err := exec.Command("iwgetid", "-r").CombinedOutput()
-	if err != nil {
+func (w *IWLWorker) GetID(stdout, stderr io.Writer) (string, error) {
+	var execOutput bytes.Buffer
+	stdoutTee := io.MultiWriter(&execOutput, stdout)
+
+	cmd := exec.Command("iwgetid", "-r")
+	cmd.Stdout, cmd.Stderr = stdoutTee, stderr
+	if err := cmd.Run(); err != nil {
 		return "", err
 	}
-	return strings.Trim(string(o), " \n"), nil
+	return strings.Trim(execOutput.String(), " \n"), nil
 }
 
-func (w *IWLWorker) Connect(a ...string) error {
+func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	// format of a: [essid, pass, id]
 	conf, err := generateConfig(a...)
 	if err != nil {
@@ -155,14 +167,14 @@ func (w *IWLWorker) Connect(a ...string) error {
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
 		cmd := exec.CommandContext(ctx, "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
-		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr //For an easier time debugging
+		cmd.Stdout, cmd.Stderr = stdout, stderr
 		cmd.Run()
 	}()
 
 	// dhclient might never return on incorrect passwords or identity
 	go func() {
 		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
-		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr //For an easier time debugging
+		cmd.Stdout, cmd.Stderr = stdout, stderr
 		if err := cmd.Run(); err != nil {
 			c <- err
 		} else {
