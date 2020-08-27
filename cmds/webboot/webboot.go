@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -236,10 +237,14 @@ func main() {
 
 	entry := getMainMenu(cacheDir)
 
-	var err error
+	// Buffer the log output, else it might overlap with the menu
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+
 	// check the chosen entry of each level
 	// and call it's exec() to get the next level's chosen entry.
 	// repeat this process until there is no next level
+	var err error
 	for entry != nil {
 		switch entry.(type) {
 		case *DownloadOption:
