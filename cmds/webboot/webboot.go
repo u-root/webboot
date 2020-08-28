@@ -205,6 +205,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 }
 
 func main() {
+
 	flag.Parse()
 	if *v {
 		verbose = log.Printf
@@ -227,6 +228,12 @@ func main() {
 			cacheDir = cachePath
 		}
 	}
+
+	if err := menu.Init(); err != nil {
+		log.Fatalf(err.Error())
+	}
+	defer menu.Close()
+
 	entry := getMainMenu(cacheDir)
 
 	var err error
