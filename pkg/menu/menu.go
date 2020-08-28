@@ -121,15 +121,10 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	}
 }
 
-// NewInputWindow opens a new input window with fixed width=100, hight=1.
-func NewInputWindow(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
-	return NewCustomInputWindow(introwords, 80, 1, isValid, uiEvents)
-}
-
-// NewCustomInputWindow creates a new ui window and displays an input box.
-func NewCustomInputWindow(introwords string, wid int, ht int, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+// PromptTextInput opens a new input window with fixed width=100, hight=1.
+func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
 	defer ui.Clear()
-	input, _, err := processInput(introwords, 0, wid, ht, isValid, uiEvents)
+	input, _, err := processInput(introwords, 0, 80, 1, isValid, uiEvents)
 	return input, err
 }
 
@@ -291,12 +286,12 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 	}
 }
 
-// DisplayMenu presents all entries into a menu with numbers.
+// PromptMenuEntry presents all entries into a menu with numbers.
 // user inputs a number to choose from them.
 // customWarning allow self-defined warnings in the menu
 // for example the wifi menu want to show specific warning when user hit a specific entry,
 // because some wifi's type may not be supported.
-func DisplayMenu(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
+func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
 	defer ui.Clear()
 
 	// listData contains all choice's labels

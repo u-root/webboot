@@ -66,7 +66,7 @@ func selectNetworkInterface(uiEvents <-chan ui.Event) (string, error) {
 	}
 
 	for {
-		iface, err := menu.DisplayMenu("Network Interfaces", "Choose an option", ifEntries, uiEvents)
+		iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents)
 		if err != nil {
 			return "", err
 		}
@@ -96,7 +96,7 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 			netEntries = append(netEntries, &Network{info: network})
 		}
 
-		entry, err := menu.DisplayMenu("Wireless Networks", "Choose an option", netEntries, uiEvents)
+		entry, err := menu.PromptMenuEntry("Wireless Networks", "Choose an option", netEntries, uiEvents)
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network 
 
 func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]string, error) {
 	var credentials []string
-	pass, err := menu.NewInputWindow("Enter password:", menu.AlwaysValid, uiEvents)
+	pass, err := menu.PromptTextInput("Enter password:", menu.AlwaysValid, uiEvents)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]stri
 	}
 
 	// If not WpaPsk, the network uses WpaEap and also needs an identity
-	identity, err := menu.NewInputWindow("Enter identity:", menu.AlwaysValid, uiEvents)
+	identity, err := menu.PromptTextInput("Enter identity:", menu.AlwaysValid, uiEvents)
 	if err != nil {
 		return nil, err
 	}

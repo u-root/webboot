@@ -41,7 +41,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	for _, config := range configs {
 		entries = append(entries, &Config{label: config.Label()})
 	}
-	c, err := menu.DisplayMenu("Configs", "Choose an option", entries, uiEvents)
+	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err == nil {
 		err = bootiso.BootFromPmem(i.path, c.Label())
 	}
@@ -82,7 +82,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 
 		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
 	}
-	filename, err := menu.NewInputWindow("Enter ISO name (Enter <Esc> to go back):", validIsoName, uiEvents)
+	filename, err := menu.PromptTextInput("Enter ISO name (Enter <Esc> to go back):", validIsoName, uiEvents)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 
 	link, ok := bookmarks[filename]
 	if !ok {
-		if link, err = menu.NewInputWindow("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); err != nil {
+		if link, err = menu.PromptTextInput("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); err != nil {
 			return nil, err
 		}
 	}
@@ -118,7 +118,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		if _, derr = menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
 			return nil, derr
 		}
-		if link, derr = menu.NewInputWindow("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); derr != nil {
+		if link, derr = menu.PromptTextInput("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); derr != nil {
 			return nil, derr
 		}
 		if link == "<Esc>" {
@@ -155,7 +155,7 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 		}
 	}
 	entries = append(entries, &BackOption{})
-	return menu.DisplayMenu("Distros", "Choose an option", entries, uiEvents)
+	return menu.PromptMenuEntry("Distros", "Choose an option", entries, uiEvents)
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
@@ -197,7 +197,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 	}
 	entries = append(entries, &DownloadOption{})
 
-	entry, err := menu.DisplayMenu("Webboot", "Choose an option:(press Ctrl-d to exit)", entries, ui.PollEvents())
+	entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:(press Ctrl-d to exit)", entries, ui.PollEvents())
 	if err != nil {
 		log.Fatal(err)
 	}
