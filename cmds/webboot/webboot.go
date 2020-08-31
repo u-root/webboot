@@ -44,9 +44,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	}
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err == nil {
-		progress := menu.NewProgress("Booting", true)
 		err = bootiso.BootFromPmem(i.path, c.Label())
-		progress.Close()
 	}
 	return err
 }
@@ -55,7 +53,11 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
 func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir string) (menu.Entry, error) {
-	if network && !connected() {
+	progress := menu.NewProgress("Testing network connection", true)
+	activeConnection := connected()
+	progress.Close()
+
+	if network && !activeConnection {
 		if err := setupNetwork(uiEvents); err != nil {
 			return nil, err
 		}
