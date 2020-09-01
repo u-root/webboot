@@ -1,5 +1,5 @@
 package main
- 
+
 import (
 	"fmt"
 
@@ -16,6 +16,25 @@ const (
 var bookmarks = map[string]string{
 	"TinyCorePure64-10.1.iso": tcURL,
 	"TinyCorePure64.iso":      wbtcpURL,
+}
+
+type Distro struct {
+	url          string
+	bootConfig   string
+	kernelParams string
+}
+
+var supportedDistros = map[string]Distro{
+	"Tinycore": Distro{
+		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
+		bootConfig:   "syslinux",
+		kernelParams: "iso=",
+	},
+	"Ubuntu": Distro{
+		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
+		bootConfig:   "grub",
+		kernelParams: "iso-scan/filename=",
+	},
 }
 
 var bookmarkList string
