@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
+	"sort"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/u-root/u-root/pkg/mount"
@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	v       = flag.Bool("verbose", false, "Verbose output")
-	verbose = func(string, ...interface{}) {}
-	dir     = flag.String("dir", "", "Path of cached directory")
-	network = flag.Bool("network", true, "If network is false we will not set up network")
-	dryRun  = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
+	v          = flag.Bool("verbose", false, "Verbose output")
+	verbose    = func(string, ...interface{}) {}
+	dir        = flag.String("dir", "", "Path of cached directory")
+	network    = flag.Bool("network", true, "If network is false we will not set up network")
+	dryRun     = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
+	distroName string
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -63,47 +64,24 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 	}
 
-	validIsoName := func(input string) (string, string, bool) {
-		if input == "" {
-			return "", bookmarkList, false
-		}
-		if re2, err := regexp.Compile(input); err == nil {
-			hint := []string{}
-			for key := range bookmarks {
-				if re2.Match([]byte(key)) {
-					hint = append(hint, key)
-				}
-			}
-			if len(hint) == 1 {
-				return hint[0], "", true
-			} else if len(hint) > 1 {
-				return "", strings.Join(hint, "\n"), false
-			}
-		}
-		re := regexp.MustCompile(`[\w]+.iso`)
-		if re.Match([]byte(input)) {
-			return input, "", true
-		}
-
-		return "", "File name should only contain [a-zA-Z0-9_], and should end in .iso", false
+	entries := []menu.Entry{}
+	for distroName, _ := range supportedDistros {
+		entries = append(entries, &Config{label: distroName})
 	}
-	filename, err := menu.PromptTextInput("Enter ISO name (Enter <Esc> to go back):", validIsoName, uiEvents)
+
+	sort.Slice(entries[:], func(i, j int) bool {
+		return entries[i].Label() < entries[j].Label()
+	})
+
+	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
 	if err != nil {
 		return nil, err
 	}
-	if filename == "<Esc>" {
-		return &BackOption{}, nil
-	}
 
-	link, ok := bookmarks[filename]
-	if !ok {
-		if link, err = menu.PromptTextInput("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); err != nil {
-			return nil, err
-		}
-	}
-	if link == "<Esc>" {
-		return &BackOption{}, nil
-	}
+	distroName = entry.Label()
+	distroInfo := supportedDistros[distroName]
+	link := distroInfo.url
+	filename := path.Base(link)
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
 	var fpath string
@@ -214,11 +192,6 @@ func main() {
 	flag.Parse()
 	if *v {
 		verbose = log.Printf
-	}
-
-	bookmarkList = "We provide these isos' link:"
-	for key := range bookmarks {
-		bookmarkList += "\n" + key
 	}
 
 	cacheDir := *dir

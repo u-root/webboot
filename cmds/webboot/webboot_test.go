@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	"sort"
+	"strconv"
 	"testing"
 
 	ui "github.com/gizak/termui/v3"
@@ -47,37 +48,24 @@ func TestDownload(t *testing.T) {
 
 func TestDownloadOption(t *testing.T) {
 	bookmarkIso := &ISO{
-		label: "TinyCorePure64-10.1.iso",
-		path:  "testdata/Downloaded/TinyCorePure64-10.1.iso",
+		label: "TinyCorePure64-11.1.iso",
+		path:  "testdata/Downloaded/TinyCorePure64-11.1.iso",
 	}
-	downloadByLinkIso := &ISO{
-		label: "test_download_by_link.iso",
-		path:  "testdata/Downloaded/test_download_by_link.iso",
-	}
-	downloadLink := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
 
 	for _, tt := range []struct {
 		name  string
-		label []string
-		url   []string
+		input []string
 		want  *ISO
 	}{
 		{
 			name:  "test_bookmark",
-			label: append(strings.Split(bookmarkIso.label, ""), "<Enter>"),
+			input: []string{strconv.Itoa(distroIndex("Tinycore")), "<Enter>"},
 			want:  bookmarkIso,
-		},
-		{
-			name:  "test_download_by_link",
-			label: append(strings.Split(downloadByLinkIso.label, ""), "<Enter>"),
-			url:   append(strings.Split(downloadLink, ""), "<Enter>"),
-			want:  downloadByLinkIso,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			uiEvents := make(chan ui.Event)
-			input := append(tt.label, tt.url...)
-			go pressKey(uiEvents, input)
+			go pressKey(uiEvents, tt.input)
 
 			downloadOption := DownloadOption{}
 			entry, err := downloadOption.exec(uiEvents, false, "./testdata")
@@ -164,32 +152,17 @@ func TestBackOption(t *testing.T) {
 	}
 }
 
-func TestBackOptionInDownload(t *testing.T) {
-	for _, tt := range []struct {
-		name  string
-		input []string
-	}{
-		{
-			name:  "go_back_from_input_iso_name",
-			input: []string{"<Escape>"},
-		},
-		{
-			name:  "go_back_from_input_url",
-			input: []string{"a", ".", "i", "s", "o", "<Enter>", "<Escape>"},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			uiEvents := make(chan ui.Event)
-			go pressKey(uiEvents, tt.input)
-
-			d := &DownloadOption{}
-			if entry, err := d.exec(uiEvents, false, ""); err != nil {
-				t.Fatalf("Fail to execute download options's exec(): %+v", err)
-			} else {
-				if _, ok := entry.(*BackOption); !ok {
-					t.Fatalf("Get incorrect return, want a BackOprion, get %T", entry)
-				}
-			}
-		})
+func distroIndex(searchName string) int {
+	var downloadOptions []string
+	for distroName, _ := range supportedDistros {
+		downloadOptions = append(downloadOptions, distroName)
 	}
+	sort.Strings(downloadOptions)
+
+	for index, distroName := range downloadOptions {
+		if distroName == searchName {
+			return index
+		}
+	}
+	return -1
 }
