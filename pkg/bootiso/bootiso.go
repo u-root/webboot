@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/u-root/u-root/pkg/boot"
+	"github.com/u-root/u-root/pkg/boot/grub"
 	"github.com/u-root/u-root/pkg/boot/kexec"
 	"github.com/u-root/u-root/pkg/boot/syslinux"
 	"github.com/u-root/u-root/pkg/mount"
@@ -18,7 +19,7 @@ import (
 
 // ParseConfigFromISO mounts an iso file to a
 // temp dir to get the config options
-func ParseConfigFromISO(isoPath string) ([]boot.OSImage, error) {
+func ParseConfigFromISO(isoPath string, configType string) ([]boot.OSImage, error) {
 	tmp, err := ioutil.TempDir("", "mnt")
 	if err != nil {
 		return nil, fmt.Errorf("Error creating mount dir: %v", err)
@@ -36,7 +37,7 @@ func ParseConfigFromISO(isoPath string) ([]boot.OSImage, error) {
 	}
 	defer mp.Unmount(0)
 
-	configOpts, err := syslinux.ParseLocalConfig(context.Background(), tmp)
+	configOpts, err := parseConfigFile(tmp, configType)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing config: %v", err)
 	}
@@ -46,7 +47,7 @@ func ParseConfigFromISO(isoPath string) ([]boot.OSImage, error) {
 
 // BootFromPmem copies the ISO to pmem0 and boots
 // given the syslinux configuration with the provided label
-func BootFromPmem(isoPath string, configLabel string) error {
+func BootFromPmem(isoPath string, configLabel string, configType string) error {
 	pmem, err := os.OpenFile("/dev/pmem0", os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("Error opening persistent memory device: %v", err)
@@ -75,7 +76,7 @@ func BootFromPmem(isoPath string, configLabel string) error {
 		return fmt.Errorf("Error mounting pmem0 to temp directory: %v", err)
 	}
 
-	configOpts, err := syslinux.ParseLocalConfig(context.Background(), tmp)
+	configOpts, err := parseConfigFile(tmp, configType)
 	if err != nil {
 		return fmt.Errorf("Error retrieving syslinux config options: %v", err)
 	}
@@ -115,4 +116,19 @@ func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) b
 		}
 	}
 	return nil
+}
+
+func parseConfigFile(mountDir string, configType string) ([]boot.OSImage, error) {
+	if configType == "syslinux" {
+		return syslinux.ParseLocalConfig(context.Background(), mountDir)
+	} else if configType == "grub" {
+		return grub.ParseLocalConfig(context.Background(), mountDir)
+	}
+
+	// If no config type was specified, try both grub and syslinux
+	configOpts, err := syslinux.ParseLocalConfig(context.Background(), mountDir)
+	if err == nil && len(configOpts) != 0 {
+		return configOpts, err
+	}
+	return grub.ParseLocalConfig(context.Background(), mountDir)
 }
