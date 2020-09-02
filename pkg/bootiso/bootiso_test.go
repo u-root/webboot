@@ -9,7 +9,7 @@ import (
 var isoPath string = "testdata/TinyCorePure64.iso"
 
 func TestParseConfigFromISO(t *testing.T) {
-	configOpts, err := ParseConfigFromISO(isoPath)
+	configOpts, err := ParseConfigFromISO(isoPath, "syslinux")
 	if err != nil {
 		t.Error(err)
 	}
