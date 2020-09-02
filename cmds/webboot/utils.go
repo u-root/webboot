@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 
 	"github.com/u-root/webboot/pkg/menu"
 )
@@ -76,4 +77,14 @@ func download(URL, fPath string) error {
 
 	verbose("%q is downloaded at %q\n", URL, fPath)
 	return nil
+}
+
+func inferIsoType(isoName string) string {
+	for distroName, distroInfo := range supportedDistros {
+		match, _ := regexp.MatchString(distroInfo.isoPattern, isoName)
+		if match {
+			return distroName
+		}
+	}
+	return ""
 }

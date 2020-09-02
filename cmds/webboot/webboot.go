@@ -30,6 +30,11 @@ var (
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	verbose("Intent to boot %s", i.path)
+
+	if distroName == "" {
+		distroName = inferIsoType(path.Base(i.path))
+	}
+
 	configs, err := bootiso.ParseConfigFromISO(i.path)
 	if err != nil {
 		return err
