@@ -35,12 +35,18 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		distroName = inferIsoType(path.Base(i.path))
 	}
 
-	configs, err := bootiso.ParseConfigFromISO(i.path)
+	distroInfo, ok := supportedDistros[distroName]
+	if !ok {
+		distroInfo = Distro{}
+	}
+
+	configs, err := bootiso.ParseConfigFromISO(i.path, distroInfo.bootConfig)
 	if err != nil {
 		return err
 	}
+
 	verbose("Get configs: %+v", configs)
-	if !boot {
+	if !boot || len(configs) == 0 {
 		return nil
 	}
 
@@ -50,7 +56,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	}
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err == nil {
-		err = bootiso.BootFromPmem(i.path, c.Label())
+		err = bootiso.BootFromPmem(i.path, c.Label(), distroInfo.bootConfig)
 	}
 	return err
 }
