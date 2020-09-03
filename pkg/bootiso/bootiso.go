@@ -109,6 +109,36 @@ func BootFromPmem(isoPath string, configLabel string, configType string) error {
 	return nil
 }
 
+func BootCachedISO(isoPath string, configLabel string, configType string, kernelParams string) error {
+	configOpts, err := ParseConfigFromISO(isoPath, configType)
+	if err != nil {
+		return fmt.Errorf("Error retrieving config options: %v", err)
+	}
+
+	osImage := findConfigOptionByLabel(configOpts, configLabel)
+	if osImage == nil {
+		return fmt.Errorf("Config option with the requested label does not exist")
+	}
+
+	// Need to convert from boot.OSImage to boot.LinuxImage to edit the Cmdline
+	linuxImage, ok := osImage.(*boot.LinuxImage)
+	if !ok {
+		return fmt.Errorf("Error converting from boot.OSImage to boot.LinuxImage")
+	}
+
+	linuxImage.Cmdline = linuxImage.Cmdline + " " + kernelParams
+
+	if err := linuxImage.Load(true); err != nil {
+		return err
+	}
+
+	if err := kexec.Reboot(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) boot.OSImage {
 	for _, config := range configOptions {
 		if config.Label() == configLabel {
