@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/u-root/u-root/pkg/mount"
@@ -25,6 +26,7 @@ var (
 	network    = flag.Bool("network", true, "If network is false we will not set up network")
 	dryRun     = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
 	distroName string
+	mountPoint string
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -56,7 +58,8 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	}
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err == nil {
-		err = bootiso.BootFromPmem(i.path, c.Label(), distroInfo.bootConfig)
+		kernelParams := distroInfo.kernelParams + strings.ReplaceAll(i.path, mountPoint, "")
+		err = bootiso.BootCachedISO(i.path, c.Label(), distroInfo.bootConfig, kernelParams)
 	}
 	return err
 }
@@ -177,6 +180,7 @@ func getCachedDirectory() (string, error) {
 		}
 		cachePath := filepath.Join(mp.Path, "Images")
 		if _, err = os.Stat(cachePath); err == nil {
+			mountPoint = mp.Path
 			return cachePath, nil
 		}
 	}
