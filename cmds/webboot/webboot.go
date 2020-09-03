@@ -220,8 +220,8 @@ func main() {
 	entry := getMainMenu(cacheDir)
 
 	// Buffer the log output, else it might overlap with the menu
-	var logBuffer bytes.Buffer
-	log.SetOutput(&logBuffer)
+	var l bytes.Buffer
+	log.SetOutput(&l)
 
 	// check the chosen entry of each level
 	// and call it's exec() to get the next level's chosen entry.
@@ -231,20 +231,23 @@ func main() {
 		switch entry.(type) {
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
-				log.Fatalf("Download option failed:%v", err)
+				fmt.Printf("Download option failed:%v (%s)", err, l.String())
+				os.Exit(1)
 			}
 			if _, ok := entry.(*BackOption); ok {
 				entry = getMainMenu(cacheDir)
 			}
 		case *ISO:
 			if err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
-				log.Fatalf("ISO option failed:%v", err)
+				fmt.Printf("ISO option failed:%v (%s)", err, l.String())
+				os.Exit(2)
 			}
 			entry = nil
 		case *DirOption:
 			dirOption := entry.(*DirOption)
 			if entry, err = dirOption.exec(ui.PollEvents()); err != nil {
-				log.Fatalf("Directory option failed:%v", err)
+				fmt.Printf("Directory option failed:%v (%s)", err, l.String())
+				os.Exit(3)
 			}
 			if _, ok := entry.(*BackOption); ok {
 				// if dirOption.path == cacheDir means current dir is the root of cache dir
@@ -256,7 +259,8 @@ func main() {
 				entry = &DirOption{path: filepath.Dir(dirOption.path)}
 			}
 		default:
-			log.Fatalf("Unknown type %T!\n", entry)
+			fmt.Printf("Unknown type %T!\n", entry)
+			os.Exit(4)
 		}
 	}
 }
