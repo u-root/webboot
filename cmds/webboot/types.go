@@ -16,6 +16,18 @@ type Distro struct {
 }
 
 var supportedDistros = map[string]Distro{
+	"Fedora": Distro{
+		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
+		isoPattern:   "^Fedora-.+",
+		bootConfig:   "grub",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
+	"Linux Mint": Distro{
+		url:          "http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso",
+		isoPattern:   "^linuxmint-.+",
+		bootConfig:   "grub",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
 	"Tinycore": Distro{
 		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
 		isoPattern:   ".*CorePure64-.+",
@@ -25,7 +37,7 @@ var supportedDistros = map[string]Distro{
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
 		isoPattern:   "^ubuntu-.+",
-		bootConfig:   "grub",
+		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 }
