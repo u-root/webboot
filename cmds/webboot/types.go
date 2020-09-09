@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/menu"
 	"github.com/u-root/webboot/pkg/wifi"
 )
@@ -19,14 +20,29 @@ var supportedDistros = map[string]Distro{
 		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
 		isoPattern:   ".*CorePure64-.+",
 		bootConfig:   "syslinux",
-		kernelParams: "iso=",
+		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
 	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
 		isoPattern:   "^ubuntu-.+",
 		bootConfig:   "grub",
-		kernelParams: "iso-scan/filename=",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
+}
+
+type CacheDevice struct {
+	Name       string
+	UUID       string
+	MountPoint string
+	IsoPath    string // set after iso is selected
+}
+
+func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
+	return CacheDevice{
+		Name:       device.Name,
+		UUID:       device.FsUUID,
+		MountPoint: mountPoint,
+	}
 }
 
 // ISO contains information of the iso user want to boot
