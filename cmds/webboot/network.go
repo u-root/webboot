@@ -29,7 +29,7 @@ func connected() bool {
 	return true
 }
 
-func interfaceEntries() ([]menu.Entry, error) {
+func wirelessIfaceEntries() ([]menu.Entry, error) {
 	interfaces, err := netlink.LinkList()
 	if err != nil {
 		return nil, err
@@ -37,7 +37,9 @@ func interfaceEntries() ([]menu.Entry, error) {
 
 	var ifEntries []menu.Entry
 	for _, iface := range interfaces {
-		ifEntries = append(ifEntries, &Interface{label: iface.Attrs().Name})
+		if interfaceIsWireless(iface.Attrs().Name) {
+			ifEntries = append(ifEntries, &Interface{label: iface.Attrs().Name})
+		}
 	}
 	return ifEntries, nil
 }
@@ -60,23 +62,17 @@ func setupNetwork(uiEvents <-chan ui.Event) error {
 }
 
 func selectNetworkInterface(uiEvents <-chan ui.Event) (string, error) {
-	ifEntries, err := interfaceEntries()
+	ifEntries, err := wirelessIfaceEntries()
 	if err != nil {
 		return "", err
 	}
 
-	for {
-		iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents)
-		if err != nil {
-			return "", err
-		}
-
-		if !interfaceIsWireless(iface.Label()) {
-			menu.DisplayResult([]string{"Only wireless network interfaces are supported."}, uiEvents)
-		} else {
-			return iface.Label(), nil
-		}
+	iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents)
+	if err != nil {
+		return "", err
 	}
+
+	return iface.Label(), nil
 }
 
 func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
