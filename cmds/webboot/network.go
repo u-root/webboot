@@ -52,33 +52,35 @@ func interfaceIsWireless(ifname string) bool {
 	return true
 }
 
-func setupNetwork(uiEvents <-chan ui.Event) error {
+func setupNetwork(uiEvents <-chan ui.Event) (bool, error) {
 	iface, err := selectNetworkInterface(uiEvents)
 	if err != nil {
-		return err
+		return false, err
+	} else if menu.IsBackOption(iface) {
+		return false, nil
 	}
 
-	return selectWirelessNetwork(uiEvents, iface)
+	return selectWirelessNetwork(uiEvents, iface.Label())
 }
 
-func selectNetworkInterface(uiEvents <-chan ui.Event) (string, error) {
+func selectNetworkInterface(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	ifEntries, err := wirelessIfaceEntries()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return iface.Label(), nil
+	return iface, nil
 }
 
-func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
+func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) (bool, error) {
 	worker, err := wifi.NewIWLWorker(&wifiStdout, &wifiStderr, iface)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for {
@@ -86,7 +88,7 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 		networkScan, err := worker.Scan(&wifiStdout, &wifiStderr)
 		progress.Close()
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		netEntries := []menu.Entry{}
@@ -96,12 +98,14 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 
 		entry, err := menu.PromptMenuEntry("Wireless Networks", "Choose an option", netEntries, uiEvents)
 		if err != nil {
-			return err
+			return false, err
+		} else if menu.IsBackOption(entry) {
+			return false, nil
 		}
 
 		network, ok := entry.(*Network)
 		if !ok {
-			return fmt.Errorf("Bad menu entry.")
+			return false, fmt.Errorf("Bad menu entry.")
 		}
 
 		if err := connectWirelessNetwork(uiEvents, worker, network.info); err != nil {
@@ -109,7 +113,7 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 			continue
 		}
 
-		return nil
+		return true, nil
 	}
 }
 

@@ -122,7 +122,7 @@ func TestDirOption(t *testing.T) {
 
 func TestBackOption(t *testing.T) {
 	uiEvents := make(chan ui.Event)
-	input := []string{"0", "<Enter>", "1", "<Enter>"}
+	input := []string{"0", "<Enter>", "<Escape>"}
 	go pressKey(uiEvents, input)
 
 	var entry menu.Entry = &DirOption{path: "./testdata"}
@@ -134,7 +134,7 @@ func TestBackOption(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			}
-			if _, ok := entry.(*BackOption); ok {
+			if _, ok := entry.(*menu.BackOption); ok {
 				backTo := filepath.Dir(currentPath)
 				entry = &DirOption{path: backTo}
 			}
