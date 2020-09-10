@@ -132,14 +132,3 @@ func (n *Network) Label() string {
 	}
 	return "Invalid wifi network."
 }
-
-// BackOption let user back to the upper menu
-type BackOption struct {
-}
-
-var _ = menu.Entry(&BackOption{})
-
-// Label is the string this iso displays in the menu page.
-func (b *BackOption) Label() string {
-	return "Go Back"
-}
