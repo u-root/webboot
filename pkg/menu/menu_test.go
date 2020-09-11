@@ -94,7 +94,7 @@ func TestDisplayResult(t *testing.T) {
 			name:      "short_message",
 			msg:       []string{"short message"},
 			userInput: []string{"q"},
-			want:      "short message\n(Press any key to continue, press <Esc> to exit.)",
+			want:      "short message\n(Press any key to continue.)",
 		},
 		{
 			name: "long_message_escape",
@@ -107,7 +107,7 @@ func TestDisplayResult(t *testing.T) {
 			// which is 20 "long message" and a hint
 			want: "long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
 				"long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
-				"(Press any key to continue, press <Esc> to exit.)",
+				"(Press any key to continue.)",
 		},
 		{
 			name: "long message",
@@ -119,7 +119,7 @@ func TestDisplayResult(t *testing.T) {
 			// input did not contains <Escape>, so the return would be the second page's message
 			// which is 11 "long message" and a hint
 			want: "long message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\nlong message\n" +
-				"long message\n(Press any key to continue, press <Esc> to exit.)",
+				"long message\n(Press any key to continue.)",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

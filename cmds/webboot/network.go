@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -108,8 +109,13 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) (bool, error)
 			return false, fmt.Errorf("Bad menu entry.")
 		}
 
-		if err := connectWirelessNetwork(uiEvents, worker, network.info); err != nil {
+		completed, err := connectWirelessNetwork(uiEvents, worker, network.info)
+		if err == io.EOF { // user typed <Ctrl+d> to exit
+			return false, err
+		} else if err != nil { // connection error
 			menu.DisplayResult([]string{err.Error()}, uiEvents)
+			continue
+		} else if !completed { // user typed <Esc> to go back
 			continue
 		}
 
@@ -117,16 +123,18 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) (bool, error)
 	}
 }
 
-func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network wifi.Option) error {
+func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network wifi.Option) (bool, error) {
 	var setupParams = []string{network.Essid}
 	authSuite := network.AuthSuite
 
 	if authSuite == wifi.NotSupportedProto {
-		return fmt.Errorf("Security protocol is not supported.")
+		return false, fmt.Errorf("Security protocol is not supported.")
 	} else if authSuite == wifi.WpaPsk || authSuite == wifi.WpaEap {
 		credentials, err := enterCredentials(uiEvents, authSuite)
 		if err != nil {
-			return err
+			return false, err
+		} else if credentials == nil {
+			return false, nil
 		}
 		setupParams = append(setupParams, credentials...)
 	}
@@ -135,10 +143,10 @@ func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network 
 	err := worker.Connect(&wifiStdout, &wifiStderr, setupParams...)
 	progress.Close()
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]string, error) {
@@ -146,6 +154,8 @@ func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]stri
 	pass, err := menu.PromptTextInput("Enter password:", menu.AlwaysValid, uiEvents)
 	if err != nil {
 		return nil, err
+	} else if pass == "<Esc>" {
+		return nil, nil
 	}
 
 	credentials = append(credentials, pass)
@@ -157,6 +167,8 @@ func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]stri
 	identity, err := menu.PromptTextInput("Enter identity:", menu.AlwaysValid, uiEvents)
 	if err != nil {
 		return nil, err
+	} else if identity == "<Esc>" {
+		return nil, nil
 	}
 
 	credentials = append(credentials, identity)
