@@ -12,21 +12,21 @@ import (
 	"github.com/u-root/webboot/pkg/menu"
 )
 
-// WriteCounter counts the number of bytes written to it. It implements to the io.Writer
+// WriteCounter counts the number of bytes written to it. It implements an io.Writer
 type WriteCounter struct {
-	total    float64
+	received float64
+	expected float64
 	progress menu.Progress
 }
 
-func NewWriteCounter() WriteCounter {
-	return WriteCounter{0, menu.NewProgress("", false)}
+func NewWriteCounter(expectedSize int64) WriteCounter {
+	return WriteCounter{0, float64(expectedSize), menu.NewProgress("", false)}
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
-	wc.total += float64(n)
-	// print how many bytes have been writen to the file
-	wc.progress.Update(fmt.Sprintf("\rDownloading... %.3f MB complete", wc.total/1000000))
+	wc.received += float64(n)
+	wc.progress.Update(fmt.Sprintf("Downloading... %.2f%% (%.3f MB)", 100*(wc.received/wc.expected), wc.received/1000000))
 	return n, nil
 }
 
@@ -34,31 +34,31 @@ func (wc *WriteCounter) Close() {
 	wc.progress.Close()
 }
 
-func linkOpen(URL string) (io.ReadCloser, error) {
+func linkOpen(URL string) (io.ReadCloser, int64, error) {
 	u, err := url.Parse(URL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	switch u.Scheme {
-	case "file":
-		return os.Open(URL[7:])
-	case "http", "https":
-		resp, err := http.Get(URL)
-		if err != nil {
-			return nil, err
-		}
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
-		}
-		return resp.Body, nil
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, -1, fmt.Errorf("%q: linkopen only supports http://, and https:// schemes", URL)
 	}
-	return nil, fmt.Errorf("%q: linkopen only supports file://, https://, and http:// schemes", URL)
+
+	resp, err := http.Get(URL)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, -1, fmt.Errorf("HTTP Get failed: %v", resp.StatusCode)
+	}
+
+	return resp.Body, resp.ContentLength, nil
 }
 
 // download will download a file from URL and save it as fPath
 func download(URL, fPath string) error {
-	isoReader, err := linkOpen(URL)
+	isoReader, isoSize, err := linkOpen(URL)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func download(URL, fPath string) error {
 	}
 	defer f.Close()
 
-	counter := NewWriteCounter()
+	counter := NewWriteCounter(isoSize)
 	if _, err = io.Copy(f, io.TeeReader(isoReader, &counter)); err != nil {
 		return fmt.Errorf("Fail to copy iso to a persistent memory device: %v", err)
 	}

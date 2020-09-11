@@ -25,7 +25,7 @@ func pressKey(ch chan ui.Event, input []string) {
 
 func TestDownload(t *testing.T) {
 	t.Run("error_link", func(t *testing.T) {
-		expected := fmt.Errorf("%q: linkopen only supports file://, https://, and http:// schemes", "errorlink")
+		expected := fmt.Errorf("%q: linkopen only supports http://, and https:// schemes", "errorlink")
 		if err := download("errorlink", "/tmp/test.iso"); err.Error() != expected.Error() {
 			t.Errorf("Error msg are wrong, want %+v but get %+v", expected, err)
 		}
