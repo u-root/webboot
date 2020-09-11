@@ -162,7 +162,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	p.SetRect(0, 0, wid+2, resultHeight+3)
 	p.TextStyle.Fg = ui.ColorWhite
 
-	hint := "(Press any key to continue, press <Esc> to exit.)"
+	hint := "(Press any key to continue.)"
 	msgLength := len(text)
 	currentLine := 0
 
