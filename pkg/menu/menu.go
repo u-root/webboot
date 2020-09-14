@@ -1,6 +1,7 @@
 package menu
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -58,6 +59,8 @@ func IsBackOption(entry Entry) bool {
 	_, ok := entry.(*BackOption)
 	return ok
 }
+
+var BackRequest = errors.New("User requested to return to a previous menu.")
 
 // AlwaysValid is a special isValid function that check nothing
 func AlwaysValid(input string) (string, string, bool) {
@@ -118,7 +121,7 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 				ui.Render(input)
 			}
 		case "<Escape>":
-			return "<Esc>", "", nil
+			return "", "", BackRequest
 		case "<Space>":
 			input.Text += " "
 			ui.Render(input)

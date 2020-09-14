@@ -132,3 +132,13 @@ func (n *Network) Label() string {
 	}
 	return "Invalid wifi network."
 }
+
+// BackOption is a special menu Entry that says
+// the user wants to go back to the previous menu
+type BackOption struct{}
+
+func (b *BackOption) Label() string {
+	return "Go Back"
+}
+
+var _ = menu.Entry(&BackOption{})

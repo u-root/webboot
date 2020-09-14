@@ -93,10 +93,13 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	progress.Close()
 
 	if network && !activeConnection {
-		if completed, err := setupNetwork(uiEvents); err != nil {
-			return nil, err
-		} else if !completed { // user exited the network setup
-			return &menu.BackOption{}, nil
+		if err := setupNetwork(uiEvents); err != nil {
+			switch err {
+			case menu.BackRequest:
+				return &BackOption{}, nil
+			default:
+				return nil, err
+			}
 		}
 	}
 
