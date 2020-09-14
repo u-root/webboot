@@ -3,7 +3,6 @@ package menu
 import (
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +47,7 @@ func Close() {
 }
 
 var BackRequest = errors.New("User requested to return to a previous menu.")
+var ExitRequest = errors.New("User requested to exit the program.")
 
 // AlwaysValid is a special isValid function that check nothing
 func AlwaysValid(input string) (string, string, bool) {
@@ -92,7 +92,7 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
-			return input.Text, warning.Text, io.EOF
+			return input.Text, warning.Text, ExitRequest
 		case "<Enter>":
 			inputString, warningString, ok := isValid(input.Text)
 			if ok {
@@ -165,7 +165,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
-			return p.Text, io.EOF
+			return p.Text, ExitRequest
 		case "<Escape>":
 			return p.Text, nil
 		default:
@@ -197,7 +197,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
-			return 0, io.EOF
+			return 0, ExitRequest
 		case "<Escape>":
 			return -1, BackRequest
 		case "<Enter>":

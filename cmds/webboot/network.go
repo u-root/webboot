@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"time"
@@ -107,7 +106,7 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 
 		if err := connectWirelessNetwork(uiEvents, worker, network.info); err != nil {
 			switch err {
-			case io.EOF: // user typed <Ctrl+d> to exit
+			case menu.ExitRequest: // user typed <Ctrl+d> to exit
 				return err
 			case menu.BackRequest: // user typed <Esc> to go back
 				continue
