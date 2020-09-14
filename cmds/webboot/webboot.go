@@ -60,9 +60,12 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err != nil {
-		return nil, err
-	} else if menu.IsBackOption(c) {
-		return c, nil
+		switch err {
+		case menu.BackRequest:
+			return &BackOption{}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	if err == nil {
@@ -114,9 +117,12 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 
 	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
 	if err != nil {
-		return nil, err
-	} else if menu.IsBackOption(entry) {
-		return entry, nil
+		switch err {
+		case menu.BackRequest:
+			return &BackOption{}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	distroName = entry.Label()
@@ -143,10 +149,12 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 			return nil, derr
 		}
 		if link, derr = menu.PromptTextInput("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); derr != nil {
-			return nil, derr
-		}
-		if link == "<Esc>" {
-			return &menu.BackOption{}, nil
+			switch derr {
+			case menu.BackRequest:
+				return &BackOption{}, nil
+			default:
+				return nil, derr
+			}
 		}
 		err = download(link, fpath)
 	}
@@ -179,7 +187,12 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 		}
 	}
 
-	return menu.PromptMenuEntry("Distros", "Choose an option", entries, uiEvents)
+	entry, err := menu.PromptMenuEntry("Distros", "Choose an option", entries, uiEvents)
+	if err == menu.BackRequest {
+		return &BackOption{}, nil
+	}
+
+	return entry, err
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
@@ -224,7 +237,12 @@ func getMainMenu(cacheDir string) menu.Entry {
 
 	entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:", entries, ui.PollEvents())
 	if err != nil {
-		log.Fatal(err)
+		switch err {
+		case menu.BackRequest:
+			return &BackOption{}
+		default:
+			log.Fatal(err)
+		}
 	}
 	return entry
 }
@@ -271,7 +289,7 @@ func main() {
 				fmt.Printf("Download option failed:%v (%s)", err, l.String())
 				os.Exit(1)
 			}
-			if menu.IsBackOption(entry) {
+			if _, ok := entry.(*BackOption); ok {
 				entry = getMainMenu(cacheDir)
 			}
 		case *ISO:
@@ -285,7 +303,7 @@ func main() {
 				fmt.Printf("Directory option failed:%v (%s)", err, l.String())
 				os.Exit(3)
 			}
-			if menu.IsBackOption(entry) {
+			if _, ok := entry.(*BackOption); ok {
 				// if dirOption.path == cacheDir means current dir is the root of cache dir
 				// and it should go back to the main menu.
 				if dirOption.path == cacheDir {
@@ -294,7 +312,7 @@ func main() {
 				}
 				entry = &DirOption{path: filepath.Dir(dirOption.path)}
 			}
-		case *menu.BackOption:
+		case *BackOption:
 			entry = getMainMenu(cacheDir)
 		default:
 			fmt.Printf("Unknown type %T!\n", entry)

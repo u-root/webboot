@@ -134,7 +134,7 @@ func TestBackOption(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			}
-			if _, ok := entry.(*menu.BackOption); ok {
+			if _, ok := entry.(*BackOption); ok {
 				backTo := filepath.Dir(currentPath)
 				entry = &DirOption{path: backTo}
 			}
