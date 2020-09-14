@@ -47,19 +47,6 @@ func Close() {
 	ui.Close()
 }
 
-// BackOption is a special menu Entry that says
-// the user wants to go back to the previous menu
-type BackOption struct{}
-
-func (b *BackOption) Label() string {
-	return "Go Back"
-}
-
-func IsBackOption(entry Entry) bool {
-	_, ok := entry.(*BackOption)
-	return ok
-}
-
 var BackRequest = errors.New("User requested to return to a previous menu.")
 
 // AlwaysValid is a special isValid function that check nothing
@@ -212,7 +199,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 		case "<C-d>":
 			return 0, io.EOF
 		case "<Escape>":
-			return -1, nil
+			return -1, BackRequest
 		case "<Enter>":
 			choose := input.Text
 			input.Text = ""
@@ -338,9 +325,13 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 
 	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents, customWarning...)
 	if err != nil {
-		return nil, fmt.Errorf("Fail to get the choose from menu: %+v", err)
-	} else if chooseIndex == -1 {
-		return &BackOption{}, nil
+		switch err {
+		case BackRequest:
+			return nil, err
+		default:
+			return nil, fmt.Errorf("Failed to get choice from the menu: %+v", err)
+		}
+
 	}
 
 	return entries[chooseIndex], nil
