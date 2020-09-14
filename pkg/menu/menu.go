@@ -149,30 +149,56 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 
 	p := widgets.NewParagraph()
 	p.Border = true
-	p.SetRect(0, 0, wid+2, resultHeight+3)
+	p.SetRect(0, 0, resultWidth+2, resultHeight+4)
 	p.TextStyle.Fg = ui.ColorWhite
 
-	hint := "(Press any key to continue.)"
 	msgLength := len(text)
-	currentLine := 0
+	first := 0
+	last := min(resultHeight, msgLength)
 
-	for currentLine < msgLength {
-		// display the page number
-		p.Title = fmt.Sprintf("Message---%v/%v", currentLine, msgLength)
-		p.Text = strings.Join(text[currentLine:min(msgLength, currentLine+resultHeight)], "\n") + "\n" + hint
-		currentLine += resultHeight
+	controlText := "<Page Up>, <Page Down> to scroll\n\nPress any other key to continue."
+	controls := newParagraph(controlText, false, resultHeight+4, wid+2, 5)
+	ui.Render(controls)
+
+	for {
+		p.Title = fmt.Sprintf("Message---%v/%v", first, msgLength)
+		displayText := strings.Join(text[first:last], "\n")
+
+		// Indicate whether user is at the
+		// end of text for long messages
+		if msgLength > resultHeight {
+			if last < msgLength {
+				displayText += "\n\n(More)"
+			} else if last == msgLength {
+				displayText += "\n\n(End of message)"
+			}
+		}
+
+		p.Text = displayText
 		ui.Render(p)
+
 		k := readKey(uiEvents)
 		switch k {
+		case "<Up>", "<MouseWheelUp>":
+			first = max(0, first-1)
+			last = min(first+resultHeight, len(text))
+		case "<Down>", "<MouseWheelDown>":
+			last = min(last+1, len(text))
+			first = max(0, last-resultHeight)
+		case "<Left>", "<PageUp>":
+			first = max(0, first-resultHeight)
+			last = min(first+resultHeight, len(text))
+		case "<Right>", "<PageDown>":
+			last = min(last+resultHeight, len(text))
+			first = max(0, last-resultHeight)
 		case "<C-d>":
 			return p.Text, ExitRequest
 		case "<Escape>":
-			return p.Text, nil
+			return p.Text, BackRequest
 		default:
-			continue
+			return p.Text, nil
 		}
 	}
-	return p.Text, nil
 }
 
 // parsingMenuOption parses the user's operation in the menu page, such as page up, page down, selection. etc
