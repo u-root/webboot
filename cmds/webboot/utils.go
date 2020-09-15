@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sort"
 
 	"github.com/u-root/webboot/pkg/menu"
 )
@@ -87,4 +88,17 @@ func inferIsoType(isoName string) string {
 		}
 	}
 	return ""
+}
+
+func supportedDistroEntries() []menu.Entry {
+	entries := []menu.Entry{}
+	for distroName, _ := range supportedDistros {
+		entries = append(entries, &Config{label: distroName})
+	}
+
+	sort.Slice(entries[:], func(i, j int) bool {
+		return entries[i].Label() < entries[j].Label()
+	})
+
+	return entries
 }
