@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	ui "github.com/gizak/termui/v3"
@@ -21,35 +20,47 @@ import (
 )
 
 var (
-	v          = flag.Bool("verbose", false, "Verbose output")
-	verbose    = func(string, ...interface{}) {}
-	dir        = flag.String("dir", "", "Path of cached directory")
-	network    = flag.Bool("network", true, "If network is false we will not set up network")
-	dryRun     = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
-	distroName string
-	cacheDev   CacheDevice
+	v        = flag.Bool("verbose", false, "Verbose output")
+	verbose  = func(string, ...interface{}) {}
+	dir      = flag.String("dir", "", "Path of cached directory")
+	network  = flag.Bool("network", true, "If network is false we will not set up network")
+	dryRun   = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
+	cacheDev CacheDevice
 )
 
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 	verbose("Intent to boot %s", i.path)
 
-	if distroName == "" {
-		distroName = inferIsoType(path.Base(i.path))
-	}
+	distroName := inferIsoType(path.Base(i.path))
+	distro, ok := supportedDistros[distroName]
 
-	distroInfo, ok := supportedDistros[distroName]
 	if !ok {
-		distroInfo = Distro{}
+		// Could not infer ISO type based on filename
+		// Prompt user to identify the ISO's type
+		entries := supportedDistroEntries()
+		entry, err := menu.PromptMenuEntry("ISO Type", "Select the closest distribution:", entries, uiEvents)
+		if err != nil {
+			switch err {
+			case menu.BackRequest:
+				return &BackOption{}, nil
+			default:
+				return nil, err
+			}
+		}
+
+		distro = supportedDistros[entry.Label()]
 	}
 
-	configs, err := bootiso.ParseConfigFromISO(i.path, distroInfo.bootConfig)
+	configs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
 	if err != nil {
 		return nil, err
+	} else if len(configs) == 0 {
+		return nil, fmt.Errorf("No valid configs were found.")
 	}
 
 	verbose("Get configs: %+v", configs)
-	if !boot || len(configs) == 0 {
+	if !boot {
 		return nil, nil
 	}
 
@@ -70,7 +81,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 
 	if err == nil {
 		cacheDev.IsoPath = strings.ReplaceAll(i.path, cacheDev.MountPoint, "")
-		paramTemplate, err := template.New("template").Parse(distroInfo.kernelParams)
+		paramTemplate, err := template.New("template").Parse(distro.kernelParams)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +91,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 			return nil, err
 		}
 
-		err = bootiso.BootCachedISO(i.path, c.Label(), distroInfo.bootConfig, kernelParams.String())
+		err = bootiso.BootCachedISO(i.path, c.Label(), distro.bootConfig, kernelParams.String())
 	}
 
 	// If kexec succeeds, we should not arrive here
@@ -106,15 +117,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 	}
 
-	entries := []menu.Entry{}
-	for distroName, _ := range supportedDistros {
-		entries = append(entries, &Config{label: distroName})
-	}
-
-	sort.Slice(entries[:], func(i, j int) bool {
-		return entries[i].Label() < entries[j].Label()
-	})
-
+	entries := supportedDistroEntries()
 	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
 	if err != nil {
 		switch err {
@@ -125,9 +128,8 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 	}
 
-	distroName = entry.Label()
-	distroInfo := supportedDistros[distroName]
-	link := distroInfo.url
+	distro := supportedDistros[entry.Label()]
+	link := distro.url
 	filename := path.Base(link)
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
