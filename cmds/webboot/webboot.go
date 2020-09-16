@@ -20,12 +20,13 @@ import (
 )
 
 var (
-	v        = flag.Bool("verbose", false, "Verbose output")
-	verbose  = func(string, ...interface{}) {}
-	dir      = flag.String("dir", "", "Path of cached directory")
-	network  = flag.Bool("network", true, "If network is false we will not set up network")
-	dryRun   = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
-	cacheDev CacheDevice
+	v         = flag.Bool("verbose", false, "Verbose output")
+	verbose   = func(string, ...interface{}) {}
+	dir       = flag.String("dir", "", "Path of cached directory")
+	network   = flag.Bool("network", true, "If network is false we will not set up network")
+	dryRun    = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
+	cacheDev  CacheDevice
+	logBuffer bytes.Buffer
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -249,6 +250,20 @@ func getMainMenu(cacheDir string) menu.Entry {
 	return entry
 }
 
+func handleError(err error) {
+	if err == menu.ExitRequest {
+		menu.Close()
+		os.Exit(0)
+	}
+
+	errorText := err.Error() + "\n" + logBuffer.String() + wifiStdout.String() + wifiStderr.String()
+	menu.DisplayResult(strings.Split(errorText, "\n"), ui.PollEvents())
+
+	logBuffer.Reset()
+	wifiStdout.Reset()
+	wifiStderr.Reset()
+}
+
 func main() {
 
 	flag.Parse()
@@ -272,13 +287,11 @@ func main() {
 	if err := menu.Init(); err != nil {
 		log.Fatalf(err.Error())
 	}
-	defer menu.Close()
 
 	entry := getMainMenu(cacheDir)
 
 	// Buffer the log output, else it might overlap with the menu
-	var l bytes.Buffer
-	log.SetOutput(&l)
+	log.SetOutput(&logBuffer)
 
 	// check the chosen entry of each level
 	// and call it's exec() to get the next level's chosen entry.
@@ -288,22 +301,22 @@ func main() {
 		switch entry.(type) {
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
-				fmt.Printf("Download option failed:%v (%s)", err, l.String())
-				os.Exit(1)
+				handleError(err)
+				entry = getMainMenu(cacheDir)
 			}
 			if _, ok := entry.(*BackOption); ok {
 				entry = getMainMenu(cacheDir)
 			}
 		case *ISO:
 			if entry, err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
-				fmt.Printf("ISO option failed:%v (%s)", err, l.String())
-				os.Exit(2)
+				handleError(err)
+				entry = getMainMenu(cacheDir)
 			}
 		case *DirOption:
 			dirOption := entry.(*DirOption)
 			if entry, err = dirOption.exec(ui.PollEvents()); err != nil {
-				fmt.Printf("Directory option failed:%v (%s)", err, l.String())
-				os.Exit(3)
+				handleError(err)
+				entry = getMainMenu(cacheDir)
 			}
 			if _, ok := entry.(*BackOption); ok {
 				// if dirOption.path == cacheDir means current dir is the root of cache dir
@@ -317,8 +330,8 @@ func main() {
 		case *BackOption:
 			entry = getMainMenu(cacheDir)
 		default:
-			fmt.Printf("Unknown type %T!\n", entry)
-			os.Exit(4)
+			handleError(fmt.Errorf("Unknown menu type %T!\n", entry))
+			entry = getMainMenu(cacheDir)
 		}
 	}
 }
