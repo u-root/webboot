@@ -84,6 +84,27 @@ func TestProcessInputComplex(t *testing.T) {
 	}
 }
 
+func TestProcessInputLong(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	testText := "splash=silent quiet  root=live:CDLABEL=openSUSE_Leap_15.2_KDE_Live " +
+		"rd.live.image rd.live.overlay.persistent rd.live.overlay.cowfs=ext4" +
+		"iso-scan/filename=openSUSE-Leap-15.2-KDE-Live-x86_64-Build31.135-Media.iso"
+
+	var keyPresses []string
+	for i := 1; i <= len(testText); i++ {
+		keyPresses = append(keyPresses, testText[i-1:i])
+	}
+	keyPresses = append(keyPresses, "<Enter>")
+	go pressKey(uiEvents, keyPresses)
+
+	input, _, err := processInput("test processInput long", 0, 50, 1, AlwaysValid, uiEvents)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	} else if input != testText {
+		t.Errorf("Incorrect value for input. got: %v, want: %v", input, testText)
+	}
+}
+
 func TestDisplayResult(t *testing.T) {
 	var longMsg []string
 	for i := 0; i < 50; i++ {

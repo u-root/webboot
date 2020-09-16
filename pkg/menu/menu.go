@@ -87,37 +87,52 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 	ui.Render(input)
 	ui.Render(warning)
 
-	// keep tracking all input from user
+	// The input box is wid characters wide
+	//   - 2 chars are reserved for the left and right borders
+	//   - 1 char is left empty at the end of input to visually
+	//        signify that the text box is still accepting input
+	// The user might want to input a string longer than wid-3
+	// characters, so we store the full typed input in fullText
+	// and display a substring of the full text to the user
+	var fullText string
+
 	for {
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
 			return input.Text, warning.Text, ExitRequest
 		case "<Enter>":
-			inputString, warningString, ok := isValid(input.Text)
+			inputString, warningString, ok := isValid(fullText)
 			if ok {
 				return inputString, warning.Text, nil
 			}
+			fullText = ""
 			input.Text = ""
 			warning.Text = warningString
 			ui.Render(input)
 			ui.Render(warning)
 		case "<Backspace>":
 			if len(input.Text) > 0 {
-				input.Text = input.Text[:len(input.Text)-1]
+				fullText = fullText[:len(fullText)-1]
+				start := max(0, len(fullText)-wid+3)
+				input.Text = fullText[start:len(fullText)]
 				ui.Render(input)
 			}
 		case "<Escape>":
 			return "", "", BackRequest
 		case "<Space>":
-			input.Text += " "
+			fullText += " "
+			start := max(0, len(fullText)-wid+3)
+			input.Text = fullText[start:len(fullText)]
 			ui.Render(input)
 		default:
 			// the termui use a string begin at '<' to represent some special keys
 			// for example the 'F1' key will be parsed to "<F1>" string .
 			// we should do nothing when meet these special keys, we only care about alphabets and digits.
 			if k[0:1] != "<" {
-				input.Text += k
+				fullText += k
+				start := max(0, len(fullText)-wid+3)
+				input.Text = fullText[start:len(fullText)]
 				ui.Render(input)
 			}
 		}
