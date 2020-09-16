@@ -47,10 +47,17 @@ func TestDownload(t *testing.T) {
 }
 
 func TestDownloadOption(t *testing.T) {
-	bookmarkIso := &ISO{
+	tinycoreIso := &ISO{
 		label: "TinyCorePure64-11.1.iso",
 		path:  "testdata/Downloaded/TinyCorePure64-11.1.iso",
 	}
+
+	// Select custom distro, then type Tinycore URL manually
+	customIndex := len(supportedDistros)
+	tinycoreURL := supportedDistros["Tinycore"].url
+	customCmd := []string{strconv.Itoa(customIndex), "<Enter>"}
+	customCmd = append(customCmd, stringToKeypress(tinycoreURL)...)
+	customCmd = append(customCmd, "<Enter>")
 
 	for _, tt := range []struct {
 		name  string
@@ -60,7 +67,12 @@ func TestDownloadOption(t *testing.T) {
 		{
 			name:  "test_bookmark",
 			input: []string{strconv.Itoa(distroIndex("Tinycore")), "<Enter>"},
-			want:  bookmarkIso,
+			want:  tinycoreIso,
+		},
+		{
+			name:  "test_custom_url",
+			input: customCmd,
+			want:  tinycoreIso,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -165,4 +177,12 @@ func distroIndex(searchName string) int {
 		}
 	}
 	return -1
+}
+
+func stringToKeypress(str string) []string {
+	var keyPresses []string
+	for i := 0; i < len(str); i++ {
+		keyPresses = append(keyPresses, str[i:i+1])
+	}
+	return keyPresses
 }
