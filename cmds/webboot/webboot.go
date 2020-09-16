@@ -119,6 +119,8 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 
 	entries := supportedDistroEntries()
+	customLabel := "Other Distro"
+	entries = append(entries, &Config{customLabel})
 	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
 	if err != nil {
 		switch err {
@@ -129,8 +131,21 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 	}
 
-	distro := supportedDistros[entry.Label()]
-	link := distro.url
+	var link string
+	if entry.Label() == customLabel {
+		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
+		if err != nil {
+			switch err {
+			case menu.BackRequest:
+				return &BackOption{}, nil
+			default:
+				return nil, err
+			}
+		}
+	} else {
+		distro := supportedDistros[entry.Label()]
+		link = distro.url
+	}
 	filename := path.Base(link)
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
