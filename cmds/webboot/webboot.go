@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"html/template"
@@ -159,22 +160,14 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 		fpath = filepath.Join(downloadDir, filename)
 	}
-	// if download link is not valid, ask again until the link is rights
-	err = download(link, fpath)
-	for err != nil {
-		var derr error
-		if _, derr = menu.DisplayResult([]string{err.Error()}, uiEvents); derr != nil {
-			return nil, derr
+
+	if err = download(link, fpath, uiEvents); err != nil {
+		switch err {
+		case context.Canceled:
+			return &BackOption{}, nil
+		default:
+			return nil, err
 		}
-		if link, derr = menu.PromptTextInput("Enter URL (Enter <Esc> to go back):", menu.AlwaysValid, uiEvents); derr != nil {
-			switch derr {
-			case menu.BackRequest:
-				return &BackOption{}, nil
-			default:
-				return nil, derr
-			}
-		}
-		err = download(link, fpath)
 	}
 
 	return &ISO{label: filename, path: fpath}, nil

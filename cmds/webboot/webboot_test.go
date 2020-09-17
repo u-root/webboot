@@ -24,17 +24,20 @@ func pressKey(ch chan ui.Event, input []string) {
 }
 
 func TestDownload(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+
 	t.Run("error_link", func(t *testing.T) {
-		expected := fmt.Errorf("%q: linkopen only supports http://, and https:// schemes", "errorlink")
-		if err := download("errorlink", "/tmp/test.iso"); err.Error() != expected.Error() {
-			t.Errorf("Error msg are wrong, want %+v but get %+v", expected, err)
+		errorLink := "errorlink"
+		expected := fmt.Errorf("Get %q: unsupported protocol scheme \"\"", errorLink)
+		if err := download(errorLink, "/tmp/test.iso", uiEvents); err.Error() != expected.Error() {
+			t.Errorf("Expected %+v, received %+v", expected, err)
 		}
 	})
 
 	t.Run("download_tinycore", func(t *testing.T) {
 		fPath := "/tmp/test_tinycore.iso"
 		url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
-		if err := download(url, fPath); err != nil {
+		if err := download(url, fPath, uiEvents); err != nil {
 			t.Fatalf("Fail to download: %+v", err)
 		}
 		if _, err := os.Stat(fPath); err != nil {
@@ -101,6 +104,25 @@ func TestDownloadOption(t *testing.T) {
 		})
 	}
 
+}
+
+func TestCancelDownload(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"0", "<Enter>", "<Escape>"}
+	go pressKey(uiEvents, keyPresses)
+
+	downloadOption := DownloadOption{}
+	entry, err := downloadOption.exec(uiEvents, false, "./testdata")
+
+	if _, ok := entry.(*BackOption); !ok {
+		t.Errorf("Unknown return type %T!\n", entry)
+	} else if err != nil {
+		t.Errorf("Received error: %+v", err)
+	}
+
+	if err := os.RemoveAll("./testdata/Downloaded"); err != nil {
+		t.Errorf("Fail to remove test file: %+v", err)
+	}
 }
 
 func TestDirOption(t *testing.T) {
