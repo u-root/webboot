@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -35,7 +36,8 @@ func (wc *WriteCounter) Close() {
 	wc.progress.Close()
 }
 
-// download will download a file from URL and save it as fPath
+// download() will download a file from URL and save it to a temp file
+// If the download succeeds, the temp file will be copied to fPath
 func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -51,17 +53,36 @@ func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 	}
 	defer resp.Body.Close()
 
-	f, err := os.Create(fPath)
+	tempFile, err := ioutil.TempFile("", "iso-download-")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer os.Remove(tempFile.Name())
 
 	go listenForCancel(ctx, cancel, uiEvents)
 	counter := NewWriteCounter(resp.ContentLength)
-	defer counter.Close()
 
-	if _, err = io.Copy(f, io.TeeReader(resp.Body, &counter)); err != nil {
+	if _, err = io.Copy(tempFile, io.TeeReader(resp.Body, &counter)); err != nil {
+		counter.Close()
+		return err
+	}
+
+	counter.Close()
+	copyProgress := menu.NewProgress("Download complete. Writing ISO to cache", true)
+	defer copyProgress.Close()
+
+	if _, err = tempFile.Seek(0, 0); err != nil {
+		return err
+	}
+
+	cacheFile, err := os.Create(fPath)
+	if err != nil {
+		return err
+	}
+	defer cacheFile.Close()
+
+	if _, err := io.Copy(cacheFile, tempFile); err != nil {
+		os.RemoveAll(cacheFile.Name())
 		return err
 	}
 
