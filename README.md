@@ -1,37 +1,49 @@
 # About
 
-webboot offers tools to let a u-root instance boot signed live distro images
-over the web.
+`webboot` offers tools to let a u-root instance boot signed live distro images over the web.
 
 ## Concept
 
-The webboot bootloader works as follows:
+The `webboot` bootloader works as follows:
 
 1. fetch an OS distro release ISO from the web
-2. copy the ISO to memory
+2. save the ISO to a local cache (ex. USB stick)
 3. mount the ISO and copy out the kernel and initrd
 4. load the extracted kernel with the initrd
-5. kexec that kernel with `memmap` parameters to retain the ISO
+5. kexec that kernel with parameters to tell the next distro where to locate its ISO file (ex. iso-scan/filename=)
 
-The key point lies in preserving the respective ISO file without further storage
-throughout the kexec. That is achieved by using a persistent memory driver,
-which creates a pmem device at `/dev/pmem[N]` when booting Linux with the
-`memmap` parameter.
-
-The caveat is that both our webboot kernel as well as the kernel we kexec into
-need support for pmem. See [below](#supported-operating-systems) for details on
-OS distribution support and how the kernel needs to be configured.
-
-The second issue is with carefully choosing size options. The Linux system
-started first needs enough memory to work with, and the pmem device needs to be
-large enough to hold the ISO.
+The current version offers a user interface based on [termui](https://github.com/gizak/termui) to help locate and boot the ISO file.
 
 For reference, webboot developers should familiarize themselves with:
 
 - [cpio tutorial](https://www.gnu.org/software/cpio/manual/html_node/Tutorial.html)
 - [initrd usage](https://www.kernel.org/doc/html/latest/admin-guide/initrd.html)
 - [kernel parameters](https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html)
-- the [memmap option](https://docs.pmem.io/persistent-memory/getting-started-guide/creating-development-environments/linux-environments/linux-memmap)
+
+
+## Supported Operating Systems
+
+### Requirements
+ISOs must have the following to be compatible with `webboot`.
+
+1. 64-bit kernel
+2. Parsable `grub` or `syslinux` config file
+3. Init process than can locate an ISO file (ex. casper's iso-scan)
+
+Additional operating systems can be added by appending an entry to the `supportedDistros` map in `/cmds/webboot/types.go`.
+
+### Currently Supported
+| Name | Required Kernel Parameters |
+| ----- | ------ |
+| Fedora | `iso-scan/filename=PATH_TO_ISO` |
+| Linux Mint | `iso-scan/filename=PATH_TO_ISO` |
+| Tinycore | `iso=UUID/PATH_TO_ISO` |
+| Ubuntu | `iso-scan/filename=PATH_TO_ISO` |
+
+### In Progress
+| Name | Required Kernel Parameters | Issue |
+| --- | --- | --- |
+| OpenSUSE | `iso-scan/filename=PATH_TO_ISO` | `grub` config file is too complicated for our parser. The distro works as expected if we manually copy out the kernel and initrd, then `kexec` with the required kernel parameters. |
 
 ## Usage
 
@@ -132,21 +144,12 @@ If you have KVM in your host system, you can add `-enable-kvm` for speedup.
 ```sh
 qemu-system-x86_64 \
   -enable-kvm \
-  -m 20G \
+  -m 2G \
   -kernel linux/arch/x86/boot/bzImage \
   -append 'console=ttyS0 console=tty1 memmap=1G!1G' \
   -initrd /tmp/initramfs.linux_amd64.cpio \
   -device virtio-rng-pci
 ```
-
-Note the `memmap` kernel parameter for webboot. It is crucial for the kernel
-to have pmem enabled to create a block device in memory to mount the ISO of the
-next OS to boot into, and for that second OS's kernel to know about it as well
-so that it knows where the ISO resides in RAM such that it can pick it up and
-load additional files from it, i.e., its root filesystem. The size for `memmap`
-needs to be chosen such that the ISO fits into it and it is sufficiently
-smaller than the memory assigned to the VM so that the first system has enough
-for itself to run.
 
 Refer to
 [u-root's documentation](https://github.com/u-root/u-root#testing-in-qemu) for
@@ -199,22 +202,36 @@ You should be able to boot from the USB stick now. Depending on your firmware
 setup, it might be necessary to get into a boot menu or make changes in the
 settings.
 
-### The `webboot` command
+## Legacy Information
 
-`webboot [distribution]`
+**Note: The following information does not apply as of [PR 156](https://github.com/u-root/webboot/pull/156). However the original concept for webboot, as laid out below, is worth noting.**
 
-The `distribution` argument defines a supported operating system distribution.
-E.g., `webboot tinycore` perfoms a webboot of the TinyCore Linux distribution.
+### Original Concept (using pmem)
 
-#### Ethernet / QEMU
+The original concept for webboot was the following:
+1. fetch an OS distro release ISO from the web
+2. copy the ISO to memory
+3. mount the ISO and copy out the kernel and initrd
+4. load the extracted kernel with the initrd
+5. kexec that kernel with [memmap parameters](https://docs.pmem.io/persistent-memory/getting-started-guide/creating-development-environments/linux-environments/linux-memmap) to retain the ISO
 
-If you have no Wi-fi but ethernet instead, or you are trying webboot in QEMU
-with an emulated ethernet card, you will need to tell webboot to use the
-correct interface, e.g., `eth0`:
+The key point lies in preserving the respective ISO file without further storage throughout the kexec. That is achieved by using a persistent memory driver, which creates a pmem device at `/dev/pmem[N]` when booting Linux with the `memmap` parameter.
 
-`webboot -interface eth0 [distribution]`
+Note the `memmap` kernel parameter. It is crucial for the kernel
+to have pmem enabled to create a block device that contains the ISO file.
+The pmem device must be large enough to contain the ISO, and the next kernel needs to know that the device exists and contains its respective ISO file.
 
-### Supported Operating Systems
+
+### Main Issues
+One caveat is that both our webboot kernel, as well as the kernel we kexec into, need support for pmem. See [below](#supported-operating-systems-(Legacy)) for details on OS distribution support and how the kernel needs to be configured.
+
+A second issue is selecting the size options. The Linux system
+that starts first needs enough memory to work with, and the pmem device needs to be large enough to hold the ISO. In addition, the addresses provided to `memmap` might segment memory in a way that is difficult to allocate.
+
+Finally, downloading the ISO every time we run `webboot` is a major inconvenience. This issue led us to consider adding a local ISO cache.
+
+
+### Supported Operating Systems (Legacy)
 
 - [x] TinyCore Linux (remastering the ISO or reusing the webboot kernel for it)
 - [x] Arch Linux (PoC for a remastered ISO)
@@ -225,9 +242,7 @@ correct interface, e.g., `eth0`:
 - [ ] Debian
 - [ ] Ubuntu
 
-TODO: look into other distros such as http://boot.slitaz.org/en/
-
-#### Issue: ISO structure
+### Issue: ISO structure
 
 The respective ISOs of the following distros have pmem as a module in their
 squashfs (`lib/modules/*/kernel/drivers/nvdimm/`). They would need to either
