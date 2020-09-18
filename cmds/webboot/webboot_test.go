@@ -112,11 +112,9 @@ func TestCancelDownload(t *testing.T) {
 	go pressKey(uiEvents, keyPresses)
 
 	downloadOption := DownloadOption{}
-	entry, err := downloadOption.exec(uiEvents, false, "./testdata")
+	_, err := downloadOption.exec(uiEvents, false, "./testdata")
 
-	if _, ok := entry.(*BackOption); !ok {
-		t.Errorf("Unknown return type %T!\n", entry)
-	} else if err != nil {
+	if err != nil && err.Error() != "Download was canceled." {
 		t.Errorf("Received error: %+v", err)
 	}
 
@@ -165,10 +163,9 @@ func TestBackOption(t *testing.T) {
 		if dirOption, ok := entry.(*DirOption); ok {
 			currentPath := dirOption.path
 			entry, err = dirOption.exec(uiEvents)
-			if err != nil {
+			if err != nil && err != menu.BackRequest {
 				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
-			}
-			if _, ok := entry.(*BackOption); ok {
+			} else if err == menu.BackRequest {
 				backTo := filepath.Dir(currentPath)
 				entry = &DirOption{path: backTo}
 			}

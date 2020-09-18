@@ -25,13 +25,13 @@ var (
 	verbose   = func(string, ...interface{}) {}
 	dir       = flag.String("dir", "", "Path of cached directory")
 	network   = flag.Bool("network", true, "If network is false we will not set up network")
-	dryRun    = flag.Bool("dry_run", false, "If dry_run is true we won't boot the iso.")
+	dryRun    = flag.Bool("dryrun", false, "If dry_run is true we won't boot the iso.")
 	cacheDev  CacheDevice
 	logBuffer bytes.Buffer
 )
 
 // ISO's exec downloads the iso and boot it.
-func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
+func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	verbose("Intent to boot %s", i.path)
 
 	distroName := inferIsoType(path.Base(i.path))
@@ -43,12 +43,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 		entries := supportedDistroEntries()
 		entry, err := menu.PromptMenuEntry("ISO Type", "Select the closest distribution:", entries, uiEvents)
 		if err != nil {
-			switch err {
-			case menu.BackRequest:
-				return &BackOption{}, nil
-			default:
-				return nil, err
-			}
+			return err
 		}
 
 		distro = supportedDistros[entry.Label()]
@@ -56,14 +51,14 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 
 	configs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
 	if err != nil {
-		return nil, err
+		return err
 	} else if len(configs) == 0 {
-		return nil, fmt.Errorf("No valid configs were found.")
+		return fmt.Errorf("No valid configs were found.")
 	}
 
 	verbose("Get configs: %+v", configs)
 	if !boot {
-		return nil, nil
+		return fmt.Errorf("Booting is disabled (see --dryrun flag).")
 	}
 
 	entries := []menu.Entry{}
@@ -73,31 +68,26 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) (menu.Entry, error) {
 
 	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err != nil {
-		switch err {
-		case menu.BackRequest:
-			return &BackOption{}, nil
-		default:
-			return nil, err
-		}
+		return err
 	}
 
 	if err == nil {
 		cacheDev.IsoPath = strings.ReplaceAll(i.path, cacheDev.MountPoint, "")
 		paramTemplate, err := template.New("template").Parse(distro.kernelParams)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		var kernelParams bytes.Buffer
 		if err = paramTemplate.Execute(&kernelParams, cacheDev); err != nil {
-			return nil, err
+			return err
 		}
 
 		err = bootiso.BootCachedISO(i.path, c.Label(), distro.bootConfig, kernelParams.String())
 	}
 
 	// If kexec succeeds, we should not arrive here
-	return nil, err
+	return err
 }
 
 // DownloadOption's exec lets user input the name of the iso they want
@@ -110,12 +100,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 
 	if network && !activeConnection {
 		if err := setupNetwork(uiEvents); err != nil {
-			switch err {
-			case menu.BackRequest:
-				return &BackOption{}, nil
-			default:
-				return nil, err
-			}
+			return nil, err
 		}
 	}
 
@@ -124,24 +109,14 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	entries = append(entries, &Config{customLabel})
 	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
 	if err != nil {
-		switch err {
-		case menu.BackRequest:
-			return &BackOption{}, nil
-		default:
-			return nil, err
-		}
+		return nil, err
 	}
 
 	var link string
 	if entry.Label() == customLabel {
 		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
 		if err != nil {
-			switch err {
-			case menu.BackRequest:
-				return &BackOption{}, nil
-			default:
-				return nil, err
-			}
+			return nil, err
 		}
 	} else {
 		distro := supportedDistros[entry.Label()]
@@ -162,12 +137,12 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 
 	if err = download(link, fpath, uiEvents); err != nil {
-		switch err {
-		case context.Canceled:
-			return &BackOption{}, nil
-		default:
+		if err == context.Canceled {
+			return nil, fmt.Errorf("Download was canceled.")
+		} else {
 			return nil, err
 		}
+
 	}
 
 	return &ISO{label: filename, path: fpath}, nil
@@ -198,12 +173,7 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 		}
 	}
 
-	entry, err := menu.PromptMenuEntry("Distros", "Choose an option", entries, uiEvents)
-	if err == menu.BackRequest {
-		return &BackOption{}, nil
-	}
-
-	return entry, err
+	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents)
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
@@ -246,22 +216,24 @@ func getMainMenu(cacheDir string) menu.Entry {
 	}
 	entries = append(entries, &DownloadOption{})
 
-	entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:", entries, ui.PollEvents())
-	if err != nil {
-		switch err {
-		case menu.BackRequest:
-			return &BackOption{}
-		default:
+	for {
+		// Display the main menu until user makes a valid choice or
+		// they encounter an error that's not menu.BackRequest
+		entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:", entries, ui.PollEvents())
+		if err != nil && err != menu.BackRequest {
 			log.Fatal(err)
+		} else if entry != nil {
+			return entry
 		}
 	}
-	return entry
 }
 
 func handleError(err error) {
 	if err == menu.ExitRequest {
 		menu.Close()
 		os.Exit(0)
+	} else if err == menu.BackRequest {
+		return
 	}
 
 	errorText := err.Error() + "\n" + logBuffer.String() + wifiStdout.String() + wifiStderr.String()
@@ -312,31 +284,26 @@ func main() {
 				handleError(err)
 				entry = getMainMenu(cacheDir)
 			}
-			if _, ok := entry.(*BackOption); ok {
-				entry = getMainMenu(cacheDir)
-			}
 		case *ISO:
-			if entry, err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
+			if err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
 				handleError(err)
 				entry = getMainMenu(cacheDir)
 			}
 		case *DirOption:
 			dirOption := entry.(*DirOption)
 			if entry, err = dirOption.exec(ui.PollEvents()); err != nil {
-				handleError(err)
-				entry = getMainMenu(cacheDir)
-			}
-			if _, ok := entry.(*BackOption); ok {
-				// if dirOption.path == cacheDir means current dir is the root of cache dir
-				// and it should go back to the main menu.
-				if dirOption.path == cacheDir {
+				// Check if user requested to go back from a cache subdirectory,
+				// so we can send them to a DirOption for the parent directory
+				if err == menu.BackRequest && dirOption.path != cacheDir {
+					entry = &DirOption{path: filepath.Dir(dirOption.path)}
+				} else {
+					// Otherwise they either requested to go back from the
+					// cache root, so we can send them to main menu,
+					// or they encountered an error
+					handleError(err)
 					entry = getMainMenu(cacheDir)
-					break
 				}
-				entry = &DirOption{path: filepath.Dir(dirOption.path)}
 			}
-		case *BackOption:
-			entry = getMainMenu(cacheDir)
 		default:
 			handleError(fmt.Errorf("Unknown menu type %T!\n", entry))
 			entry = getMainMenu(cacheDir)
