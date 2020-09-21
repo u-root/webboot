@@ -1,11 +1,17 @@
 package bootiso
 
 import (
+	"bufio"
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/u-root/u-root/pkg/boot"
@@ -137,6 +143,55 @@ func BootCachedISO(isoPath string, configLabel string, configType string, kernel
 	}
 
 	return nil
+}
+
+// VerifyChecksum takes a path to the ISO and its checksum file
+// and compares the calculated checksum on the ISO
+// against the value parsed from the checksum file
+func VerifyChecksum(isoPath, checksumPath, checksumType string) (bool, error) {
+	iso, err := os.Open(isoPath)
+	if err != nil {
+		return false, err
+	}
+	defer iso.Close()
+
+	checksumFile, err := os.Open(checksumPath)
+	if err != nil {
+		return false, err
+	}
+	defer checksumFile.Close()
+
+	var hash hash.Hash
+	switch checksumType {
+	case "md5":
+		hash = md5.New()
+	case "sha256":
+		hash = sha256.New()
+	default:
+		return false, fmt.Errorf("Unknown checksum type.")
+	}
+
+	if _, err := io.Copy(hash, iso); err != nil {
+		return false, err
+	}
+	calcChecksum := hex.EncodeToString(hash.Sum(nil))
+
+	var parsedChecksum string
+	isoName := path.Base(isoPath)
+	scanner := bufio.NewScanner(checksumFile)
+
+	// Checksum file should contain a line with
+	// the checksum and the ISO file name
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, isoName) {
+			splitLine := strings.Split(line, " ")
+			parsedChecksum = splitLine[0]
+			break
+		}
+	}
+
+	return calcChecksum == parsedChecksum, nil
 }
 
 func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) boot.OSImage {
