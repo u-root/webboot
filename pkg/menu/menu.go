@@ -100,7 +100,9 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
-			return input.Text, warning.Text, ExitRequest
+			return "", "", ExitRequest
+		case "<Escape>":
+			return "", "", BackRequest
 		case "<Enter>":
 			inputString, warningString, ok := isValid(fullText)
 			if ok {
@@ -118,8 +120,6 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 				input.Text = fullText[start:len(fullText)]
 				ui.Render(input)
 			}
-		case "<Escape>":
-			return "", "", BackRequest
 		case "<Space>":
 			fullText += " "
 			start := max(0, len(fullText)-wid+3)
@@ -238,7 +238,7 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 		k := readKey(uiEvents)
 		switch k {
 		case "<C-d>":
-			return 0, ExitRequest
+			return -1, ExitRequest
 		case "<Escape>":
 			return -1, BackRequest
 		case "<Enter>":
@@ -366,13 +366,7 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 
 	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents, customWarning...)
 	if err != nil {
-		switch err {
-		case BackRequest:
-			return nil, err
-		default:
-			return nil, fmt.Errorf("Failed to get choice from the menu: %+v", err)
-		}
-
+		return nil, err
 	}
 
 	return entries[chooseIndex], nil
