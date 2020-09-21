@@ -28,6 +28,43 @@ func TestParseConfigFromISO(t *testing.T) {
 	}
 }
 
+func TestChecksum(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		checksumPath string
+		checksumType string
+		valid        bool
+	}{
+		{
+			name:         "valid_md5",
+			checksumPath: "testdata/TinyCorePure64.md5.txt",
+			checksumType: "md5",
+			valid:        true,
+		},
+		{
+			name:         "valid_sha256",
+			checksumPath: "testdata/TinyCorePure64.sha256.txt",
+			checksumType: "sha256",
+			valid:        true,
+		},
+		{
+			name:         "invalid_md5",
+			checksumPath: "testdata/TinyCorePure64.sha256.txt",
+			checksumType: "md5",
+			valid:        false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			valid, err := VerifyChecksum(isoPath, test.checksumPath, test.checksumType)
+			if err != nil {
+				t.Error(err)
+			} else if valid != test.valid {
+				t.Errorf("Checksum validation was expected to result in %t.\n", test.valid)
+			}
+		})
+	}
+}
+
 func TestMain(m *testing.M) {
 	if _, err := os.Stat(isoPath); err != nil {
 		log.Fatal("ISO file was not found in the testdata directory.")
