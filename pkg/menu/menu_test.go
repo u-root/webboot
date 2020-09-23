@@ -153,7 +153,110 @@ func TestDisplayResult(t *testing.T) {
 
 		})
 	}
+}
 
+func TestCountNewlines(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		str  string
+		want int
+	}{
+		{
+			name: "empty_string",
+			str:  "",
+			want: 0,
+		},
+		{
+			name: "no_newline",
+			str:  "test string",
+			want: 0,
+		},
+		{
+			name: "single_newline_end",
+			str:  "test line\n",
+			want: 1,
+		},
+		{
+			name: "double_newline_end",
+			str:  "test line\n\n",
+			want: 2,
+		},
+		{
+			name: "two_lines",
+			str:  "test line 1\n test line 2\n",
+			want: 2,
+		},
+		{
+			name: "prefix_double_newline",
+			str:  "\n\n test line 2",
+			want: 2,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := countNewlines(tt.str)
+			if lines != tt.want {
+				t.Errorf("Expected %d counted lines, but got %d\n", tt.want, lines)
+			}
+		})
+	}
+}
+
+func TestPromptConfirmation(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		userInput []string
+		wantBool  bool
+		wantErr   error
+	}{
+		{
+			name:      "select_yes",
+			userInput: []string{"0", "<Enter>"},
+			wantBool:  true,
+			wantErr:   nil,
+		},
+		{
+			name:      "select_no",
+			userInput: []string{"0", "<Enter>"},
+			wantBool:  true,
+			wantErr:   nil,
+		},
+		{
+			name:      "go_back",
+			userInput: []string{"<Escape>", "<Enter>"},
+			wantBool:  false,
+			wantErr:   BackRequest,
+		},
+		{
+			name:      "exit",
+			userInput: []string{"<C-d>", "<Enter>"},
+			wantBool:  false,
+			wantErr:   ExitRequest,
+		},
+		{
+			name:      "change_response",
+			userInput: []string{"1", "<Backspace>", "0", "<Enter>"},
+			wantBool:  true,
+			wantErr:   nil,
+		},
+		{
+			name:      "submit_without_value",
+			userInput: []string{"1", "<Backspace>", "<Enter>", "0", "<Enter>"},
+			wantBool:  true,
+			wantErr:   nil,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			go pressKey(uiEvents, tt.userInput)
+
+			accept, err := PromptConfirmation("Continue?", uiEvents)
+			if accept != tt.wantBool {
+				t.Errorf("Expected %t, but received %t.\n", tt.wantBool, accept)
+			} else if err != nil && err != tt.wantErr {
+				t.Errorf("Expected error %v, but got %v", tt.wantErr, err)
+			}
+		})
+	}
 }
 
 func TestDisplayMenu(t *testing.T) {
