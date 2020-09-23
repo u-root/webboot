@@ -38,6 +38,16 @@ func max(a, b int) int {
 	return b
 }
 
+func countNewlines(str string) int {
+	count := 0
+	for _, s := range str {
+		if s == '\n' {
+			count++
+		}
+	}
+	return count
+}
+
 func Init() error {
 	return ui.Init()
 }
@@ -370,6 +380,64 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	}
 
 	return entries[chooseIndex], nil
+}
+
+func PromptConfirmation(message string, uiEvents <-chan ui.Event) (bool, error) {
+	defer ui.Clear()
+
+	wid := resultWidth
+	text := ""
+	position := 1
+
+	for {
+		// Split message if longer than msg box
+		end := min(len(message), wid)
+		text += message[:end] + "\n"
+		if len(message) > wid {
+			message = message[wid:]
+		} else {
+			break
+		}
+	}
+
+	text += "\n[0] Yes\n[1] No\n"
+	position += countNewlines(text) + 2
+	wid += 2 // 2 borders
+
+	msg := newParagraph(text, true, 0, wid, position)
+	ui.Render(msg)
+
+	selectHint := newParagraph("Choose an option:", false, position+1, wid, 1)
+	ui.Render(selectHint)
+
+	entry := newParagraph("", true, position+2, wid, 3)
+	ui.Render(entry)
+
+	backHint := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, position+6, wid, 1)
+	ui.Render(backHint)
+
+	for {
+		key := readKey(uiEvents)
+		switch key {
+		case "<Escape>":
+			return false, BackRequest
+		case "<C-d>":
+			return false, ExitRequest
+		case "<Enter>":
+			switch entry.Text {
+			case "0":
+				return true, nil
+			case "1":
+				return false, nil
+			}
+		case "0", "1":
+			entry.Text = key
+			ui.Render(entry)
+		case "<Backspace>":
+			entry.Text = ""
+			ui.Render(entry)
+		}
+	}
 }
 
 type Progress struct {
