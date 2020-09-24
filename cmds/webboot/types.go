@@ -15,6 +15,8 @@ type Distro struct {
 	isoPattern    string
 	bootConfig    string
 	kernelParams  string
+	checksumUrl   string
+	checksumType  string
 	customConfigs []bootiso.Config
 }
 
@@ -43,6 +45,8 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^CentOS-8.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		checksumUrl:  "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CHECKSUM",
+		checksumType: "sha256",
 	},
 	"Debian": Distro{
 		url:          "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.6.0-amd64-xfce.iso",
@@ -55,6 +59,8 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^Fedora-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		checksumUrl:  "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-32-1.6-x86_64-CHECKSUM",
+		checksumType: "sha256",
 	},
 	"Kali": Distro{
 		url:          "https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso",
@@ -67,6 +73,8 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^linuxmint-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		checksumUrl:  "http://mirrors.edge.kernel.org/linuxmint/stable/20/sha256sum.txt",
+		checksumType: "sha256",
 	},
 	"Manjaro": Distro{
 		url:          "https://mirrors.gigenet.com/OSDN//storage/g/m/ma/manjaro/xfce/20.1/minimal/manjaro-xfce-20.1-minimal-200911-linux58.iso",
@@ -86,12 +94,16 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   ".*CorePure64-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+		checksumUrl:  "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso.md5.txt",
+		checksumType: "md5",
 	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
 		isoPattern:   "^ubuntu-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		checksumUrl:  "https://releases.ubuntu.com/20.04.1/SHA256SUMS",
+		checksumType: "sha256",
 	},
 }
 
@@ -108,6 +120,16 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 		UUID:       device.FsUUID,
 		MountPoint: mountPoint,
 	}
+}
+
+// DownloadInfo contains all information needed by the
+//  download() function. This struct is meant to be used
+//  when the user would like to download multiple files
+//  (ex. iterate over array and call download() on each object)
+type DownloadInfo struct {
+	url      string
+	filename string
+	savepath string
 }
 
 // ISO contains information of the iso user want to boot

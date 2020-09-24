@@ -134,40 +134,70 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		return nil, err
 	}
 
-	var link string
+	// Collect download link, file name, and save path
+	// for the ISO and its checksum file
+	var isoLink, checksumLink, checksumType string
 	if entry.Label() == customLabel {
-		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
+		isoLink, err = menu.PromptTextInput("Enter ISO URL:", validURL, uiEvents)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		distro := supportedDistros[entry.Label()]
-		link = distro.url
-	}
-	filename := path.Base(link)
 
-	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
-	var fpath string
-	if cacheDir == "" {
-		fpath = filepath.Join(os.TempDir(), filename)
-	} else {
-		downloadDir := filepath.Join(cacheDir, "Downloaded")
-		if err = os.MkdirAll(downloadDir, os.ModePerm); err != nil {
-			return nil, fmt.Errorf("Fail to create the downloaded dir :%v", err)
-		}
-		fpath = filepath.Join(downloadDir, filename)
-	}
-
-	if err = download(link, fpath, uiEvents); err != nil {
-		if err == context.Canceled {
-			return nil, fmt.Errorf("Download was canceled.")
-		} else {
+		checksumLink, err = menu.PromptTextInput("Enter Checksum URL:", menu.AlwaysValid, uiEvents)
+		if err != nil {
 			return nil, err
 		}
 
+		checksumTypes := bootiso.SupportedChecksums
+		checksumEntries := []menu.Entry{}
+		for _, checksumType := range checksumTypes {
+			checksumEntries = append(checksumEntries, &Config{checksumType})
+		}
+
+		entry, err := menu.PromptMenuEntry("Checksum Type", "Choose an option:", checksumEntries, uiEvents)
+		if err != nil {
+			return nil, err
+		}
+		checksumType = entry.Label()
+	} else {
+		distro := supportedDistros[entry.Label()]
+		isoLink = distro.url
+		checksumLink = distro.checksumUrl
+		checksumType = distro.checksumType
 	}
 
-	return &ISO{label: filename, path: fpath}, nil
+	isoName := path.Base(isoLink)
+	checksumName := isoName + "." + checksumType
+
+	// If the cachedir is not find, download the iso to /tmp, else create a Downloaded dir in the cache dir.
+	var downloadDir string
+	if cacheDir == "" {
+		downloadDir = os.TempDir()
+	} else {
+		downloadDir = filepath.Join(cacheDir, "Downloaded")
+		if err = os.MkdirAll(downloadDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("Fail to create the downloaded dir :%v", err)
+		}
+	}
+
+	isoPath := filepath.Join(downloadDir, isoName)
+	checksumPath := filepath.Join(downloadDir, checksumName)
+
+	isoDownload := DownloadInfo{url: isoLink, filename: isoName, savepath: isoPath}
+	checksumDownload := DownloadInfo{url: checksumLink, filename: checksumName, savepath: checksumPath}
+
+	// Download the ISO and checksum file
+	for _, d := range []DownloadInfo{isoDownload, checksumDownload} {
+		if err = download(d.url, d.savepath, uiEvents); err != nil {
+			if err == context.Canceled {
+				return nil, fmt.Errorf("Download was canceled.")
+			} else {
+				return nil, err
+			}
+		}
+	}
+
+	return &ISO{label: isoDownload.filename, path: isoDownload.savepath}, nil
 }
 
 // DirOption's exec displays subdirectory or cached isos under the path directory

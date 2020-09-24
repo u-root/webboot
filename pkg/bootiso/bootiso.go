@@ -24,6 +24,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var (
+	SupportedChecksums = []string{"md5", "sha256"}
+)
+
 type Config struct {
 	Label      string
 	KernelPath string

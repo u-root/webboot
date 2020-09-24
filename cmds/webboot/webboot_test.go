@@ -55,12 +55,16 @@ func TestDownloadOption(t *testing.T) {
 		path:  "testdata/Downloaded/TinyCorePure64-11.1.iso",
 	}
 
-	// Select custom distro, then type Tinycore URL manually
+	// Select custom distro, then type in Tinycore parameters manually
 	customIndex := len(supportedDistros)
 	tinycoreURL := supportedDistros["Tinycore"].url
+	checksumUrl := supportedDistros["Tinycore"].checksumUrl
+
 	customCmd := []string{strconv.Itoa(customIndex), "<Enter>"}
 	customCmd = append(customCmd, stringToKeypress(tinycoreURL)...)
 	customCmd = append(customCmd, "<Enter>")
+	customCmd = append(customCmd, stringToKeypress(checksumUrl)...)
+	customCmd = append(customCmd, []string{"<Enter>", "0", "<Enter>"}...)
 
 	for _, tt := range []struct {
 		name  string
