@@ -135,3 +135,20 @@ func validURL(url string) (string, string, bool) {
 		return url, "Invalid URL.", false
 	}
 }
+
+// TODO: Verify that this logic is valid
+func fileExists(filepath string) bool {
+	info, err := os.Stat(filepath)
+	return err == nil && info.Mode().IsRegular()
+}
+
+func checksumInfo(isoPath string) (string, string) {
+	checksumTypes := []string{"md5", "sha256"}
+	for _, checksumType := range checksumTypes {
+		checksumFile := isoPath + "." + checksumType
+		if fileExists(checksumFile) {
+			return checksumFile, checksumType
+		}
+	}
+	return "", ""
+}
