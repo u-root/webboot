@@ -16,6 +16,12 @@ type Distro struct {
 }
 
 var supportedDistros = map[string]Distro{
+	"CentOS 8": Distro{
+		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
+		isoPattern:   "^CentOS-.+",
+		bootConfig:   "grub",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
 	"Fedora": Distro{
 		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
 		isoPattern:   "^Fedora-.+",
