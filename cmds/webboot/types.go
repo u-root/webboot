@@ -16,9 +16,15 @@ type Distro struct {
 }
 
 var supportedDistros = map[string]Distro{
+	"CentOS 7": Distro{
+		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
+		isoPattern:   "^CentOS-7.+",
+		bootConfig:   "grub",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
 	"CentOS 8": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
-		isoPattern:   "^CentOS-.+",
+		isoPattern:   "^CentOS-8.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
@@ -27,6 +33,12 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^Fedora-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
+	"Kali": Distro{
+		url:          "https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso",
+		isoPattern:   "^kali-linux-.+",
+		bootConfig:   "grub",
+		kernelParams: "findiso={{.IsoPath}}",
 	},
 	"Linux Mint": Distro{
 		url:          "http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso",
