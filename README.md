@@ -33,9 +33,11 @@ ISOs must have the following to be compatible with `webboot`.
 Additional operating systems can be added by appending an entry to the `supportedDistros` map in `/cmds/webboot/types.go`.
 
 ### Currently Supported
-| Name | Required Kernel Parameters |
-| ----- | ------ |
+| Name | Required Kernel Parameters | Notes |
+| ----- | ------ | ----- |
+| CentOS | `iso-scan/filename=PATH_TO_ISO` | CentOS 7 supports live mode. CentOS 8 will boot to the graphical installer.
 | Fedora | `iso-scan/filename=PATH_TO_ISO` |
+| Kali | `findiso=PATH_TO_ISO` |
 | Linux Mint | `iso-scan/filename=PATH_TO_ISO` |
 | Tinycore | `iso=UUID/PATH_TO_ISO` |
 | Ubuntu | `iso-scan/filename=PATH_TO_ISO` |
