@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/menu"
 	"github.com/u-root/webboot/pkg/wifi"
@@ -149,4 +150,12 @@ func (n *Network) Label() string {
 		return fmt.Sprintf("%s: Not a supported protocol\n", n.info.Essid)
 	}
 	return "Invalid wifi network."
+}
+
+type BootConfig struct {
+	image boot.OSImage
+}
+
+func (b *BootConfig) Label() string {
+	return b.image.Label()
 }

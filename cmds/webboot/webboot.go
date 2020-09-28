@@ -63,12 +63,17 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 
 	entries := []menu.Entry{}
 	for _, config := range configs {
-		entries = append(entries, &Config{label: config.Label()})
+		entries = append(entries, &BootConfig{config})
 	}
 
-	c, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
+	entry, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
 	if err != nil {
 		return err
+	}
+
+	config, ok := entry.(*BootConfig)
+	if !ok {
+		return fmt.Errorf("Could not convert selection to a boot image.")
 	}
 
 	if err == nil {
@@ -83,7 +88,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 			return err
 		}
 
-		err = bootiso.BootCachedISO(i.path, c.Label(), distro.bootConfig, kernelParams.String())
+		err = bootiso.BootCachedISO(config.image, kernelParams.String())
 	}
 
 	// If kexec succeeds, we should not arrive here
