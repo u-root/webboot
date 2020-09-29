@@ -5,18 +5,33 @@ import (
 
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/mount/block"
+	"github.com/u-root/webboot/pkg/bootiso"
 	"github.com/u-root/webboot/pkg/menu"
 	"github.com/u-root/webboot/pkg/wifi"
 )
 
 type Distro struct {
-	url          string
-	isoPattern   string
-	bootConfig   string
-	kernelParams string
+	url           string
+	isoPattern    string
+	bootConfig    string
+	kernelParams  string
+	customConfigs []bootiso.Config
 }
 
 var supportedDistros = map[string]Distro{
+	"Arch": Distro{
+		url:          "https://mirrors.edge.kernel.org/archlinux/iso/2020.09.01/archlinux-2020.09.01-x86_64.iso",
+		isoPattern:   "^archlinux-.+",
+		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
+		customConfigs: []bootiso.Config{
+			bootiso.Config{
+				Label:      "Default Config",
+				KernelPath: "/arch/boot/x86_64/vmlinuz-linux",
+				InitrdPath: "/arch/boot/x86_64/archiso.img",
+				Cmdline:    "",
+			},
+		},
+	},
 	"CentOS 7": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
 		isoPattern:   "^CentOS-7.+",
@@ -46,6 +61,19 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^linuxmint-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
+	"Manjaro": Distro{
+		url:          "https://mirrors.gigenet.com/OSDN//storage/g/m/ma/manjaro/xfce/20.1/minimal/manjaro-xfce-20.1-minimal-200911-linux58.iso",
+		isoPattern:   "^manjaro-.+",
+		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
+		customConfigs: []bootiso.Config{
+			bootiso.Config{
+				Label:      "Default Config",
+				KernelPath: "/boot/vmlinuz-x86_64",
+				InitrdPath: "/boot/initramfs-x86_64.img",
+				Cmdline:    "driver=free tz=utc lang=en_US keytable=en",
+			},
+		},
 	},
 	"Tinycore": Distro{
 		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
