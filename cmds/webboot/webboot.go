@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	ui "github.com/gizak/termui/v3"
+	Boot "github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/mount"
 	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/bootiso"
@@ -49,10 +50,26 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		distro = supportedDistros[entry.Label()]
 	}
 
-	configs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
-	if err != nil {
-		return err
-	} else if len(configs) == 0 {
+	var configs []Boot.OSImage
+	if distro.bootConfig != "" {
+		parsedConfigs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
+		if err != nil {
+			return err
+		}
+
+		configs = append(configs, parsedConfigs...)
+	}
+
+	if len(distro.customConfigs) != 0 {
+		customConfigs, err := bootiso.LoadCustomConfigs(i.path, distro.customConfigs)
+		if err != nil {
+			return err
+		}
+
+		configs = append(configs, customConfigs...)
+	}
+
+	if len(configs) == 0 {
 		return fmt.Errorf("No valid configs were found.")
 	}
 
