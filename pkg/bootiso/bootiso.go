@@ -10,6 +10,7 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -23,10 +24,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// ParseConfigFromISO mounts an iso file to a
-// temp dir to get the config options
+type Config struct {
+	Label      string
+	KernelPath string
+	InitrdPath string
+	Cmdline    string
+}
+
+// ParseConfigFromISO mounts the iso file, attempts to parse the config file,
+// and returns a list of bootable boot.OSImage objects representing the parsed configs
 func ParseConfigFromISO(isoPath string, configType string) ([]boot.OSImage, error) {
-	tmp, err := ioutil.TempDir("", "mnt")
+	tmp, err := ioutil.TempDir("", "mnt-")
 	if err != nil {
 		return nil, fmt.Errorf("Error creating mount dir: %v", err)
 	}
@@ -43,12 +51,104 @@ func ParseConfigFromISO(isoPath string, configType string) ([]boot.OSImage, erro
 	}
 	defer mp.Unmount(0)
 
-	configOpts, err := parseConfigFile(tmp, configType)
+	images, err := parseConfigFile(tmp, configType)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing config: %v", err)
 	}
 
-	return configOpts, nil
+	return images, nil
+}
+
+// LoadCustomConfigs is an alternative to ParseConfigFromISO that allows us
+// to define the boot parameters ourselves (in a list of Config objects)
+// instead of parsing them from a config file
+func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error) {
+	tmpDir, err := ioutil.TempDir("", "mnt-")
+	if err != nil {
+		return nil, err
+	}
+
+	loopdev, err := loop.New(isoPath, "iso9660", "")
+	if err != nil {
+		return nil, err
+	}
+
+	mp, err := loopdev.Mount(tmpDir, unix.MS_RDONLY|unix.MS_NOATIME)
+	if err != nil {
+		return nil, err
+	}
+
+	var images []boot.OSImage
+	var files []*os.File
+
+	defer func() {
+		for _, f := range files {
+			if err = f.Close(); err != nil {
+				log.Print(err)
+			}
+		}
+
+		if err = mp.Unmount(unix.MNT_FORCE); err != nil {
+			log.Fatal(err)
+		}
+
+		// Use Remove rather than RemoveAll to avoid
+		// removal if the directory is not empty
+		if err = os.Remove(tmpDir); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	for _, c := range configs {
+		kernel, err := os.Open(path.Join(tmpDir, c.KernelPath))
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, kernel)
+
+		initrd, err := os.Open(path.Join(tmpDir, c.InitrdPath))
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, initrd)
+
+		// Temp files are not added to the files list
+		// since they need to stay open for later reading
+		tmpKernel, err := ioutil.TempFile("", "kernel-")
+		if err != nil {
+			return nil, err
+		}
+
+		tmpInitrd, err := ioutil.TempFile("", "initrd-")
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err = io.Copy(tmpKernel, kernel); err != nil {
+			return nil, err
+		}
+
+		if _, err = io.Copy(tmpInitrd, initrd); err != nil {
+			return nil, err
+		}
+
+		if _, err = tmpKernel.Seek(0, 0); err != nil {
+			return nil, err
+		}
+
+		if _, err = tmpInitrd.Seek(0, 0); err != nil {
+			return nil, err
+		}
+
+		images = append(images, &boot.LinuxImage{
+			Name:    c.Label,
+			Kernel:  tmpKernel,
+			Initrd:  tmpInitrd,
+			Cmdline: c.Cmdline,
+		})
+	}
+
+	return images, nil
 }
 
 // BootFromPmem copies the ISO to pmem0 and boots

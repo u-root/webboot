@@ -65,6 +65,51 @@ func TestChecksum(t *testing.T) {
 	}
 }
 
+func TestCustomConfigs(t *testing.T) {
+	var configs []Config
+	for i := 0; i < 5; i++ {
+		configs = append(configs, Config{
+			Label:      "Custom Config " + string(i),
+			KernelPath: "/boot/vmlinuz64",
+			InitrdPath: "/boot/corepure64.gz",
+			Cmdline:    "loglevel=3 vga=791",
+		})
+	}
+
+	for _, test := range []struct {
+		name    string
+		configs []Config
+	}{
+		{
+			name:    "empty_list",
+			configs: []Config{},
+		},
+		{
+			name:    "single_config",
+			configs: configs[:1],
+		},
+		{
+			name:    "multiple_configs",
+			configs: configs,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			images, err := LoadCustomConfigs(isoPath, test.configs)
+			if err != nil {
+				t.Error(err)
+			} else if len(test.configs) != len(images) {
+				t.Errorf("Test contained %d configs, but only received %d images.", len(test.configs), len(images))
+			}
+
+			for index, image := range images {
+				if test.configs[index].Label != image.Label() {
+					t.Errorf("Expected label %q but received %q.", test.configs[index].Label, image.Label())
+				}
+			}
+		})
+	}
+}
+
 func TestMain(m *testing.M) {
 	if _, err := os.Stat(isoPath); err != nil {
 		log.Fatal("ISO file was not found in the testdata directory.")
