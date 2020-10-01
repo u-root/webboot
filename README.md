@@ -36,6 +36,7 @@ Additional operating systems can be added by appending an entry to the `supporte
 | Name | Required Kernel Parameters | Notes |
 | ----- | ------ | ----- |
 | CentOS | `iso-scan/filename=PATH_TO_ISO` | CentOS 7 supports live mode. CentOS 8 will boot to the graphical installer.
+| Debian | `findiso=PATH_TO_ISO` |
 | Fedora | `iso-scan/filename=PATH_TO_ISO` |
 | Kali | `findiso=PATH_TO_ISO` |
 | Linux Mint | `iso-scan/filename=PATH_TO_ISO` |

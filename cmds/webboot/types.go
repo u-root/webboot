@@ -44,6 +44,12 @@ var supportedDistros = map[string]Distro{
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
+	"Debian": Distro{
+		url:          "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.6.0-amd64-xfce.iso",
+		isoPattern:   "^debian-.+",
+		bootConfig:   "syslinux",
+		kernelParams: "findiso={{.IsoPath}}",
+	},
 	"Fedora": Distro{
 		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
 		isoPattern:   "^Fedora-.+",
