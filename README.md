@@ -24,7 +24,7 @@ For reference, webboot developers should familiarize themselves with:
 ## Supported Operating Systems
 
 ### Requirements
-ISOs must have the following to be compatible with `webboot`.
+ISOs must have the following to be fully compatible with `webboot`.
 
 1. 64-bit kernel
 2. Parsable `grub` or `syslinux` config file
@@ -32,27 +32,31 @@ ISOs must have the following to be compatible with `webboot`.
 
 Additional operating systems can be added by appending an entry to the `supportedDistros` map in `/cmds/webboot/types.go`.
 
+If the config file is not compatible with our parser, we can manually specify the configuration by adding a `Config` object to the distro's entry in `supportedDistros`. See the entries for Arch and Manjaro as an example.
+
 ### Currently Supported
 | Name | Required Kernel Parameters | Notes |
 | ----- | ------ | ----- |
+| Arch | `img_dev=/dev/disk/by-uuid/UUID img_loop=PATH_TO_ISO` | Unable to parse config file. Configuration is specified in a `Config` object.
 | CentOS | `iso-scan/filename=PATH_TO_ISO` | CentOS 7 supports live mode. CentOS 8 will boot to the graphical installer.
 | Debian | `findiso=PATH_TO_ISO` |
 | Fedora | `iso-scan/filename=PATH_TO_ISO` |
 | Kali | `findiso=PATH_TO_ISO` |
 | Linux Mint | `iso-scan/filename=PATH_TO_ISO` |
+| Manjaro | `img_dev=/dev/disk/by-uuid/UUID img_loop=PATH_TO_ISO` | Unable to parse config file. Configuration is specified in a `Config` object.
 | Tinycore | `iso=UUID/PATH_TO_ISO` |
 | Ubuntu | `iso-scan/filename=PATH_TO_ISO` |
 
 ### In Progress
 | Name | Required Kernel Parameters | Issue |
 | --- | --- | --- |
-| OpenSUSE | `iso-scan/filename=PATH_TO_ISO` | `grub` config file is too complicated for our parser. The distro works as expected if we manually copy out the kernel and initrd, then `kexec` with the required kernel parameters. |
+| OpenSUSE | `root=live:CDLABEL=ISO_LABEL iso-scan/filename=PATH_TO_ISO` | `grub` config file is too complicated for our parser. We could specify the configuration manually, but that would involve hardcoding the ISO_LABEL (see [Issue 185](https://github.com/u-root/webboot/issues/185)).|
 
 ## Usage
 
 ### Build initramfs with added webboot commands
 
-Run `go run buildimage.go` in the source directory of webboot to build the
+Run `go run .` in the source directory of webboot to build the
 initramfs.
 
 This runs [u-root](https://github.com/u-root/u-root) under the hood. To pass
@@ -199,6 +203,12 @@ cp syslinux.cfg.example /mnt/usb/syslinux.cfg
 mkdir /mnt/usb/boot
 cp linux/arch/x86/boot/bzImage /mnt/usb/boot/webboot
 cp /tmp/initramfs.linux_amd64.cpio.gz /mnt/usb/boot/webboot.cpio.gz
+```
+
+Finally, we need to create a `/Images` directory at the root of the usb stick. Note that the "I" in "Images" needs to be capitalized.
+
+```sh
+mkdir /mnt/usb/Images
 ```
 
 You should be able to boot from the USB stick now. Depending on your firmware
