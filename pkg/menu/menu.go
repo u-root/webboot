@@ -256,10 +256,9 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			input.Text = ""
 			ui.Render(input)
 			c, err := strconv.Atoi(choose)
-			// input is vilid when:
-			// 1.input is a number;
-			// 2.the number does not exceed the index in the current page.
-			if err == nil && c >= first && c < last {
+			// Input is valid if the selected index
+			// is between 0 <= input < len(labels)
+			if err == nil && c >= 0 && c < len(labels) {
 				// if there is not specific warning for this entry, return it
 				// elsewise show the warning and continue
 				if len(customWarning) > c && customWarning[c] != "" {
