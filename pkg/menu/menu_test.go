@@ -326,14 +326,14 @@ func TestDisplayMenu(t *testing.T) {
 			name:    "<Left>_<Right>_exceed_the_bound_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Left> -> <Right> current page is : 10~11 because the first <Left> should do nothing
-			userInput: []string{"<Left>", "<Right>", "8", "<Enter>", "1", "0", "<Enter>"},
+			userInput: []string{"<Left>", "<Right>", "-", "1", "<Enter>", "1", "0", "<Enter>"},
 			want:      entry11,
 		},
 		{
 			name:    "<Down>_<Down>_<Up>_exceed_the_bound_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Down> -> <Down> -> <Up> current page is : 1~10
-			userInput: []string{"<Down>", "<Down>", "<Up>", "0", "<Enter>", "1", "<Enter>"},
+			userInput: []string{"<Down>", "<Down>", "<Up>", "2", "1", "<Enter>", "1", "<Enter>"},
 			want:      entry2,
 		},
 		{
