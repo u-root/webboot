@@ -80,6 +80,7 @@ func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error)
 
 	var images []boot.OSImage
 	var files []*os.File
+	copied := make(map[string]*os.File)
 
 	defer func() {
 		for _, f := range files {
@@ -100,44 +101,60 @@ func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error)
 	}()
 
 	for _, c := range configs {
-		kernel, err := os.Open(path.Join(tmpDir, c.KernelPath))
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, kernel)
+		var tmpKernel, tmpInitrd *os.File
 
-		initrd, err := os.Open(path.Join(tmpDir, c.InitrdPath))
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, initrd)
+		// Copy kernel to temp if we haven't already
+		if _, ok := copied[c.KernelPath]; !ok {
+			kernel, err := os.Open(path.Join(tmpDir, c.KernelPath))
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, kernel)
 
-		// Temp files are not added to the files list
-		// since they need to stay open for later reading
-		tmpKernel, err := ioutil.TempFile("", "kernel-")
-		if err != nil {
-			return nil, err
-		}
+			// Temp files are not added to the files list
+			// since they need to stay open for later reading
+			tmpKernel, err = ioutil.TempFile("", "kernel-")
+			if err != nil {
+				return nil, err
+			}
 
-		tmpInitrd, err := ioutil.TempFile("", "initrd-")
-		if err != nil {
-			return nil, err
-		}
+			if _, err = io.Copy(tmpKernel, kernel); err != nil {
+				return nil, err
+			}
 
-		if _, err = io.Copy(tmpKernel, kernel); err != nil {
-			return nil, err
-		}
+			if _, err = tmpKernel.Seek(0, 0); err != nil {
+				return nil, err
+			}
 
-		if _, err = io.Copy(tmpInitrd, initrd); err != nil {
-			return nil, err
+			copied[c.KernelPath] = tmpKernel
+		} else {
+			tmpKernel = copied[c.KernelPath]
 		}
 
-		if _, err = tmpKernel.Seek(0, 0); err != nil {
-			return nil, err
-		}
+		// Copy initrd to temp if we haven't already
+		if _, ok := copied[c.InitrdPath]; !ok {
+			initrd, err := os.Open(path.Join(tmpDir, c.InitrdPath))
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, initrd)
 
-		if _, err = tmpInitrd.Seek(0, 0); err != nil {
-			return nil, err
+			tmpInitrd, err = ioutil.TempFile("", "initrd-")
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err = io.Copy(tmpInitrd, initrd); err != nil {
+				return nil, err
+			}
+
+			if _, err = tmpInitrd.Seek(0, 0); err != nil {
+				return nil, err
+			}
+
+			copied[c.InitrdPath] = tmpInitrd
+		} else {
+			tmpInitrd = copied[c.InitrdPath]
 		}
 
 		images = append(images, &boot.LinuxImage{
