@@ -158,6 +158,15 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		fpath = filepath.Join(downloadDir, filename)
 	}
 
+	if fileExists(fpath) {
+		redownload, err := checkDownloadRequired(filename, fpath, uiEvents)
+		if err != nil {
+			return nil, err
+		} else if !redownload { // return to main menu
+			return nil, menu.BackRequest
+		}
+	}
+
 	if err = download(link, fpath, uiEvents); err != nil {
 		if err == context.Canceled {
 			return nil, fmt.Errorf("Download was canceled.")
@@ -196,6 +205,47 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	}
 
 	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents)
+}
+
+// checkDownloadRequired is called if the user asks to download an ISO,
+// but the file already exists. Determine if we should remove the existing files
+// and redownload, or go back to the main menu so user can select the cached option
+func checkDownloadRequired(isoName, isoPath string, uiEvents <-chan ui.Event) (bool, error) {
+	var msg string
+	checksumPath, checksumType := checksumInfo(isoPath)
+
+	//  There are 3 cases to check for:
+	//   1. ISO exists, but there is no checksum file
+	//   2. ISO and checksum file exist, but checksum does not match ISO
+	//   3. ISO and checksum file exist, and checksum matches the ISO
+	if checksumPath == "" {
+		msg = fmt.Sprintf("ISO already exists, but no checksum file was found. Would you like to erase %s and redownload?", isoName)
+	} else {
+		valid, err := bootiso.VerifyChecksum(isoPath, checksumPath, checksumType)
+		if err != nil {
+			return false, err
+		} else if !valid {
+			msg = fmt.Sprintf("ISO already exists, but the checksum is invalid. Would you like to erase %s and redownload?", isoName)
+		} else {
+			msg = fmt.Sprintf("Valid copy of %s already exists. Are you sure you want to redownload and overwrite the file?", isoName)
+		}
+	}
+
+	//  In any case, give the user 2 options:
+	// 	 1. Erase the existing files and redownload
+	// 	 2. Keep the existing file and go back to the main menu
+	remove, err := menu.PromptConfirmation(msg, uiEvents)
+	if err != nil {
+		return false, err
+	} else if remove {
+		os.Remove(isoPath)
+		if checksumPath != "" {
+			os.Remove(checksumPath)
+		}
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
