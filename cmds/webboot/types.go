@@ -87,6 +87,18 @@ var supportedDistros = map[string]Distro{
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
 	},
+	"LHSCowboys": Distro{
+		url:          "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso",
+		isoPattern:   ".*CorePure64-.+",
+		bootConfig:   "syslinux",
+		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+	},
+	"DHSGaels": Distro{
+		url:          "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/DHSGaels.iso",
+		isoPattern:   ".*CorePure64-.+",
+		bootConfig:   "syslinux",
+		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
 		isoPattern:   "^ubuntu-.+",
