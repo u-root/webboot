@@ -74,9 +74,6 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 	}
 
 	verbose("Get configs: %+v", configs)
-	if !boot {
-		return fmt.Errorf("Booting is disabled (see --dryrun flag).")
-	}
 
 	entries := []menu.Entry{}
 	for _, config := range configs {
@@ -105,7 +102,11 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 			return err
 		}
 
-		err = bootiso.BootCachedISO(config.image, kernelParams.String())
+		if !boot {
+			s := fmt.Sprintf("config.image %s, kernelparams.String() %s", config.image, kernelParams.String())
+			return fmt.Errorf("Booting is disabled (see --dryrun flag), but otherwise would be [%s].", s)
+		}
+		err = bootiso.BootCachedISO(config.image, kernelParams.String() + " waitusb=10")
 	}
 
 	// If kexec succeeds, we should not arrive here

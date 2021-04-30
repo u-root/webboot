@@ -64,6 +64,13 @@ func main() {
 		"go", "run", "github.com/u-root/u-root/.",
 		"-files", "/etc/ssl/certs",
 	}
+
+	// Try to find the system kexec. We can not use LookPath as people
+	// building this might have the u-root kexec in their path.
+	if _, err := os.Stat("/sbin/kexec"); err == nil {
+		args = append(args, "-files=/sbin/kexec")
+	}
+
 	if *wifi {
 		args = append(args,
 			"-files", extraBinMust("iwconfig"),
