@@ -19,6 +19,24 @@ type Distro struct {
 }
 
 var supportedDistros = map[string]Distro{
+	"MicroOS": Distro{
+		url:          "https://download.opensuse.org/tumbleweed/iso/openSUSE-MicroOS-DVD-x86_64-Current.iso",
+		isoPattern:   "^openSUSE-.+",
+		bootConfig:   "grub",
+		kernelParams: "isofrom=/dev/disk/by-uuid/{{.UUID}}:{{.IsoPath}} isofrom_device=/dev/disk/by-uuid/{{.UUID}} isofrom_system={{.IsoPath}} install=hd:/ loader=syslinux",
+	},
+	"MicroOS Leap": Distro{
+		url:          "https://download.opensuse.org/distribution/leap/15.2/microos/iso/openSUSE-MicroOS-15.2-DVD-x86_64-Media.iso",
+		isoPattern:   "^openSUSE-.+",
+		bootConfig:   "grub",
+		kernelParams: "isofrom=/dev/disk/by-uuid/{{.UUID}}:{{.IsoPath}} isofrom_device=/dev/disk/by-uuid/{{.UUID}} isofrom_system={{.IsoPath}} install=hd:/ loader=syslinux",
+	},
+	"openSUSE Leap": Distro{
+		url:          "https://download.opensuse.org/distribution/leap/15.2/iso/openSUSE-Leap-15.2-NET-x86_64.iso",
+		isoPattern:   "^openSUSE-.+",
+		bootConfig:   "grub",
+		kernelParams: "isofrom=/dev/disk/by-uuid/{{.UUID}}:{{.IsoPath}} isofrom_device=/dev/disk/by-uuid/{{.UUID}} isofrom_system={{.IsoPath}} install=hd:/ loader=syslinux",
+	},
 	"Arch": Distro{
 		url:          "https://mirrors.edge.kernel.org/archlinux/iso/2020.09.01/archlinux-2020.09.01-x86_64.iso",
 		isoPattern:   "^archlinux-.+",
