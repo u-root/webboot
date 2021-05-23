@@ -29,6 +29,7 @@ var (
 	dryRun    = flag.Bool("dryrun", false, "If dry_run is true we won't boot the iso.")
 	cacheDev  CacheDevice
 	logBuffer bytes.Buffer
+	tmpBuffer bytes.Buffer
 )
 
 // ISO's exec downloads the iso and boot it.
@@ -238,6 +239,13 @@ func getCachedDirectory() (string, error) {
 	return "", fmt.Errorf("Do not find the cache directory: Expected a /Images under at the root of a block device(USB)")
 }
 
+type LogOption struct {
+}
+
+func (d *LogOption) Label() string {
+	return "Show last log"
+}
+
 func getMainMenu(cacheDir string) menu.Entry {
 	entries := []menu.Entry{}
 	if cacheDir != "" {
@@ -245,6 +253,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 		entries = append(entries, &DirOption{label: "Use Cached ISO", path: cacheDir})
 	}
 	entries = append(entries, &DownloadOption{})
+	entries = append(entries, &LogOption{})
 
 	for {
 		// Display the main menu until user makes a valid choice or
@@ -266,12 +275,21 @@ func handleError(err error) {
 		return
 	}
 
-	errorText := err.Error() + "\n" + logBuffer.String() + wifiStdout.String() + wifiStderr.String()
+	errorText := err.Error() + "\n" + tmpBuffer.String() + wifiStdout.String() + wifiStderr.String()
+	fmt.Fprintln(&logBuffer, errorText)
 	menu.DisplayResult(strings.Split(errorText, "\n"), ui.PollEvents())
 
-	logBuffer.Reset()
+	tmpBuffer.Reset()
 	wifiStdout.Reset()
 	wifiStderr.Reset()
+}
+
+func showLog() {
+	s := logBuffer.String()
+	if len(s) > 1024 {
+		s = s[len(s)-1024:]
+	}
+	menu.DisplayResult(strings.Split(s, "\n"), ui.PollEvents())
 }
 
 func main() {
@@ -302,7 +320,7 @@ func main() {
 	entry := getMainMenu(cacheDir)
 
 	// Buffer the log output, else it might overlap with the menu
-	log.SetOutput(&logBuffer)
+	log.SetOutput(&tmpBuffer)
 
 	// check the chosen entry of each level
 	// and call it's exec() to get the next level's chosen entry.
@@ -310,6 +328,9 @@ func main() {
 	var err error
 	for entry != nil {
 		switch entry.(type) {
+		case *LogOption:
+			showLog()
+			entry = getMainMenu(cacheDir)
 		case *DownloadOption:
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
 				handleError(err)
