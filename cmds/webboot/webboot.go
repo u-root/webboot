@@ -50,6 +50,8 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		distro = supportedDistros[entry.Label()]
 	}
 
+	verbose("Using distro %s with boot config %s", distroName, distro.bootConfig)
+
 	var configs []Boot.OSImage
 	if distro.bootConfig != "" {
 		parsedConfigs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
@@ -106,10 +108,15 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 			s := fmt.Sprintf("config.image %s, kernelparams.String() %s", config.image, kernelParams.String())
 			return fmt.Errorf("Booting is disabled (see --dryrun flag), but otherwise would be [%s].", s)
 		}
-		err = bootiso.BootCachedISO(config.image, kernelParams.String() + " waitusb=10")
+		err = bootiso.BootCachedISO(config.image, kernelParams.String()+" waitusb=10")
 	}
 
 	// If kexec succeeds, we should not arrive here
+	if err == nil {
+		// TODO: We should know whether we tried using /sbin/kexec.
+		err = fmt.Errorf("kexec failed, but gave no error. Consider trying kexec-tools.")
+	}
+
 	return err
 }
 
@@ -286,6 +293,7 @@ func main() {
 			cacheDir = cachePath
 		}
 	}
+	verbose("Using cache dir: %v", cacheDir)
 
 	if err := menu.Init(); err != nil {
 		log.Fatalf(err.Error())
