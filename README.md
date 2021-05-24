@@ -58,15 +58,15 @@ If the config file is not compatible with our parser, we can manually specify th
 
 Download u-root with `GO111MODULE=off go get github.com/u-root/u-root`.
 
-Run `go run .` in the source directory of webboot to build the
+Run `GO11MODULE=off go run .` in the source directory of webboot to build the
 initramfs.
 
 This runs [u-root](https://github.com/u-root/u-root) under the hood. To pass
 extra options, such as to include extra files, use the `-u` switch, e.g.,
-`go run buildimage.go -u "-files path/to/bzImage:bzImage"` to add a custom
-kernel which can be used to test whether kexec works in a small setup. That
-saves a lot of time, because a full webboot flow would always need to download
-large ISO files, copy them, mount and decompress.
+`GO11MODULE=off go run buildimage.go -u "-files path/to/bzImage:bzImage"` to
+add a custom kernel which can be used to test whether kexec works in a small
+setup. That saves a lot of time, because a full webboot flow would always need
+to download large ISO files, copy them, mount and decompress.
 
 #### Convenience
 
@@ -126,7 +126,7 @@ instructions here.
 
 You need to have the following packages installed if on Ubuntu:
 ```sh
-sudo apt install libssl-dev build-essential
+sudo apt install libssl-dev build-essential wireless-tools
 ```
 
 #### Fetching, configuring and compiling the kernel
@@ -138,7 +138,7 @@ git clone \
   git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/linux-firmware.git
 cp config-5.6.14 linux/.config
 (cd linux && make bzImage)
-go run .
+GO111MODULE=off go run .
 ```
 
 ### Testing in QEMU
