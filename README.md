@@ -56,6 +56,8 @@ If the config file is not compatible with our parser, we can manually specify th
 
 ### Build initramfs with added webboot commands
 
+Download u-root with `GO111MODULE=off go get github.com/u-root/u-root`.
+
 Run `go run .` in the source directory of webboot to build the
 initramfs.
 

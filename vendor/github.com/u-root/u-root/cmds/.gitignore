@@ -1,7 +1,0 @@
-# Ignore binaries (files without extensions)
-*
-!*.*
-!*/
-
-.bb/
-bb/
