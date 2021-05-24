@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+GO111MODULE=off go get github.com/u-root/u-root
+
 go build .
 go run webboot.go
 if [ ! -f "/tmp/initramfs.linux_amd64.cpio" ]; then
