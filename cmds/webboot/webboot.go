@@ -98,6 +98,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		}
 
 		var kernelParams bytes.Buffer
+		cacheDev.UUID = strings.ToUpper(cacheDev.UUID)
 		if err = paramTemplate.Execute(&kernelParams, cacheDev); err != nil {
 			return err
 		}
