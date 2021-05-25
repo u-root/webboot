@@ -273,7 +273,7 @@ func cmdKexecLoad(li *boot.LinuxImage, verbose bool) error {
 		// but it at least proves the files are still downloading.
 		progress := func(r io.Reader, dot string) io.Reader {
 			return &uio.ProgressReadCloser{
-				RC:       io.NopCloser(r),
+				RC:       ioutil.NopCloser(r),
 				Symbol:   dot,
 				Interval: 5 * 1024 * 1024,
 				W:        os.Stdout,
