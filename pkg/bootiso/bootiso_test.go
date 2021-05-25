@@ -1,6 +1,7 @@
 package bootiso
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -69,7 +70,7 @@ func TestCustomConfigs(t *testing.T) {
 	var configs []Config
 	for i := 0; i < 5; i++ {
 		configs = append(configs, Config{
-			Label:      "Custom Config " + string(i),
+			Label:      "Custom Config " + fmt.Sprint(i),
 			KernelPath: "/boot/vmlinuz64",
 			InitrdPath: "/boot/corepure64.gz",
 			Cmdline:    "loglevel=3 vga=791",

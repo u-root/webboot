@@ -23,6 +23,7 @@ import (
 	"github.com/u-root/u-root/pkg/boot/syslinux"
 	"github.com/u-root/u-root/pkg/boot/util"
 	"github.com/u-root/u-root/pkg/mount"
+	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/u-root/pkg/mount/loop"
 	"github.com/u-root/u-root/pkg/uio"
 	"golang.org/x/sys/unix"
@@ -271,8 +272,8 @@ func cmdKexecLoad(li *boot.LinuxImage, verbose bool) error {
 		// In verbose mode, print a dot every 5MiB. It is not pretty,
 		// but it at least proves the files are still downloading.
 		progress := func(r io.Reader, dot string) io.Reader {
-			return &uio.ProgressReader{
-				R:        r,
+			return &uio.ProgressReadCloser{
+				RC:       ioutil.NopCloser(r),
 				Symbol:   dot,
 				Interval: 5 * 1024 * 1024,
 				W:        os.Stdout,
@@ -416,10 +417,16 @@ func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) b
 }
 
 func parseConfigFile(mountDir string, configType string) ([]boot.OSImage, error) {
+	devs, err := block.GetBlockDevices()
+	if err != nil {
+		return nil, err
+	}
+	mp := &mount.Pool{}
+
 	if configType == "syslinux" {
 		return syslinux.ParseLocalConfig(context.Background(), mountDir)
 	} else if configType == "grub" {
-		return grub.ParseLocalConfig(context.Background(), mountDir)
+		return grub.ParseLocalConfig(context.Background(), mountDir, devs, mp)
 	}
 
 	// If no config type was specified, try both grub and syslinux
@@ -427,5 +434,5 @@ func parseConfigFile(mountDir string, configType string) ([]boot.OSImage, error)
 	if err == nil && len(configOpts) != 0 {
 		return configOpts, err
 	}
-	return grub.ParseLocalConfig(context.Background(), mountDir)
+	return grub.ParseLocalConfig(context.Background(), mountDir, devs, mp)
 }
