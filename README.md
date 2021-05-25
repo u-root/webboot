@@ -58,12 +58,12 @@ If the config file is not compatible with our parser, we can manually specify th
 
 Download u-root with `GO111MODULE=off go get github.com/u-root/u-root`.
 
-Run `GO11MODULE=off go run .` in the source directory of webboot to build the
+Run `GO111MODULE=off go run .` in the source directory of webboot to build the
 initramfs.
 
 This runs [u-root](https://github.com/u-root/u-root) under the hood. To pass
 extra options, such as to include extra files, use the `-u` switch, e.g.,
-`GO11MODULE=off go run buildimage.go -u "-files path/to/bzImage:bzImage"` to
+`GO111MODULE=off go run buildimage.go -u "-files path/to/bzImage:bzImage"` to
 add a custom kernel which can be used to test whether kexec works in a small
 setup. That saves a lot of time, because a full webboot flow would always need
 to download large ISO files, copy them, mount and decompress.
