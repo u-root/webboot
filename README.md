@@ -126,7 +126,7 @@ instructions here.
 
 You need to have the following packages installed if on Ubuntu:
 ```sh
-sudo apt install libssl-dev build-essential wireless-tools
+sudo apt install libssl-dev build-essential wireless-tools kexec-tools
 ```
 
 #### Fetching, configuring and compiling the kernel
