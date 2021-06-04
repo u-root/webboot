@@ -12,6 +12,7 @@ import (
 
 type Distro struct {
 	url           string
+	checksumUrl   string
 	isoPattern    string
 	bootConfig    string
 	kernelParams  string
