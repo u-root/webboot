@@ -105,6 +105,12 @@ var supportedDistros = map[string]Distro{
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
+	"Ubuntu (Constant.com)": Distro{
+		url:		"http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+		isoPattern: "^ubuntu-.+",
+		bootConfig: "syslinux",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
 }
 
 type CacheDevice struct {
