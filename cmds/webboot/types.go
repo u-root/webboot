@@ -21,7 +21,7 @@ type Distro struct {
 
 var supportedDistros = map[string]Distro{
 	"Arch": Distro{
-		url:          "https://mirrors.edge.kernel.org/archlinux/iso/2020.09.01/archlinux-2020.09.01-x86_64.iso",
+		url:          "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 		isoPattern:   "^archlinux-.+",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
@@ -35,12 +35,14 @@ var supportedDistros = map[string]Distro{
 	},
 	"CentOS 7": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
+		checksumUrl:  "https://mirror.hackingand.coffee/centos/7.9.2009/isos/x86_64/sha256sum.txt",
 		isoPattern:   "^CentOS-7.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"CentOS 8": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
+		checksumUrl:  "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64/CHECKSUM",
 		isoPattern:   "^CentOS-8.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
