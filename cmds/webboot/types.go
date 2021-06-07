@@ -35,14 +35,14 @@ var supportedDistros = map[string]Distro{
 	},
 	"CentOS 7": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
-		checksumUrl:  "https://mirror.hackingand.coffee/centos/7.9.2009/isos/x86_64/sha256sum.txt",
+		checksumUrl:  "http://repos.hou.layerhost.com/centos/7.9.2009/isos/x86_64/sha256sum.txt.asc",
 		isoPattern:   "^CentOS-7.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"CentOS 8": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
-		checksumUrl:  "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64/CHECKSUM",
+		checksumUrl:  "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64/CHECKSUM.asc",
 		isoPattern:   "^CentOS-8.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
@@ -55,6 +55,7 @@ var supportedDistros = map[string]Distro{
 	},
 	"Fedora": Distro{
 		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
+		checksumUrl:  "https://getfedora.org/static/checksums/34/iso/Fedora-Workstation-34-1.2-x86_64-CHECKSUM",
 		isoPattern:   "^Fedora-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
@@ -104,6 +105,7 @@ var supportedDistros = map[string]Distro{
 	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
+		checksumUrl:  "http://releases.ubuntu.com/20.04/SHA256SUMS",
 		isoPattern:   "^ubuntu-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
