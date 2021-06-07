@@ -137,6 +137,7 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 type ISO struct {
 	label string
 	path  string
+	checksum string
 }
 
 var _ = menu.Entry(&ISO{})
