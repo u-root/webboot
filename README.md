@@ -143,6 +143,13 @@ GO111MODULE=off go run .
 
 ### Testing in QEMU
 
+Install QEMU with
+```sh
+sudo apt-get install qemu-system-x86
+```
+
+Run the following, and a QEMU window should pop up:
+
 Tip: Don't use the `-nographic` option for u-root in QEMU as you want to boot
 into a graphical interface.
 
@@ -157,7 +164,21 @@ qemu-system-x86_64 \
   -kernel linux/arch/x86/boot/bzImage \
   -append 'console=ttyS0 console=tty1 memmap=1G!1G' \
   -initrd /tmp/initramfs.linux_amd64.cpio \
-  -device virtio-rng-pci
+  -device virtio-rng-pci \
+  -netdev user,id=network0 \
+  -device rtl8139,netdev=network0
+```
+
+Tip: Don't use the `-nographic` option for u-root in QEMU as you want to boot
+into a graphical interface.
+
+In the QEMU terminal, run
+```sh
+dhclient -ipv6=f
+```
+and then run
+```sh
+webboot
 ```
 
 Refer to
