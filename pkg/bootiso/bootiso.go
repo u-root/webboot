@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime/debug"
 	"strings"
 
 	"github.com/u-root/u-root/pkg/boot"
@@ -70,17 +71,17 @@ func ParseConfigFromISO(isoPath string, configType string) ([]boot.OSImage, erro
 func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error) {
 	tmpDir, err := ioutil.TempDir("", "mnt-")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on ioutil.TempDir; in %s, and got %v", debug.Stack(), err)
 	}
 
 	loopdev, err := loop.New(isoPath, "iso9660", "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on loop.New; in %s, and got %v", debug.Stack(), err)
 	}
 
 	mp, err := loopdev.Mount(tmpDir, unix.MS_RDONLY|unix.MS_NOATIME)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on loopdev.Mount; in %s, and got %v", debug.Stack(), err)
 	}
 
 	var images []boot.OSImage
@@ -112,7 +113,7 @@ func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error)
 		if _, ok := copied[c.KernelPath]; !ok {
 			kernel, err := os.Open(path.Join(tmpDir, c.KernelPath))
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on os.Open; in %s, and got %v", debug.Stack(), err)
 			}
 			files = append(files, kernel)
 
@@ -120,15 +121,15 @@ func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error)
 			// since they need to stay open for later reading
 			tmpKernel, err = ioutil.TempFile("", "kernel-")
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on ioutil.TempFile; in %s, and got %v", debug.Stack(), err)
 			}
 
 			if _, err = io.Copy(tmpKernel, kernel); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on io.Copy; in %s, and got %v", debug.Stack(), err)
 			}
 
 			if _, err = tmpKernel.Seek(0, 0); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on tmpKernel.Seek; in %s, and got %v", debug.Stack(), err)
 			}
 
 			copied[c.KernelPath] = tmpKernel
@@ -140,21 +141,21 @@ func LoadCustomConfigs(isoPath string, configs []Config) ([]boot.OSImage, error)
 		if _, ok := copied[c.InitrdPath]; !ok {
 			initrd, err := os.Open(path.Join(tmpDir, c.InitrdPath))
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on os.Open; in %s, and got %v", debug.Stack(), err)
 			}
 			files = append(files, initrd)
 
 			tmpInitrd, err = ioutil.TempFile("", "initrd-")
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on ioutil.TempFile; in %s, and got %v", debug.Stack(), err)
 			}
 
 			if _, err = io.Copy(tmpInitrd, initrd); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on io.Copy; in %s, and got %v", debug.Stack(), err)
 			}
 
 			if _, err = tmpInitrd.Seek(0, 0); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error on tmpInitrd.Seek; in %s, and got %v", debug.Stack(), err)
 			}
 
 			copied[c.InitrdPath] = tmpInitrd
@@ -244,19 +245,19 @@ func BootFromPmem(isoPath string, configLabel string, configType string) error {
 func copyToFile(r io.Reader) (*os.File, error) {
 	f, err := ioutil.TempFile("", "webboot")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on ioutil.TempFile; in %s, and got %v", debug.Stack(), err)
 	}
 	defer f.Close()
 	if _, err := io.Copy(f, r); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on io.Copy; in %s, and got %v", debug.Stack(), err)
 	}
 	if err := f.Sync(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on f.Sync; in %s, and got %v", debug.Stack(), err)
 	}
 
 	readOnlyF, err := os.Open(f.Name())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on os.Open; in %s, and got %v", debug.Stack(), err)
 	}
 	return readOnlyF, nil
 }
@@ -419,7 +420,7 @@ func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) b
 func parseConfigFile(mountDir string, configType string) ([]boot.OSImage, error) {
 	devs, err := block.GetBlockDevices()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error on block.GetBlockDevices; in %s, and got %v", debug.Stack(), err)
 	}
 	mp := &mount.Pool{}
 
