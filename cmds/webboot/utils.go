@@ -68,7 +68,7 @@ func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 	}
 
 	counter.Close()
-	copyProgress := menu.NewProgress("Download complete. Writing ISO to cache", true)
+	copyProgress := menu.NewProgress(fmt.Sprintf("Download complete. Writing ISO to cache (%q)", fPath), true)
 	defer copyProgress.Close()
 
 	if _, err = tempFile.Seek(0, 0); err != nil {

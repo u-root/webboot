@@ -12,6 +12,7 @@ import (
 
 type Distro struct {
 	url           string
+	checksumUrl   string
 	isoPattern    string
 	bootConfig    string
 	kernelParams  string
@@ -20,7 +21,7 @@ type Distro struct {
 
 var supportedDistros = map[string]Distro{
 	"Arch": Distro{
-		url:          "https://mirrors.edge.kernel.org/archlinux/iso/2020.09.01/archlinux-2020.09.01-x86_64.iso",
+		url:          "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 		isoPattern:   "^archlinux-.+",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
@@ -34,12 +35,14 @@ var supportedDistros = map[string]Distro{
 	},
 	"CentOS 7": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
+		checksumUrl:  "http://repos.hou.layerhost.com/centos/7.9.2009/isos/x86_64/sha256sum.txt.asc",
 		isoPattern:   "^CentOS-7.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"CentOS 8": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
+		checksumUrl:  "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64/CHECKSUM.asc",
 		isoPattern:   "^CentOS-8.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
@@ -52,6 +55,7 @@ var supportedDistros = map[string]Distro{
 	},
 	"Fedora": Distro{
 		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
+		checksumUrl:  "https://getfedora.org/static/checksums/34/iso/Fedora-Workstation-34-1.2-x86_64-CHECKSUM",
 		isoPattern:   "^Fedora-.+",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
@@ -101,6 +105,13 @@ var supportedDistros = map[string]Distro{
 	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
+		checksumUrl:  "http://releases.ubuntu.com/20.04/SHA256SUMS",
+		isoPattern:   "^ubuntu-.+",
+		bootConfig:   "syslinux",
+		kernelParams: "iso-scan/filename={{.IsoPath}}",
+	},
+	"Ubuntu (Constant.com)": Distro{
+		url:          "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 		isoPattern:   "^ubuntu-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
@@ -132,6 +143,7 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 type ISO struct {
 	label string
 	path  string
+	checksum string
 }
 
 var _ = menu.Entry(&ISO{})
