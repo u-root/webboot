@@ -383,7 +383,6 @@ func VerifyChecksum(isoPath, checksum, checksumType string) (bool, error) {
 	}
 	calcChecksum := hex.EncodeToString(hash.Sum(nil))
 
-
 	return calcChecksum == checksum, nil
 }
 

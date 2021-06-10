@@ -127,13 +127,13 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 			if len(input.Text) > 0 {
 				fullText = fullText[:len(fullText)-1]
 				start := max(0, len(fullText)-wid+3)
-				input.Text = fullText[start:len(fullText)]
+				input.Text = fullText[start:]
 				ui.Render(input)
 			}
 		case "<Space>":
 			fullText += " "
 			start := max(0, len(fullText)-wid+3)
-			input.Text = fullText[start:len(fullText)]
+			input.Text = fullText[start:]
 			ui.Render(input)
 		default:
 			// the termui use a string begin at '<' to represent some special keys
@@ -142,7 +142,7 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 			if k[0:1] != "<" {
 				fullText += k
 				start := max(0, len(fullText)-wid+3)
-				input.Text = fullText[start:len(fullText)]
+				input.Text = fullText[start:]
 				ui.Render(input)
 			}
 		}
@@ -167,7 +167,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 	for _, m := range message {
 		for len(m) > wid {
 			text = append(text, m[0:wid])
-			m = m[wid:len(m)]
+			m = m[wid:]
 		}
 		text = append(text, m)
 	}
