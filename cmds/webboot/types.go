@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/u-root/pkg/mount/block"
 	"github.com/u-root/webboot/pkg/bootiso"
@@ -17,6 +16,12 @@ type Distro struct {
 	bootConfig    string
 	kernelParams  string
 	customConfigs []bootiso.Config
+	mirrors		[]Mirror
+}
+
+type Mirror struct {
+	name string
+	url string
 }
 
 var supportedDistros = map[string]Distro{
@@ -30,6 +35,24 @@ var supportedDistros = map[string]Distro{
 				KernelPath: "/arch/boot/x86_64/vmlinuz-linux",
 				InitrdPath: "/arch/boot/x86_64/archiso.img",
 				Cmdline:    "",
+			},
+		},
+		mirrors: []Mirror{
+			Mirror{
+				name: "Arizona",
+				url: "http://mirror.arizona.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+			},
+			Mirror{
+				name: "Purdue University",
+				url: "https://plug-mirror.rcac.purdue.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+			},
+			Mirror{
+				name: "Constant.com",
+				url: "http://arch.mirror.constant.com/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+			},
+			Mirror{
+				name: "Georgia Institute of Technology",
+				url: "http://www.gtlib.gatech.edu/pub/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 		},
 	},
@@ -109,18 +132,28 @@ var supportedDistros = map[string]Distro{
 		isoPattern:   "^ubuntu-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
-	},
-	"Ubuntu (Constant.com)": Distro{
-		url:          "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
-		isoPattern:   "^ubuntu-.+",
-		bootConfig:   "syslinux",
-		kernelParams: "iso-scan/filename={{.IsoPath}}",
-	},
-	"Ubuntu (Constant.com)": Distro{
-		url:		"http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
-		isoPattern: "^ubuntu-.+",
-		bootConfig: "syslinux",
-		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		mirrors: []Mirror{
+			Mirror{
+				name:    "Constant.com",
+				url:     "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+			},
+			Mirror{
+				name: "Rochester Institute of Technology",
+				url: "http://mirrors.rit.edu/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+			},
+			Mirror{
+				name: "Purdue University",
+				url: "http://osmirrors.cerias.purdue.edu/pub/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+			},
+			Mirror{
+				name: "University of Utah",
+				url: "http://ubuntu.cs.utah.edu/releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
+			},
+			Mirror{
+				name: "Washington State University",
+				url: "http://mirrors.vcea.wsu.edu/ubuntu-releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
+			},
+		},
 	},
 }
 
