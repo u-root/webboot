@@ -16,12 +16,12 @@ type Distro struct {
 	bootConfig    string
 	kernelParams  string
 	customConfigs []bootiso.Config
-	mirrors		[]Mirror
+	mirrors       []Mirror
 }
 
 type Mirror struct {
 	name string
-	url string
+	url  string
 }
 
 var supportedDistros = map[string]Distro{
@@ -40,19 +40,19 @@ var supportedDistros = map[string]Distro{
 		mirrors: []Mirror{
 			Mirror{
 				name: "Arizona",
-				url: "http://mirror.arizona.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+				url:  "http://mirror.arizona.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 			Mirror{
 				name: "Purdue University",
-				url: "https://plug-mirror.rcac.purdue.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+				url:  "https://plug-mirror.rcac.purdue.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 			Mirror{
 				name: "Constant.com",
-				url: "http://arch.mirror.constant.com/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+				url:  "http://arch.mirror.constant.com/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 			Mirror{
 				name: "Georgia Institute of Technology",
-				url: "http://www.gtlib.gatech.edu/pub/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+				url:  "http://www.gtlib.gatech.edu/pub/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 		},
 	},
@@ -134,24 +134,24 @@ var supportedDistros = map[string]Distro{
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 		mirrors: []Mirror{
 			Mirror{
-				name:    "Constant.com",
-				url:     "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+				name: "Constant.com",
+				url:  "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
 			Mirror{
 				name: "Rochester Institute of Technology",
-				url: "http://mirrors.rit.edu/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+				url:  "http://mirrors.rit.edu/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
 			Mirror{
 				name: "Purdue University",
-				url: "http://osmirrors.cerias.purdue.edu/pub/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
+				url:  "http://osmirrors.cerias.purdue.edu/pub/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
 			Mirror{
 				name: "University of Utah",
-				url: "http://ubuntu.cs.utah.edu/releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
+				url:  "http://ubuntu.cs.utah.edu/releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
 			Mirror{
 				name: "Washington State University",
-				url: "http://mirrors.vcea.wsu.edu/ubuntu-releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
+				url:  "http://mirrors.vcea.wsu.edu/ubuntu-releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
 		},
 	},
@@ -174,8 +174,8 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 
 // ISO contains information of the iso user want to boot
 type ISO struct {
-	label string
-	path  string
+	label    string
+	path     string
 	checksum string
 }
 
