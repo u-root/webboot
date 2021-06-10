@@ -116,7 +116,7 @@ func inferIsoType(isoName string) string {
 
 func supportedDistroEntries() []menu.Entry {
 	entries := []menu.Entry{}
-	for distroName, _ := range supportedDistros {
+	for distroName := range supportedDistros {
 		entries = append(entries, &Config{label: distroName})
 	}
 

@@ -185,7 +185,7 @@ func TestBackOption(t *testing.T) {
 
 func distroIndex(searchName string) int {
 	var downloadOptions []string
-	for distroName, _ := range supportedDistros {
+	for distroName := range supportedDistros {
 		downloadOptions = append(downloadOptions, distroName)
 	}
 	sort.Strings(downloadOptions)

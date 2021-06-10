@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Check that the code has been formatted correctly.
+test -z "$(gofmt -s -l *.go pkg cmds)"
+
 go build .
 go run webboot.go
 if [ ! -f "/tmp/initramfs.linux_amd64.cpio" ]; then
