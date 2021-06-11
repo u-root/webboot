@@ -12,8 +12,9 @@ import (
 
 type Distro struct {
 	url           string
-	checksumUrl   string
 	isoPattern    string
+	checksum      string
+	checksumType  string
 	bootConfig    string
 	kernelParams  string
 	customConfigs []bootiso.Config
@@ -29,6 +30,8 @@ var supportedDistros = map[string]Distro{
 	"Arch": Distro{
 		url:          "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 		isoPattern:   "^archlinux-.+",
+		checksum:     "1bf76d864651cc6454ab273fd3d2226a",
+		checksumType: "md5",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
 			bootiso.Config{
@@ -59,46 +62,57 @@ var supportedDistros = map[string]Distro{
 	},
 	"CentOS 7": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
-		checksumUrl:  "http://repos.hou.layerhost.com/centos/7.9.2009/isos/x86_64/sha256sum.txt.asc",
 		isoPattern:   "^CentOS-7.+",
+		checksum:     "689531cce9cf484378481ae762fae362791a9be078fda10e4f6977bf8fa71350",
+		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"CentOS 8": Distro{
 		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
-		checksumUrl:  "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64/CHECKSUM.asc",
 		isoPattern:   "^CentOS-8.+",
+		checksum:     "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64",
+		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"Debian": Distro{
-		url:          "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.6.0-amd64-xfce.iso",
+		url:          "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.9.0-amd64-xfce.iso",
 		isoPattern:   "^debian-.+",
+		checksum:     "44e98dfc974e5ade72ebf3cbb9ff06df3aa2c0c0cdc0f30913dbd93983179ff5",
+		checksumType: "sha256",
 		bootConfig:   "syslinux",
 		kernelParams: "findiso={{.IsoPath}}",
 	},
 	"Fedora": Distro{
 		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
-		checksumUrl:  "https://getfedora.org/static/checksums/34/iso/Fedora-Workstation-34-1.2-x86_64-CHECKSUM",
 		isoPattern:   "^Fedora-.+",
+		checksum:     "4d0f6653e2e0860c99ffe0ef274a46d875fb85bd2a40cb896dce1ed013566924",
+		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"Kali": Distro{
 		url:          "https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso",
 		isoPattern:   "^kali-linux-.+",
+		checksum:     "1a0b2ea83f48861dd3f3babd5a2892a14b30a7234c8c9b5013a6507d1401874f",
+		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "findiso={{.IsoPath}}",
 	},
 	"Linux Mint": Distro{
 		url:          "http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso",
 		isoPattern:   "^linuxmint-.+",
+		checksum:     "2f6ae466ec9b7c6255e997b82f162ae88bfe640a8df16d3e2f495b6281120af9",
+		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 	},
 	"Manjaro": Distro{
-		url:          "https://mirrors.gigenet.com/OSDN//storage/g/m/ma/manjaro/xfce/20.1/minimal/manjaro-xfce-20.1-minimal-200911-linux58.iso",
+		url:          "https://download.manjaro.org/xfce/21.0.6/manjaro-xfce-21.0.6-210607-linux510.iso",
 		isoPattern:   "^manjaro-.+",
+		checksum:     "fab9d1bdd03a7e5daab226ccc8e16ba96a5b07e9",
+		checksumType: "sha1",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
 			bootiso.Config{
@@ -112,6 +126,8 @@ var supportedDistros = map[string]Distro{
 	"Tinycore": Distro{
 		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
 		isoPattern:   ".*CorePure64-.+",
+		checksum:     "58bc33523ce10e64f56b9a9ec8a77531",
+		checksumType: "md5",
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
 	},
@@ -129,8 +145,9 @@ var supportedDistros = map[string]Distro{
 	},
 	"Ubuntu": Distro{
 		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
-		checksumUrl:  "http://releases.ubuntu.com/20.04/SHA256SUMS",
 		isoPattern:   "^ubuntu-.+",
+		checksum:     "b45165ed3cd437b9ffad02a2aad22a4ddc69162470e2622982889ce5826f6e3d",
+		checksumType: "sha256",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 		mirrors: []Mirror{
