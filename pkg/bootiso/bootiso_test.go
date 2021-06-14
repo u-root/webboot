@@ -32,31 +32,31 @@ func TestParseConfigFromISO(t *testing.T) {
 func TestChecksum(t *testing.T) {
 	for _, test := range []struct {
 		name         string
-		checksumPath string
+		checksum     string
 		checksumType string
 		valid        bool
 	}{
 		{
 			name:         "valid_md5",
-			checksumPath: "testdata/TinyCorePure64.md5.txt",
+			checksum:     "10a79ba7558598574cd396e7b1b057b7",
 			checksumType: "md5",
 			valid:        true,
 		},
 		{
 			name:         "valid_sha256",
-			checksumPath: "testdata/TinyCorePure64.sha256.txt",
+			checksum:     "01ce6b5f4e4f7e98eddc343fc14f1436fb1b0452e6b9f7e07461b6a089a909c1", 
 			checksumType: "sha256",
 			valid:        true,
 		},
 		{
 			name:         "invalid_md5",
-			checksumPath: "testdata/TinyCorePure64.sha256.txt",
+			checksum: "99979ba7558598574cd396e7b1b057b7",
 			checksumType: "md5",
 			valid:        false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			valid, err := VerifyChecksum(isoPath, test.checksumPath, test.checksumType)
+			valid, err := VerifyChecksum(isoPath, test.checksum, test.checksumType)
 			if err != nil {
 				t.Error(err)
 			} else if valid != test.valid {

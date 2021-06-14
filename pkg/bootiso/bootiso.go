@@ -1,7 +1,6 @@
 package bootiso
 
 import (
-	"bufio"
 	"context"
 	"crypto/md5"
 	"crypto/sha256"
@@ -359,21 +358,15 @@ func BootCachedISO(osImage boot.OSImage, kernelParams string) error {
 	return nil
 }
 
-// VerifyChecksum takes a path to the ISO and its checksum file
+// VerifyChecksum takes a path to the ISO and its checksum
 // and compares the calculated checksum on the ISO
-// against the value parsed from the checksum file
-func VerifyChecksum(isoPath, checksumPath, checksumType string) (bool, error) {
+// against the checksum
+func VerifyChecksum(isoPath, checksum, checksumType string) (bool, error) {
 	iso, err := os.Open(isoPath)
 	if err != nil {
 		return false, err
 	}
 	defer iso.Close()
-
-	checksumFile, err := os.Open(checksumPath)
-	if err != nil {
-		return false, err
-	}
-	defer checksumFile.Close()
 
 	var hash hash.Hash
 	switch checksumType {
@@ -390,22 +383,8 @@ func VerifyChecksum(isoPath, checksumPath, checksumType string) (bool, error) {
 	}
 	calcChecksum := hex.EncodeToString(hash.Sum(nil))
 
-	var parsedChecksum string
-	isoName := path.Base(isoPath)
-	scanner := bufio.NewScanner(checksumFile)
 
-	// Checksum file should contain a line with
-	// the checksum and the ISO file name
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, isoName) {
-			splitLine := strings.Split(line, " ")
-			parsedChecksum = splitLine[0]
-			break
-		}
-	}
-
-	return calcChecksum == parsedChecksum, nil
+	return calcChecksum == checksum, nil
 }
 
 func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) boot.OSImage {
