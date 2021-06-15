@@ -126,7 +126,7 @@ instructions here.
 
 You need to have the following packages installed if on Ubuntu:
 ```sh
-sudo apt install libssl-dev build-essential wireless-tools kexec-tools
+sudo apt install libssl-dev build-essential wireless-tools kexec-tools bison flex
 ```
 
 #### Fetching, configuring and compiling the kernel
@@ -162,7 +162,7 @@ qemu-system-x86_64 \
   -enable-kvm \
   -m 2G \
   -kernel linux/arch/x86/boot/bzImage \
-  -append 'console=ttyS0 console=tty1 memmap=1G!1G' \
+  -append 'console=ttyS0 console=tty1' \
   -initrd /tmp/initramfs.linux_amd64.cpio \
   -device virtio-rng-pci \
   -netdev user,id=network0 \
@@ -249,23 +249,10 @@ The original concept for webboot was the following:
 2. copy the ISO to memory
 3. mount the ISO and copy out the kernel and initrd
 4. load the extracted kernel with the initrd
-5. kexec that kernel with [memmap parameters](https://docs.pmem.io/persistent-memory/getting-started-guide/creating-development-environments/linux-environments/linux-memmap) to retain the ISO
-
-The key point lies in preserving the respective ISO file without further storage throughout the kexec. That is achieved by using a persistent memory driver, which creates a pmem device at `/dev/pmem[N]` when booting Linux with the `memmap` parameter.
-
-Note the `memmap` kernel parameter. It is crucial for the kernel
-to have pmem enabled to create a block device that contains the ISO file.
-The pmem device must be large enough to contain the ISO, and the next kernel needs to know that the device exists and contains its respective ISO file.
+5. kexec that kernel
 
 
 ### Main Issues
-One caveat is that both our webboot kernel, as well as the kernel we kexec into, need support for pmem. See [below](#supported-operating-systems-(Legacy)) for details on OS distribution support and how the kernel needs to be configured.
-
-A second issue is selecting the size options. The Linux system
-that starts first needs enough memory to work with, and the pmem device needs to be large enough to hold the ISO. In addition, the addresses provided to `memmap` might segment memory in a way that is difficult to allocate.
-
-Finally, downloading the ISO every time we run `webboot` is a major inconvenience. This issue led us to consider adding a local ISO cache.
-
 
 ### Supported Operating Systems (Legacy)
 
