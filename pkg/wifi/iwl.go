@@ -166,7 +166,7 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	// There's no telling how long the supplicant will take, but on the other hand,
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
-		cmd := exec.CommandContext(ctx, "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
+		cmd := exec.CommandContext(ctx, "wifi", a[0], a[1])
 		cmd.Stdout, cmd.Stderr = stdout, stderr
 		cmd.Run()
 	}()
