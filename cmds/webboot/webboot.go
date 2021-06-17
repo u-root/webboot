@@ -142,7 +142,6 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	if err != nil {
 		return nil, err
 	}
-
 	var link string
 
 	if entry.Label() == customLabel {
@@ -151,8 +150,10 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 			return nil, err
 		}
 	} else {
-		distro := supportedDistros[entry.Label()]
-		link = distro.url
+		link, _, err = mirrorMenu(entry, uiEvents, link)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	filename := path.Base(link)
@@ -246,6 +247,34 @@ func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string
 		}
 	}
 	return nil, nil
+}
+
+// mirrorMenu fetches the mirror options of the distro the user selects and displays them in a new menu. Finally, it gets
+// the download link of the mirror the user selects.
+func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, link string) (url string, mirrorNameForTestPurposes string, err error) {
+	// Code for after the specific distro has been selected.
+	// Looks up the distro.
+	distro := supportedDistros[entry.Label()]
+	if len(distro.mirrors) > 0 {
+		// Make an array of type menu.Entry to store the mirrors of the
+		// particular distro selected. Then, display the mirror options.
+		entries := make([]menu.Entry, len(distro.mirrors))
+		for i := range entries {
+			entries[i] = &distro.mirrors[i]
+		}
+		entry, err = menu.PromptMenuEntry("Available Mirrors", "Choose an option:", entries, uiEvents)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	// Iterate through the mirrors of the distro to select the appropriate link.
+	for i := range distro.mirrors {
+		if distro.mirrors[i].name == entry.Label() {
+			link = distro.mirrors[i].url
+			return link, distro.mirrors[i].name, err
+		}
+	}
+	return "", "", fmt.Errorf("Mirror not found: %v", entry.Label())
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
@@ -353,7 +382,6 @@ func main() {
 		}
 	}
 	verbose("Using cache dir: %v", cacheDir)
-
 	if err := menu.Init(); err != nil {
 		log.Fatalf(err.Error())
 	}
