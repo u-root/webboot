@@ -57,7 +57,7 @@ func TestDownloadOption(t *testing.T) {
 
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
-	tinycoreURL := supportedDistros["Tinycore"].url
+	tinycoreURL := supportedDistros["Tinycore"].mirrors[0].url
 	customCmd := []string{strconv.Itoa(customIndex), "<Enter>"}
 	customCmd = append(customCmd, stringToKeypress(tinycoreURL)...)
 	customCmd = append(customCmd, "<Enter>")
@@ -86,20 +86,20 @@ func TestDownloadOption(t *testing.T) {
 			entry, err := downloadOption.exec(uiEvents, false, "./testdata")
 
 			if err != nil {
-				t.Errorf("Fail to execute downloadOption.exec(): %+v", err)
+				t.Fatalf("Fail to execute downloadOption.exec(): %+v", err)
 			}
 			iso, ok := entry.(*ISO)
 			if !ok {
-				t.Errorf("Expected type *ISO, but get %T", entry)
+				t.Fatalf("Expected type *ISO, but get %T", entry)
 			}
 			if tt.want.label != iso.label || tt.want.path != iso.path {
-				t.Errorf("Incorrect return. get %+v, want %+v", entry, tt.want)
+				t.Fatalf("Incorrect return. get %+v, want %+v", entry, tt.want)
 			}
 			if _, err := os.Stat(iso.path); err != nil {
-				t.Errorf("Fail to find downloaded file: %+v", err)
+				t.Fatalf("Fail to find downloaded file: %+v", err)
 			}
 			if err := os.RemoveAll("./testdata/Downloaded"); err != nil {
-				t.Errorf("Fail to remove test file: %+v", err)
+				t.Fatalf("Fail to remove test file: %+v", err)
 			}
 		})
 	}
@@ -274,4 +274,52 @@ func stringToKeypress(str string) []string {
 		keyPresses = append(keyPresses, str[i:i+1])
 	}
 	return keyPresses
+}
+
+func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"0", "<Enter>", "0", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "Arch"}
+	u, m, err := mirrorMenu(entry, uiEvents, "")
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	const tl = "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso"
+	if u != tl {
+		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
+	}
+	if m != "Default" {
+		t.Fatalf("Wrong mirror name. Got %q, want %q", m, "Default")
+	}
+}
+
+func TestMirrorNameAndLinkCheck(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"1", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "Arch"}
+	u, m, err := mirrorMenu(entry, uiEvents, "")
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	const tl = "http://mirror.arizona.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso"
+	if u != tl {
+		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
+	}
+	if m != "Arizona" {
+		t.Fatalf("Wrong mirror name. Got %q, want %q", m, "Arizona")
+	}
+}
+
+func TestMirrorNameAndLinkCheckBad(t *testing.T) {
+	t.Skip("This test is disabled until the menu package is fixed.")
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"9", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "Arch"}
+	_, _, err := mirrorMenu(entry, uiEvents, "")
+	if err == nil {
+		t.Fatalf("Bad mirror selection: got nil, want error")
+	}
 }
