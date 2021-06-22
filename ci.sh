@@ -2,7 +2,13 @@
 set -e
 
 # Check that the code has been formatted correctly.
-test -z "$(gofmt -s -l *.go pkg cmds)"
+GOFMT_DIFF=$(gofmt -s -d *.go pkg cmds)
+if [[ -n "${GOFMT_DIFF}" ]]; then
+	echo 'Error: Go source code is not formatted:'
+	printf '%s\n' "${GOFMT_DIFF}"
+	echo 'Run `gofmt -s -w *.go pkg cmds'
+	exit 1
+fi
 
 go build .
 go run webboot.go
