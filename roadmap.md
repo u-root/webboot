@@ -1,29 +1,15 @@
 # Roadmap
 
-Initial build incorporating u-root
+Last updated June 23, 2021.
 
-## Next steps are by hand the first time
-
-successfully download an iso
-
-mount it and extract the kernel
-
-kexec it just to see how kexec works
-
-preserve the iso across the reboot so the kernel can see and use it
-
-full boot
-
-## now we write the program to do the stuff we did by hand
-
-Write the extra commands needed to implement webboot functionality
-
-Boot into webboot image
-
-## stretch goals
-
-add signing support
-
-add wifi
-
-
+* **Directory server**: Instead of storing the list of distros in
+  cmds/webboot/types.go, download the list as a json file over HTTP (possibly
+  from github).
+* **Improve UI error messaging**: Devise a better paradigm to display useful
+  error messages to the user while still having highly technical logs
+  available.
+* **ISO builder**: Add a tool to automatically build the ISO image. Right now,
+  you have to get comfortable with fdisk and dd in order to install webboot.
+* **Get rid of C-based kexec**
+* **CentOS 8**
+* **ISO signing support**
