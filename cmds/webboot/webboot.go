@@ -144,6 +144,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	}
 
 	var link string
+
 	if entry.Label() == customLabel {
 		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
 		if err != nil {
@@ -153,6 +154,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		distro := supportedDistros[entry.Label()]
 		link = distro.url
 	}
+
 	filename := path.Base(link)
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
@@ -173,7 +175,13 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		} else {
 			return nil, err
 		}
+	}
 
+	menu, err := displayChecksumPrompt(uiEvents, supportedDistros, entry.Label(), fpath)
+	if err != nil {
+		return nil, err
+	} else if menu != nil {
+		return menu, nil
 	}
 
 	return &ISO{label: filename, path: fpath}, nil
@@ -205,6 +213,39 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	}
 
 	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents)
+}
+
+// If the chosen distro has a checksum, verify it.
+// If the checksum is not correct, prompt the user to choose whether they still want to continue.
+func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string]Distro, label string, fpath string) (menu.Entry, error) {
+	// Check that the distro is supported
+	if _, ok := supportedDistros[label]; ok {
+		distro := supportedDistros[label]
+		// Check that checksum is available
+		if distro.checksum == "" {
+			accept, err := menu.PromptConfirmation("This distro does not have a checksum. Proceed anyway?", uiEvents)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
+			}
+			if !accept {
+				// Go back to download menu
+				return &DownloadOption{}, nil
+			}
+		} else if valid, calcChecksum, err := bootiso.VerifyChecksum(fpath, distro.checksum, distro.checksumType); err != nil {
+			return nil, fmt.Errorf("Failed to verify checksum: %s", err)
+		} else if !valid {
+			accept, err := menu.PromptConfirmation(fmt.Sprintf("Checksum was not correct. The correct checksum is %s and the downloaded ISO's checksum is %s. Proceed anyway?",
+				distro.checksum, calcChecksum), uiEvents)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
+			}
+			if !accept {
+				// Go back to download menu
+				return &DownloadOption{}, nil
+			}
+		}
+	}
+	return nil, nil
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
