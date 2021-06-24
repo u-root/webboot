@@ -190,7 +190,7 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 	}
 }
 
-// ISO contains information of the iso user want to boot
+// ISO contains information of the iso user wants to boot.
 type ISO struct {
 	label    string
 	path     string
@@ -204,7 +204,7 @@ func (i *ISO) Label() string {
 	return i.label
 }
 
-// Config represents one kind of configure of booting an iso
+// Config represents one kind of configure of booting an iso.
 type Config struct {
 	label string
 }
@@ -216,7 +216,7 @@ func (c *Config) Label() string {
 	return c.label
 }
 
-// DownloadOption let user download an iso then boot it
+// DownloadOption lets the user download an iso then boot it.
 type DownloadOption struct {
 }
 
@@ -227,8 +227,8 @@ func (d *DownloadOption) Label() string {
 	return "Download an ISO"
 }
 
-// DirOption represents a directory under cache directory
-// it displays it's sub-directory or iso files
+// DirOption represents a directory under cache directory.
+// It displays its sub-directory or iso files.
 type DirOption struct {
 	label string
 	path  string

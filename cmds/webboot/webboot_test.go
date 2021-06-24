@@ -183,6 +183,76 @@ func TestBackOption(t *testing.T) {
 	}
 }
 
+func TestDisplayChecksumPrompt(t *testing.T) {
+	// test data
+	var testDistros = map[string]Distro{
+		"FakeDistro": {
+			checksum:     "1234567",
+			checksumType: "sha256",
+		},
+		"FakeDistroNoChecksum": {},
+		"FakeDistroGoodChecksum": {
+			checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
+			checksumType: "sha256",
+		},
+	}
+
+	type test struct {
+		name       string
+		keyInput   []string
+		distroName string
+		want       string
+	}
+
+	tests := []test{
+		{
+			name:       "Incorrect checksum, don't proceed",
+			keyInput:   []string{"1", "<Enter>"},
+			distroName: "FakeDistro",
+			want:       "*main.DownloadOption",
+		},
+		{
+			name:       "Incorrect checksum, proceed",
+			keyInput:   []string{"0", "<Enter>"},
+			distroName: "FakeDistro",
+			want:       "<nil>",
+		},
+		{
+			name:       "No checksum, don't proceed",
+			keyInput:   []string{"1", "<Enter>"},
+			distroName: "FakeDistroNoChecksum",
+			want:       "*main.DownloadOption",
+		},
+		{
+			name:       "No checksum, proceed",
+			keyInput:   []string{"0", "<Enter>"},
+			distroName: "FakeDistroNoChecksum",
+			want:       "<nil>",
+		},
+		{
+			name:       "Correct checksum",
+			keyInput:   []string{},
+			distroName: "FakeDistroGoodChecksum",
+			want:       "<nil>",
+		},
+	}
+
+	for _, tc := range tests {
+		uiEvents := make(chan ui.Event)
+		input := tc.keyInput
+		go pressKey(uiEvents, input)
+
+		t.Run(tc.name, func(t *testing.T) {
+			menu, err := displayChecksumPrompt(uiEvents, testDistros, tc.distroName, "testdata/dirlevel1/fakeDistro.iso")
+			if err != nil {
+				t.Errorf("Error on displayChecksumPrompt: %v", err)
+			} else if got := fmt.Sprintf("%T", menu); got != tc.want {
+				t.Errorf("%s: Got %s but want %s", tc.name, got, tc.want)
+			}
+		})
+	}
+}
+
 func distroIndex(searchName string) int {
 	var downloadOptions []string
 	for distroName := range supportedDistros {

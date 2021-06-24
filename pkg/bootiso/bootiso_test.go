@@ -56,11 +56,13 @@ func TestChecksum(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			valid, err := VerifyChecksum(isoPath, test.checksum, test.checksumType)
+			valid, calcChecksum, err := VerifyChecksum(isoPath, test.checksum, test.checksumType)
 			if err != nil {
 				t.Error(err)
 			} else if valid != test.valid {
 				t.Errorf("Checksum validation was expected to result in %t.\n", test.valid)
+			} else if len(calcChecksum) == 0 {
+				t.Errorf("Should have returned a checksum")
 			}
 		})
 	}
