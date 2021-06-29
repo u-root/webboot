@@ -310,6 +310,12 @@ func TestDisplayMenu(t *testing.T) {
 			want:      entry1,
 		},
 		{
+			name:      "exceed_the_bound_then_9_input_hangs",
+			entries:   []Entry{entry1, entry2, entry3},
+			userInput: []string{"4", "<Enter>", "9", "<Enter>"},
+			want:      entry1,
+		},
+		{
 			name:      "right_input_with_backspace",
 			entries:   []Entry{entry1, entry2, entry3},
 			userInput: []string{"2", "a", "<Backspace>", "<Enter>"},
