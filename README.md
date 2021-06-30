@@ -126,7 +126,7 @@ instructions here.
 
 You need to have the following packages installed if on Ubuntu:
 ```sh
-sudo apt install libssl-dev build-essential wireless-tools kexec-tools
+sudo apt install libssl-dev build-essential wireless-tools kexec-tools libelf-dev
 ```
 
 #### Fetching, configuring and compiling the kernel
@@ -200,25 +200,130 @@ webboot very much: It lists a kernel, an initrd, and extra arguments to append.
 Before you continue, please make sure to meet the following conditions:
 
 - your system can boot from MBR (possibly through UEFI CSM)
-- you have a USB stick with MBR partitioning, first partition formatted as VFAT
-- you have a directory `/mnt/usb` to mount the partition to
-- you have `syslinux` installed (use your package manager)
-- you have built a suitable Linux kernel using a config from this repository
-- you have built an initramfs that includes webboot, gzip-compressed
+- You have a directory `/mnt/usb` to mount the partition to
 
 To [install](https://wiki.syslinux.org/wiki/index.php?title=Install) syslinux as
 a bootloader and configure it, four steps are necessary:
 
-1. write a Volume Boot Record (VBR) to the stick
-2. write a Master Boot Record (MBR) to it
-3. mark the first partition as bootable
-4. copy the config file, Linux kernel and initcpio
+1. Write a Volume Boot Record (VBR) to the stick
+2. Write a Master Boot Record (MBR) to it
+3. Mark the first partition as bootable
+4. Copy the config file, Linux kernel, and initcpio
+
+The following instructions will walk you through these four steps.
+Tip: You may need to replace `sdb1` with the name of your partition.
+
+Install syslinux with
+```sh
+sudo apt-get install syslinux
+```
+
+To prepare your USB stick, run `sudo fdisk /dev/sdb` and use the fdisk instructions to complete the following:
+1. Delete all existing partitions (d)
+2. Add one new partition (n, p, 1)
+3. Change partition type (t) to EFI (ef)
+4. Make partition 1 bootable (a)
+5. Save (w)
+
+Here is a sample fdisk output:
+```sh
+$ sudo fdisk /dev/sdb
+
+Welcome to fdisk (util-linux 2.36.1).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+
+Command (m for help): d
+Selected partition 1
+Partition 1 has been deleted.
+
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (1-4, default 1): 1
+First sector (2048-121061375, default 2048):
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-121061375, default 121061375):
+
+Created a new partition 1 of type 'Linux' and of size 57.7 GiB.
+
+Command (m for help): t
+Selected partition 1
+Hex code or alias (type L to list all): L
+
+00 Empty            24 NEC DOS          81 Minix / old Lin  bf Solaris
+01 FAT12            27 Hidden NTFS Win  82 Linux swap / So  c1 DRDOS/sec (FAT-
+02 XENIX root       39 Plan 9           83 Linux            c4 DRDOS/sec (FAT-
+03 XENIX usr        3c PartitionMagic   84 OS/2 hidden or   c6 DRDOS/sec (FAT-
+04 FAT16 <32M       40 Venix 80286      85 Linux extended   c7 Syrinx
+05 Extended         41 PPC PReP Boot    86 NTFS volume set  da Non-FS data
+06 FAT16            42 SFS              87 NTFS volume set  db CP/M / CTOS / .
+07 HPFS/NTFS/exFAT  4d QNX4.x           88 Linux plaintext  de Dell Utility
+08 AIX              4e QNX4.x 2nd part  8e Linux LVM        df BootIt
+09 AIX bootable     4f QNX4.x 3rd part  93 Amoeba           e1 DOS access
+0a OS/2 Boot Manag  50 OnTrack DM       94 Amoeba BBT       e3 DOS R/O
+0b W95 FAT32        51 OnTrack DM6 Aux  9f BSD/OS           e4 SpeedStor
+0c W95 FAT32 (LBA)  52 CP/M             a0 IBM Thinkpad hi  ea Linux extended
+0e W95 FAT16 (LBA)  53 OnTrack DM6 Aux  a5 FreeBSD          eb BeOS fs
+0f W95 Ext'd (LBA)  54 OnTrackDM6       a6 OpenBSD          ee GPT
+10 OPUS             55 EZ-Drive         a7 NeXTSTEP         ef EFI (FAT-12/16/
+11 Hidden FAT12     56 Golden Bow       a8 Darwin UFS       f0 Linux/PA-RISC b
+12 Compaq diagnost  5c Priam Edisk      a9 NetBSD           f1 SpeedStor
+14 Hidden FAT16 <3  61 SpeedStor        ab Darwin boot      f4 SpeedStor
+16 Hidden FAT16     63 GNU HURD or Sys  af HFS / HFS+       f2 DOS secondary
+17 Hidden HPFS/NTF  64 Novell Netware   b7 BSDI fs          fb VMware VMFS
+18 AST SmartSleep   65 Novell Netware   b8 BSDI swap        fc VMware VMKCORE
+1b Hidden W95 FAT3  70 DiskSecure Mult  bb Boot Wizard hid  fd Linux raid auto
+1c Hidden W95 FAT3  75 PC/IX            bc Acronis FAT32 L  fe LANstep
+1e Hidden W95 FAT1  80 Old Minix        be Solaris boot     ff BBT
+
+Aliases:
+   linux          - 83
+   swap           - 82
+   extended       - 05
+   uefi           - EF
+   raid           - FD
+   lvm            - 8E
+   linuxex        - 85
+Hex code or alias (type L to list all): EF
+Changed type of partition 'Linux' to 'EFI (FAT-12/16/32)'.
+
+Command (m for help): a
+Selected partition 1
+The bootable flag on partition 1 is enabled now.
+
+Command (m for help): w
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+```
+
+Generate the partition header
+```sh
+mkfs -t vfat /dev/sdb1
+```
+
+Mount the USB and copy the config file, Linux kernel, and initcpio
+```sh
+sudo mount /dev/sdb1 /mnt/usb
+cp config-5.6.14 /mnt/usb/
+cp arch/x86/boot/bzImage /mnt/usb
+cp /tmp/initramfs.linux_amd64.cpio /mnt/usb
+umount /mnt/usb
+```
+
+Zip initramfs
+```sh
+gzip /tmp/initramfs.linux_amd64.cpio
+```
 
 Now the following commands would need to be run as root:
 
 ```sh
 syslinux -i /dev/sdb1
-dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/mbr.bin of=/dev/sdb
+dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/mbr/mbr.bin of=/dev/sdb
 parted /dev/sdb set 1 boot on
 # mount the stick and copy the files
 mount /dev/sdb1 /mnt/usb
