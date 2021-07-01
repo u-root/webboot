@@ -3,6 +3,7 @@ package bootiso
 import (
 	"context"
 	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -359,12 +360,13 @@ func BootCachedISO(osImage boot.OSImage, kernelParams string) error {
 }
 
 // VerifyChecksum takes a path to the ISO and its checksum
-// and compares the calculated checksum on the ISO
-// against the checksum
-func VerifyChecksum(isoPath, checksum, checksumType string) (bool, error) {
+// and compares the calculated checksum on the ISO against the checksum.
+// It returns true if the checksum was correct, false if the checksum
+// was incorrect, the calculated checksum, and an error.
+func VerifyChecksum(isoPath, checksum, checksumType string) (bool, string, error) {
 	iso, err := os.Open(isoPath)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	defer iso.Close()
 
@@ -372,19 +374,20 @@ func VerifyChecksum(isoPath, checksum, checksumType string) (bool, error) {
 	switch checksumType {
 	case "md5":
 		hash = md5.New()
+	case "sha1":
+		hash = sha1.New()
 	case "sha256":
 		hash = sha256.New()
 	default:
-		return false, fmt.Errorf("Unknown checksum type.")
+		return false, "", fmt.Errorf("Unknown checksum type.")
 	}
 
 	if _, err := io.Copy(hash, iso); err != nil {
-		return false, err
+		return false, "", err
 	}
 	calcChecksum := hex.EncodeToString(hash.Sum(nil))
 
-
-	return calcChecksum == checksum, nil
+	return calcChecksum == checksum, calcChecksum, nil
 }
 
 func findConfigOptionByLabel(configOptions []boot.OSImage, configLabel string) boot.OSImage {

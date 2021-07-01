@@ -142,17 +142,20 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	if err != nil {
 		return nil, err
 	}
-
 	var link string
+
 	if entry.Label() == customLabel {
 		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		distro := supportedDistros[entry.Label()]
-		link = distro.url
+		link, _, err = mirrorMenu(entry, uiEvents, link)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	filename := path.Base(link)
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
@@ -173,7 +176,13 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		} else {
 			return nil, err
 		}
+	}
 
+	menu, err := displayChecksumPrompt(uiEvents, supportedDistros, entry.Label(), fpath)
+	if err != nil {
+		return nil, err
+	} else if menu != nil {
+		return menu, nil
 	}
 
 	return &ISO{label: filename, path: fpath}, nil
@@ -205,6 +214,67 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	}
 
 	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents)
+}
+
+// If the chosen distro has a checksum, verify it.
+// If the checksum is not correct, prompt the user to choose whether they still want to continue.
+func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string]Distro, label string, fpath string) (menu.Entry, error) {
+	// Check that the distro is supported
+	if _, ok := supportedDistros[label]; ok {
+		distro := supportedDistros[label]
+		// Check that checksum is available
+		if distro.checksum == "" {
+			accept, err := menu.PromptConfirmation("This distro does not have a checksum. Proceed anyway?", uiEvents)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
+			}
+			if !accept {
+				// Go back to download menu
+				return &DownloadOption{}, nil
+			}
+		} else if valid, calcChecksum, err := bootiso.VerifyChecksum(fpath, distro.checksum, distro.checksumType); err != nil {
+			return nil, fmt.Errorf("Failed to verify checksum: %s", err)
+		} else if !valid {
+			accept, err := menu.PromptConfirmation(fmt.Sprintf("Checksum was not correct. The correct checksum is %s and the downloaded ISO's checksum is %s. Proceed anyway?",
+				distro.checksum, calcChecksum), uiEvents)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
+			}
+			if !accept {
+				// Go back to download menu
+				return &DownloadOption{}, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// mirrorMenu fetches the mirror options of the distro the user selects and displays them in a new menu. Finally, it gets
+// the download link of the mirror the user selects.
+func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, link string) (url string, mirrorNameForTestPurposes string, err error) {
+	// Code for after the specific distro has been selected.
+	// Looks up the distro.
+	distro := supportedDistros[entry.Label()]
+	if len(distro.mirrors) > 0 {
+		// Make an array of type menu.Entry to store the mirrors of the
+		// particular distro selected. Then, display the mirror options.
+		entries := make([]menu.Entry, len(distro.mirrors))
+		for i := range entries {
+			entries[i] = &distro.mirrors[i]
+		}
+		entry, err = menu.PromptMenuEntry("Available Mirrors", "Choose an option:", entries, uiEvents)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	// Iterate through the mirrors of the distro to select the appropriate link.
+	for i := range distro.mirrors {
+		if distro.mirrors[i].name == entry.Label() {
+			link = distro.mirrors[i].url
+			return link, distro.mirrors[i].name, err
+		}
+	}
+	return "", "", fmt.Errorf("Mirror not found: %v", entry.Label())
 }
 
 // getCachedDirectory recognizes the usb stick that contains the cached directory from block devices,
@@ -312,7 +382,6 @@ func main() {
 		}
 	}
 	verbose("Using cache dir: %v", cacheDir)
-
 	if err := menu.Init(); err != nil {
 		log.Fatalf(err.Error())
 	}

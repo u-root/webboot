@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -159,35 +161,42 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	}
 
 	// Each request has a 30 second window to make a connection
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
 	defer cancel()
 	c := make(chan error, 1)
 
 	// There's no telling how long the supplicant will take, but on the other hand,
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
-		cmd := exec.CommandContext(ctx, "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
-		cmd.Stdout, cmd.Stderr = stdout, stderr
-		cmd.Run()
-	}()
+		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "-f", "-o", "/tmp/out", "-s", "1024", "-v", "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf", "-f", "wpa_supplicant.log", "-dd")
 
-	// dhclient might never return on incorrect passwords or identity
-	go func() {
-		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
-		cmd.Stdout, cmd.Stderr = stdout, stderr
-		if err := cmd.Run(); err != nil {
+		outfile, err := os.OpenFile("morelog", os.O_WRONLY|os.O_CREATE, 0666)
+		cmd.Stdout, cmd.Stderr = outfile, outfile
+		if err != nil {
+			log.Print(err)
+		}
+		if err = cmd.Run(); err != nil {
 			c <- err
 		} else {
 			c <- nil
 		}
+
 	}()
 
-	select {
-	case err := <-c:
+	//	select {
+	//	case err := <-c:
+	//		return err
+	//	case <-ctx.Done():
+	//		return fmt.Errorf("wpa_supplicant error")
+	//	}
+
+	// dhclient might never return on incorrect passwords or identity
+	cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
+	cmd.Stdout, cmd.Stderr = stdout, stderr
+	if err := cmd.Run(); err != nil {
 		return err
-	case <-ctx.Done():
-		return fmt.Errorf("Connection timeout")
 	}
+	return nil
 }
 
 func generateConfig(a ...string) (conf []byte, err error) {

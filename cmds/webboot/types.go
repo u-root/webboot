@@ -11,7 +11,6 @@ import (
 )
 
 type Distro struct {
-	url           string
 	isoPattern    string
 	checksum      string
 	checksumType  string
@@ -26,15 +25,18 @@ type Mirror struct {
 	url  string
 }
 
+func (m *Mirror) Label() string {
+	return m.name
+}
+
 var supportedDistros = map[string]Distro{
-	"Arch": Distro{
-		url:          "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+	"Arch": {
 		isoPattern:   "^archlinux-.+",
 		checksum:     "1bf76d864651cc6454ab273fd3d2226a",
 		checksumType: "md5",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
-			bootiso.Config{
+			{
 				Label:      "Default Config",
 				KernelPath: "/arch/boot/x86_64/vmlinuz-linux",
 				InitrdPath: "/arch/boot/x86_64/archiso.img",
@@ -42,132 +44,189 @@ var supportedDistros = map[string]Distro{
 			},
 		},
 		mirrors: []Mirror{
-			Mirror{
+			{
+				name: "Default",
+				url:  "http://mirrors.acm.wpi.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
+			},
+			{
 				name: "Arizona",
 				url:  "http://mirror.arizona.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
-			Mirror{
+			{
 				name: "Purdue University",
 				url:  "https://plug-mirror.rcac.purdue.edu/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
-			Mirror{
+			{
 				name: "Constant.com",
 				url:  "http://arch.mirror.constant.com/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
-			Mirror{
+			{
 				name: "Georgia Institute of Technology",
 				url:  "http://www.gtlib.gatech.edu/pub/archlinux/iso/2021.06.01/archlinux-2021.06.01-x86_64.iso",
 			},
 		},
 	},
-	"CentOS 7": Distro{
-		url:          "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
+	"CentOS 7": {
 		isoPattern:   "^CentOS-7.+",
 		checksum:     "689531cce9cf484378481ae762fae362791a9be078fda10e4f6977bf8fa71350",
 		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso",
+			},
+		},
 	},
-	"CentOS 8": Distro{
-		url:          "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
+	"CentOS 8": {
 		isoPattern:   "^CentOS-8.+",
 		checksum:     "http://centos.mirror.lstn.net/8.4.2105/isos/x86_64",
 		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso",
+			},
+		},
 	},
-	"Debian": Distro{
-		url:          "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.9.0-amd64-xfce.iso",
+	"Debian": {
 		isoPattern:   "^debian-.+",
 		checksum:     "44e98dfc974e5ade72ebf3cbb9ff06df3aa2c0c0cdc0f30913dbd93983179ff5",
 		checksumType: "sha256",
 		bootConfig:   "syslinux",
 		kernelParams: "findiso={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.9.0-amd64-xfce.iso",
+			},
+		},
 	},
-	"Fedora": Distro{
-		url:          "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
+	"Fedora": {
 		isoPattern:   "^Fedora-.+",
 		checksum:     "4d0f6653e2e0860c99ffe0ef274a46d875fb85bd2a40cb896dce1ed013566924",
 		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso",
+			},
+		},
 	},
-	"Kali": Distro{
-		url:          "https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso",
+	"Kali": {
 		isoPattern:   "^kali-linux-.+",
 		checksum:     "1a0b2ea83f48861dd3f3babd5a2892a14b30a7234c8c9b5013a6507d1401874f",
 		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "findiso={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso",
+			},
+		},
 	},
-	"Linux Mint": Distro{
-		url:          "http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso",
+	"Linux Mint": {
 		isoPattern:   "^linuxmint-.+",
 		checksum:     "2f6ae466ec9b7c6255e997b82f162ae88bfe640a8df16d3e2f495b6281120af9",
 		checksumType: "sha256",
 		bootConfig:   "grub",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso",
+			},
+		},
 	},
-	"Manjaro": Distro{
-		url:          "https://download.manjaro.org/xfce/21.0.6/manjaro-xfce-21.0.6-210607-linux510.iso",
+	"Manjaro": {
 		isoPattern:   "^manjaro-.+",
 		checksum:     "fab9d1bdd03a7e5daab226ccc8e16ba96a5b07e9",
 		checksumType: "sha1",
 		kernelParams: "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
 		customConfigs: []bootiso.Config{
-			bootiso.Config{
+			{
 				Label:      "Default Config",
 				KernelPath: "/boot/vmlinuz-x86_64",
 				InitrdPath: "/boot/initramfs-x86_64.img",
 				Cmdline:    "driver=free tz=utc lang=en_US keytable=en",
 			},
 		},
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://download.manjaro.org/xfce/21.0.6/manjaro-xfce-21.0.6-210607-linux510.iso",
+			},
+		},
 	},
-	"Tinycore": Distro{
-		url:          "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
+	"Tinycore": {
 		isoPattern:   ".*CorePure64-.+",
 		checksum:     "58bc33523ce10e64f56b9a9ec8a77531",
 		checksumType: "md5",
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso",
+			},
+		},
 	},
-	"LHSCowboys": Distro{
-		url:          "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso",
+	"LHSCowboys": {
 		isoPattern:   ".*CorePure64-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso",
+			},
+		},
 	},
-	"DHSGaels": Distro{
-		url:          "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/DHSGaels.iso",
+	"DHSGaels": {
 		isoPattern:   ".*CorePure64-.+",
 		bootConfig:   "syslinux",
 		kernelParams: "iso=UUID={{.UUID}}{{.IsoPath}}",
+		mirrors: []Mirror{
+			{
+				name: "Default",
+				url:  "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/DHSGaels.iso",
+			},
+		},
 	},
-	"Ubuntu": Distro{
-		url:          "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
+	"Ubuntu": {
 		isoPattern:   "^ubuntu-.+",
 		checksum:     "b45165ed3cd437b9ffad02a2aad22a4ddc69162470e2622982889ce5826f6e3d",
 		checksumType: "sha256",
 		bootConfig:   "syslinux",
 		kernelParams: "iso-scan/filename={{.IsoPath}}",
 		mirrors: []Mirror{
-			Mirror{
+			{
+				name: "Default",
+				url:  "https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso",
+			},
+			{
 				name: "Constant.com",
 				url:  "http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
-			Mirror{
+			{
 				name: "Rochester Institute of Technology",
 				url:  "http://mirrors.rit.edu/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
-			Mirror{
+			{
 				name: "Purdue University",
 				url:  "http://osmirrors.cerias.purdue.edu/pub/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
-			Mirror{
+			{
 				name: "University of Utah",
 				url:  "http://ubuntu.cs.utah.edu/releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
-			Mirror{
+			{
 				name: "Washington State University",
 				url:  "http://mirrors.vcea.wsu.edu/ubuntu-releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso",
 			},
@@ -190,7 +249,7 @@ func NewCacheDevice(device *block.BlockDev, mountPoint string) CacheDevice {
 	}
 }
 
-// ISO contains information of the iso user want to boot
+// ISO contains information of the iso user wants to boot.
 type ISO struct {
 	label    string
 	path     string
@@ -204,7 +263,7 @@ func (i *ISO) Label() string {
 	return i.label
 }
 
-// Config represents one kind of configure of booting an iso
+// Config represents one kind of configure of booting an iso.
 type Config struct {
 	label string
 }
@@ -216,7 +275,7 @@ func (c *Config) Label() string {
 	return c.label
 }
 
-// DownloadOption let user download an iso then boot it
+// DownloadOption lets the user download an iso then boot it.
 type DownloadOption struct {
 }
 
@@ -227,8 +286,8 @@ func (d *DownloadOption) Label() string {
 	return "Download an ISO"
 }
 
-// DirOption represents a directory under cache directory
-// it displays it's sub-directory or iso files
+// DirOption represents a directory under cache directory.
+// It displays its sub-directory or iso files.
 type DirOption struct {
 	label string
 	path  string

@@ -44,23 +44,25 @@ func TestChecksum(t *testing.T) {
 		},
 		{
 			name:         "valid_sha256",
-			checksum:     "01ce6b5f4e4f7e98eddc343fc14f1436fb1b0452e6b9f7e07461b6a089a909c1", 
+			checksum:     "01ce6b5f4e4f7e98eddc343fc14f1436fb1b0452e6b9f7e07461b6a089a909c1",
 			checksumType: "sha256",
 			valid:        true,
 		},
 		{
 			name:         "invalid_md5",
-			checksum: "99979ba7558598574cd396e7b1b057b7",
+			checksum:     "99979ba7558598574cd396e7b1b057b7",
 			checksumType: "md5",
 			valid:        false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			valid, err := VerifyChecksum(isoPath, test.checksum, test.checksumType)
+			valid, calcChecksum, err := VerifyChecksum(isoPath, test.checksum, test.checksumType)
 			if err != nil {
 				t.Error(err)
 			} else if valid != test.valid {
 				t.Errorf("Checksum validation was expected to result in %t.\n", test.valid)
+			} else if len(calcChecksum) == 0 {
+				t.Errorf("Should have returned a checksum")
 			}
 		})
 	}
