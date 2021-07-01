@@ -59,33 +59,33 @@ func TestMain(m *testing.M) {
 	supportedDistros = map[string]Distro{
 		"FakeArch": {
 			// This checksum corresponds to the random data for random1MiB.iso.
-			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
-			checksumType: "sha256",
-			mirrors: []Mirror{
+			Checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			ChecksumType: "sha256",
+			Mirrors: []Mirror{
 				{
-					name: "Default",
-					url:  server.url(randomISO),
+					Name: "Default",
+					Url:  server.url(randomISO),
 				},
 				{
-					name: "Arizona",
-					url:  server.url(randomISO),
+					Name: "Arizona",
+					Url:  server.url(randomISO),
 				},
 			},
 		},
 		"FakeTinycore": {
 			// This checksum corresponds to the random data for random1MiB.iso.
-			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
-			checksumType: "sha256",
-			mirrors: []Mirror{
+			Checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			ChecksumType: "sha256",
+			Mirrors: []Mirror{
 				{
-					name: "Default",
-					url:  server.url(randomISO),
+					Name: "Default",
+					Url:  server.url(randomISO),
 				},
 			},
 		},
 		"InfiniteOS": {
-			mirrors: []Mirror{
-				{url: server.url(infiniteISO)},
+			Mirrors: []Mirror{
+				{Url: server.url(infiniteISO)},
 			},
 		},
 	}
@@ -188,7 +188,7 @@ func TestDownload(t *testing.T) {
 		fPath := filepath.Join(tmpDir, "test_download.iso")
 
 		// Download the ISO from the fake server.
-		u := supportedDistros["FakeTinycore"].mirrors[0].url
+		u := supportedDistros["FakeTinycore"].Mirrors[0].Url
 		if err := download(u, fPath, uiEvents); err != nil {
 			t.Fatalf("Fail to download: %+v", err)
 		}
@@ -203,6 +203,35 @@ func TestDownload(t *testing.T) {
 	})
 }
 
+func TestDistroData(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+
+	supportedDistros, err := distroData(uiEvents, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
+	if err != nil {
+		t.Fatalf("Error on distroData: %v", err)
+	}
+
+	if len(supportedDistros) == 0 {
+		t.Fatalf("Empty distro list")
+	}
+
+	for distroName := range supportedDistros {
+		if len(supportedDistros[distroName].Mirrors) == 0 {
+			t.Fatalf("Empty mirror list in %s", distroName)
+		}
+	}
+}
+
+func TestDistroDataBad(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+
+	_, err := distroData(uiEvents, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/invalid_link.json")
+	if err.Error() != "Received http status code 404 Not Found" {
+		fmt.Println(err.Error())
+		t.Fatalf("Got \"%v\", want \"Received http status code 404 Not Found\"", err)
+	}
+}
+
 func TestDownloadOption(t *testing.T) {
 	tinycoreIso := &ISO{
 		label: randomISO,
@@ -211,7 +240,7 @@ func TestDownloadOption(t *testing.T) {
 
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
-	tinycoreURL := supportedDistros["FakeTinycore"].mirrors[0].url
+	tinycoreURL := supportedDistros["FakeTinycore"].Mirrors[0].Url
 	tinycoreIndex, err := distroIndex("FakeTinycore")
 	if err != nil {
 		t.Fatalf("Error on distroIndex: %v", err)
@@ -390,13 +419,13 @@ func TestDisplayChecksumPrompt(t *testing.T) {
 	// test data
 	var testDistros = map[string]Distro{
 		"FakeDistro": {
-			checksum:     "1234567",
-			checksumType: "sha256",
+			Checksum:     "1234567",
+			ChecksumType: "sha256",
 		},
 		"FakeDistroNoChecksum": {},
 		"FakeDistroGoodChecksum": {
-			checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
-			checksumType: "sha256",
+			Checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
+			ChecksumType: "sha256",
 		},
 	}
 
@@ -512,7 +541,7 @@ func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
-	tl := supportedDistros["FakeArch"].mirrors[0].url
+	tl := supportedDistros["FakeArch"].Mirrors[0].Url
 	if u != tl {
 		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
 	}
@@ -535,7 +564,7 @@ func TestMirrorNameAndLinkCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
-	tl := supportedDistros["FakeArch"].mirrors[0].url
+	tl := supportedDistros["FakeArch"].Mirrors[0].Url
 	if u != tl {
 		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
 	}
