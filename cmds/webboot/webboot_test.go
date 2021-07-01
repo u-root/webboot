@@ -2,11 +2,18 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/u-root/webboot/pkg/menu"
@@ -23,6 +30,140 @@ func pressKey(ch chan ui.Event, input []string) {
 	}
 }
 
+// The following files can be downloaded:
+const (
+	// randomISO is a file containing 1 mebibytes of random data.
+	randomISO = "random1MiB.iso"
+	// inititeISO is a file which is infinite bytes and takes forever to
+	// download.
+	infiniteISO = "infinite.iso"
+)
+
+// MiB is 1 mebibyte.
+const MiB = 1024 * 1024
+
+// TestMain is run once before all tests.
+func TestMain(m *testing.M) {
+	// Launch the fake ISO server.
+	server, err := startFakeISOServer()
+	if err != nil {
+		log.Fatalf("error starting fake ISO server: %v", err)
+	}
+	defer server.stop()
+
+	// Replace the supportedDistros list with a fake list for testing.
+	supportedDistros = map[string]Distro{
+		"FakeArch": {
+			// This checksum corresponds to the random data for random1MiB.iso.
+			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			checksumType: "sha256",
+			mirrors: []Mirror{
+				{
+					name: "Default",
+					url:  server.url(randomISO),
+				},
+				{
+					name: "Arizona",
+					url:  server.url(randomISO),
+				},
+			},
+		},
+		"FakeTinycore": {
+			// This checksum corresponds to the random data for random1MiB.iso.
+			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			checksumType: "sha256",
+			mirrors: []Mirror{
+				{
+					name: "Default",
+					url:  server.url(randomISO),
+				},
+			},
+		},
+		"InfiniteOS": {
+			mirrors: []Mirror{
+				{url: server.url(infiniteISO)},
+			},
+		},
+	}
+
+	// Run tests.
+	os.Exit(m.Run())
+}
+
+// fakeISOServer serves fake ISO images for testing.
+type fakeISOServer struct {
+	server *http.Server
+	port   int
+}
+
+// startFakeISOServers starts serving ISOs on 127.0.0.1. The port is in the
+// returned struct.
+func startFakeISOServer() (*fakeISOServer, error) {
+	f := &fakeISOServer{}
+	f.server = &http.Server{
+		Handler: f,
+	}
+
+	// Find an unused port.
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, fmt.Errorf("error creating free port: %v", err)
+	}
+	f.port = l.Addr().(*net.TCPAddr).Port
+
+	go func() {
+		if err := f.server.Serve(l); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+	return f, nil
+}
+
+// stop stops serving ISOs.
+func (f fakeISOServer) stop() {
+	f.server.Close()
+}
+
+// url returns the download url for the given filename.
+func (f fakeISOServer) url(filename string) string {
+	u := &url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("127.0.0.1:%d", f.port),
+		Path:   filename,
+	}
+	return u.String()
+}
+
+// ServeHTTP handles HTTP requests for the fakeISOServer.
+func (f fakeISOServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Random number generator.
+	rr := rand.New(rand.NewSource(99))
+
+	switch r.URL.Path {
+	case "/" + randomISO:
+		w.WriteHeader(200)
+		io.CopyN(w, rr, MiB)
+
+	case "/" + infiniteISO:
+		w.WriteHeader(200)
+
+		ctx := r.Context()
+		for {
+			// Write 1 mebibyte every 1 second until the connection
+			// is closed.
+			io.CopyN(w, rr, MiB)
+			select {
+			case <-ctx.Done():
+				break
+			case <-time.After(time.Second):
+			}
+		}
+
+	default:
+		w.WriteHeader(404)
+	}
+}
+
 func TestDownload(t *testing.T) {
 	uiEvents := make(chan ui.Event)
 
@@ -35,29 +176,38 @@ func TestDownload(t *testing.T) {
 	})
 
 	t.Run("download_tinycore", func(t *testing.T) {
-		fPath := "/tmp/test_tinycore.iso"
-		url := "http://tinycorelinux.net/10.x/x86_64/release/TinyCorePure64-10.1.iso"
-		if err := download(url, fPath, uiEvents); err != nil {
+		// Create a temporary directory for the download.
+		tmpDir, err := filepath.Abs(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		fPath := filepath.Join(tmpDir, "test_download.iso")
+
+		// Download the ISO from the fake server.
+		u := supportedDistros["FakeTinycore"].mirrors[0].url
+		if err := download(u, fPath, uiEvents); err != nil {
 			t.Fatalf("Fail to download: %+v", err)
 		}
-		if _, err := os.Stat(fPath); err != nil {
+		s, err := os.Stat(fPath)
+		if err != nil {
 			t.Fatalf("Fail to find downloaded file: %+v", err)
 		}
-		if err := os.Remove(fPath); err != nil {
-			t.Fatalf("Fail to remove test file: %+v", err)
+		if s.Size() != MiB {
+			t.Fatalf("Expected download size of %d; got %d", MiB, s.Size())
 		}
+
 	})
 }
 
 func TestDownloadOption(t *testing.T) {
 	tinycoreIso := &ISO{
-		label: "TinyCorePure64-11.1.iso",
-		path:  "testdata/Downloaded/TinyCorePure64-11.1.iso",
+		label: randomISO,
+		path:  filepath.Join("testdata/Downloaded", randomISO),
 	}
 
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
-	tinycoreURL := supportedDistros["Tinycore"].url
+	tinycoreURL := supportedDistros["FakeTinycore"].mirrors[0].url
 	customCmd := []string{strconv.Itoa(customIndex), "<Enter>"}
 	customCmd = append(customCmd, stringToKeypress(tinycoreURL)...)
 	customCmd = append(customCmd, "<Enter>")
@@ -68,9 +218,14 @@ func TestDownloadOption(t *testing.T) {
 		want  *ISO
 	}{
 		{
-			name:  "test_bookmark",
-			input: []string{strconv.Itoa(distroIndex("Tinycore")), "<Enter>"},
-			want:  tinycoreIso,
+			name: "test_bookmark",
+			input: []string{
+				// Distros selection menu
+				strconv.Itoa(distroIndex("FakeTinycore")), "<Enter>",
+				// Mirrors selection menu
+				"0", "<Enter>",
+			},
+			want: tinycoreIso,
 		},
 		{
 			name:  "test_custom_url",
@@ -86,33 +241,44 @@ func TestDownloadOption(t *testing.T) {
 			entry, err := downloadOption.exec(uiEvents, false, "./testdata")
 
 			if err != nil {
-				t.Errorf("Fail to execute downloadOption.exec(): %+v", err)
+				t.Fatalf("Fail to execute downloadOption.exec(): %+v", err)
 			}
 			iso, ok := entry.(*ISO)
 			if !ok {
-				t.Errorf("Expected type *ISO, but get %T", entry)
+				t.Fatalf("Expected type *ISO, but get %T", entry)
 			}
 			if tt.want.label != iso.label || tt.want.path != iso.path {
-				t.Errorf("Incorrect return. get %+v, want %+v", entry, tt.want)
+				t.Fatalf("Incorrect return. get %+v, want %+v", entry, tt.want)
 			}
 			if _, err := os.Stat(iso.path); err != nil {
-				t.Errorf("Fail to find downloaded file: %+v", err)
+				t.Fatalf("Fail to find downloaded file: %+v", err)
 			}
 			if err := os.RemoveAll("./testdata/Downloaded"); err != nil {
-				t.Errorf("Fail to remove test file: %+v", err)
+				t.Fatalf("Fail to remove test file: %+v", err)
 			}
 		})
 	}
-
 }
 
 func TestCancelDownload(t *testing.T) {
 	uiEvents := make(chan ui.Event)
-	keyPresses := []string{"0", "<Enter>", "<Escape>"}
+	// InfiniteOS will take forever to download and must be cancelled.
+	keyPresses := []string{
+		// Distros selection menu
+		strconv.Itoa(distroIndex("InfiniteOS")), "<Enter>",
+		// Mirrors selection menu
+		"0", "<Enter>",
+		// Quit the download.
+		"<Escape>",
+	}
 	go pressKey(uiEvents, keyPresses)
 
 	downloadOption := DownloadOption{}
 	_, err := downloadOption.exec(uiEvents, false, "./testdata")
+
+	if err == nil {
+		t.Errorf("Got nil error; expected 'Download was canceled.'")
+	}
 
 	if err != nil && err.Error() != "Download was canceled." {
 		t.Errorf("Received error: %+v", err)
@@ -183,6 +349,76 @@ func TestBackOption(t *testing.T) {
 	}
 }
 
+func TestDisplayChecksumPrompt(t *testing.T) {
+	// test data
+	var testDistros = map[string]Distro{
+		"FakeDistro": {
+			checksum:     "1234567",
+			checksumType: "sha256",
+		},
+		"FakeDistroNoChecksum": {},
+		"FakeDistroGoodChecksum": {
+			checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
+			checksumType: "sha256",
+		},
+	}
+
+	type test struct {
+		name       string
+		keyInput   []string
+		distroName string
+		want       string
+	}
+
+	tests := []test{
+		{
+			name:       "Incorrect checksum, don't proceed",
+			keyInput:   []string{"1", "<Enter>"},
+			distroName: "FakeDistro",
+			want:       "*main.DownloadOption",
+		},
+		{
+			name:       "Incorrect checksum, proceed",
+			keyInput:   []string{"0", "<Enter>"},
+			distroName: "FakeDistro",
+			want:       "<nil>",
+		},
+		{
+			name:       "No checksum, don't proceed",
+			keyInput:   []string{"1", "<Enter>"},
+			distroName: "FakeDistroNoChecksum",
+			want:       "*main.DownloadOption",
+		},
+		{
+			name:       "No checksum, proceed",
+			keyInput:   []string{"0", "<Enter>"},
+			distroName: "FakeDistroNoChecksum",
+			want:       "<nil>",
+		},
+		{
+			name:       "Correct checksum",
+			keyInput:   []string{},
+			distroName: "FakeDistroGoodChecksum",
+			want:       "<nil>",
+		},
+	}
+
+	for _, tc := range tests {
+		uiEvents := make(chan ui.Event)
+		input := tc.keyInput
+		go pressKey(uiEvents, input)
+
+		t.Run(tc.name, func(t *testing.T) {
+			menu, err := displayChecksumPrompt(uiEvents, testDistros, tc.distroName, "testdata/dirlevel1/fakeDistro.iso")
+			if err != nil {
+				t.Errorf("Error on displayChecksumPrompt: %v", err)
+			} else if got := fmt.Sprintf("%T", menu); got != tc.want {
+				t.Errorf("%s: Got %s but want %s", tc.name, got, tc.want)
+			}
+		})
+	}
+}
+
 func distroIndex(searchName string) int {
 	var downloadOptions []string
 	for distroName := range supportedDistros {
@@ -204,4 +440,52 @@ func stringToKeypress(str string) []string {
 		keyPresses = append(keyPresses, str[i:i+1])
 	}
 	return keyPresses
+}
+
+func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"0", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "FakeArch"}
+	u, m, err := mirrorMenu(entry, uiEvents, "")
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	tl := supportedDistros["FakeArch"].mirrors[0].url
+	if u != tl {
+		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
+	}
+	if m != "Default" {
+		t.Fatalf("Wrong mirror name. Got %q, want %q", m, "Default")
+	}
+}
+
+func TestMirrorNameAndLinkCheck(t *testing.T) {
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"1", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "FakeArch"}
+	u, m, err := mirrorMenu(entry, uiEvents, "")
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+	tl := supportedDistros["FakeArch"].mirrors[0].url
+	if u != tl {
+		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
+	}
+	if m != "Arizona" {
+		t.Fatalf("Wrong mirror name. Got %q, want %q", m, "Arizona")
+	}
+}
+
+func TestMirrorNameAndLinkCheckBad(t *testing.T) {
+	t.Skip("TODO: This test is disabled until the menu package is fixed.")
+	uiEvents := make(chan ui.Event)
+	keyPresses := []string{"9", "<Enter>"}
+	go pressKey(uiEvents, keyPresses)
+	entry := &Config{label: "FakeArch"}
+	_, _, err := mirrorMenu(entry, uiEvents, "")
+	if err == nil {
+		t.Fatalf("Bad mirror selection: got nil, want error")
+	}
 }
