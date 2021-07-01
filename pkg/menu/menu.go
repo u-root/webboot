@@ -9,10 +9,9 @@ import (
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/nsf/termbox-go"
 )
 
-const menuWidth = 50
-const menuHeight = 12
 const resultHeight = 20
 const resultWidth = 70
 
@@ -354,20 +353,25 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	for i, e := range entries {
 		listData = append(listData, fmt.Sprintf("[%d] %s", i, e.Label()))
 	}
-
+	windowWidth, windowHeight := termbox.Size()
+	// location will serve as the y1 coordinate in this function.
 	location := 0
 	menu := widgets.NewList()
 	menu.Title = menuTitle
-	// menus's hight always be 12, which could diplay 10 entrys in one page
-	menu.SetRect(0, location, menuWidth, location+menuHeight)
-	location += menuHeight
-	menu.TextStyle.Fg = ui.ColorWhite
+	// windowHeight is divided by 5 to make room for the five boxes that will be on the screen.
+	height := windowHeight / 5
+	// menu is the box with the options. It will be at the top of the screen.
+	menu.SetRect(0, location, windowWidth, height)
 
-	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
-	location += 2
-	input := newParagraph("", true, location, menuWidth, 3)
-	location += 3
-	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, menuWidth, 3)
+	location += height
+	menu.TextStyle.Fg = ui.ColorWhite
+	intro := newParagraph(introwords, false, location, windowWidth, height)
+
+	location += height
+	input := newParagraph("", true, location, windowWidth, height)
+
+	location += height
+	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, windowWidth, height)
 
 	ui.Render(intro)
 	ui.Render(input)
