@@ -1,8 +1,11 @@
 package menu
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +17,8 @@ import (
 
 const resultHeight = 20
 const resultWidth = 70
+
+var counter = 0
 
 type validCheck func(string) (string, string, bool)
 
@@ -226,7 +231,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 }
 
 // parsingMenuOption parses the user's operation in the menu page, such as page up, page down, selection. etc
-func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widgets.Paragraph, uiEvents <-chan ui.Event, customWarning ...string) (int, error) {
+func parsingMenuOption(labels []string, menu *widgets.List, input *widgets.Paragraph, logBox *widgets.List, warning *widgets.Paragraph, uiEvents <-chan ui.Event, customWarning ...string) (int, error) {
 
 	if len(labels) == 0 {
 		return 0, fmt.Errorf("No Entry in the menu")
@@ -274,16 +279,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 				input.Text = input.Text[:len(input.Text)-1]
 				ui.Render(input)
 			}
-		case "<Left>", "<PageUp>":
-			// page up
+		case "<Left>":
 			first = max(0, first-10)
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
 			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
-		case "<Right>", "<PageDown>":
-			// page down
+		case "<Right>":
 			if first+10 >= len(labels) {
 				continue
 			}
@@ -293,6 +296,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			menu.Rows = listData
 			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
+		case "<PageUp>":
+			// scroll up in the log box
+			logBox.ScrollHalfPageUp()
+			ui.Render(logBox)
+		case "<PageDown>":
+			// scroll down in the log box
+			logBox.ScrollHalfPageDown()
+			ui.Render(logBox)
 		case "<Up>", "<MouseWheelUp>":
 			// move one line up
 			first = max(0, first-1)
@@ -354,6 +365,7 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 		listData = append(listData, fmt.Sprintf("[%d] %s", i, e.Label()))
 	}
 	windowWidth, windowHeight := termbox.Size()
+
 	// location will serve as the y1 coordinate in this function.
 	location := 0
 	menu := widgets.NewList()
@@ -362,22 +374,50 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	height := windowHeight / 5
 	// menu is the box with the options. It will be at the top of the screen.
 	menu.SetRect(0, location, windowWidth, height)
+	menu.TextStyle.Fg = ui.ColorWhite
 
 	location += height
-	menu.TextStyle.Fg = ui.ColorWhite
+	// A variable to help get rid of the gap between "Choose an option:" and its
+	// corresponding box.
+	alternateHeight := 2
+
 	intro := newParagraph(introwords, false, location, windowWidth, height)
 
-	location += height
+	location += alternateHeight
 	input := newParagraph("", true, location, windowWidth, height)
+
+	location += height
+	logBox := widgets.NewList()
+	logBox.Title = "Logs:"
+	logBox.WrapText = false
+	logBox.SetRect(0, location, windowWidth, location+height)
+	logBox.Rows = make([]string, 1000)
 
 	location += height
 	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, windowWidth, height)
 
+	// Write the contents of the log output text file to the log box.
+	var file, err = os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		logBox.Rows[counter] += scanner.Text()
+		counter++
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
 	ui.Render(intro)
 	ui.Render(input)
 	ui.Render(warning)
+	ui.Render(logBox)
 
-	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents, customWarning...)
+	chooseIndex, err := parsingMenuOption(listData, menu, input, logBox, warning, uiEvents, customWarning...)
 	if err != nil {
 		return nil, err
 	}

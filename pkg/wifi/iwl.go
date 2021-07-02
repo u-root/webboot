@@ -157,6 +157,14 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	}
 
 	if err := ioutil.WriteFile("/tmp/wifi.conf", conf, 0444); err != nil {
+		var file, err = os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		file.WriteString(time.Now().String() + " ")
+		file.WriteString("/temp/wifi.conf: " + err.Error())
+		file.WriteString("\n")
+		defer file.Close()
 		return fmt.Errorf("/tmp/wifi.conf: %v", err)
 	}
 
@@ -168,15 +176,19 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	// There's no telling how long the supplicant will take, but on the other hand,
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
-		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "-f", "-o", "/tmp/out", "-s", "1024", "-v", "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf", "-f", "wpa_supplicant.log", "-dd")
+		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "-f", "-o", "/tmp/out", "-s", "1024", "-v", "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf", "-dd")
 
-		outfile, err := os.OpenFile("morelog", os.O_WRONLY|os.O_CREATE, 0666)
+		outfile, err := os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		cmd.Stdout, cmd.Stderr = outfile, outfile
 		if err != nil {
 			log.Print(err)
 		}
+		defer outfile.Close()
 		if err = cmd.Run(); err != nil {
 			c <- err
+			outfile.WriteString(time.Now().String() + " ")
+			outfile.WriteString(err.Error())
+			outfile.WriteString("\n")
 		} else {
 			c <- nil
 		}
