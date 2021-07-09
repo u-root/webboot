@@ -52,22 +52,22 @@ func interfaceIsWireless(ifname string) bool {
 	return true
 }
 
-func setupNetwork(uiEvents <-chan ui.Event) error {
-	iface, err := selectNetworkInterface(uiEvents)
+func setupNetwork(uiEvents <-chan ui.Event, menus chan<- string) error {
+	iface, err := selectNetworkInterface(uiEvents, menus)
 	if err != nil {
 		return err
 	}
 
-	return selectWirelessNetwork(uiEvents, iface.Label())
+	return selectWirelessNetwork(uiEvents, menus, iface.Label())
 }
 
-func selectNetworkInterface(uiEvents <-chan ui.Event) (menu.Entry, error) {
+func selectNetworkInterface(uiEvents <-chan ui.Event, menus chan<- string) (menu.Entry, error) {
 	ifEntries, err := wirelessIfaceEntries()
 	if err != nil {
 		return nil, err
 	}
 
-	iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents)
+	iface, err := menu.PromptMenuEntry("Network Interfaces", "Choose an option", ifEntries, uiEvents, menus)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func selectNetworkInterface(uiEvents <-chan ui.Event) (menu.Entry, error) {
 	return iface, nil
 }
 
-func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
+func selectWirelessNetwork(uiEvents <-chan ui.Event, menus chan<- string, iface string) error {
 	worker, err := wifi.NewIWLWorker(&wifiStdout, &wifiStderr, iface)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 			netEntries = append(netEntries, &Network{info: network})
 		}
 
-		entry, err := menu.PromptMenuEntry("Wireless Networks", "Choose an option", netEntries, uiEvents)
+		entry, err := menu.PromptMenuEntry("Wireless Networks", "Choose an option", netEntries, uiEvents, menus)
 		if err != nil {
 			return err
 		}
@@ -104,14 +104,14 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 			return fmt.Errorf("Bad menu entry.")
 		}
 
-		if err := connectWirelessNetwork(uiEvents, worker, network.info); err != nil {
+		if err := connectWirelessNetwork(uiEvents, menus, worker, network.info); err != nil {
 			switch err {
 			case menu.ExitRequest: // user typed <Ctrl+d> to exit
 				return err
 			case menu.BackRequest: // user typed <Esc> to go back
 				continue
 			default: // connection error
-				menu.DisplayResult([]string{err.Error()}, uiEvents)
+				menu.DisplayResult([]string{err.Error()}, uiEvents, menus)
 				continue
 			}
 		}
@@ -120,14 +120,14 @@ func selectWirelessNetwork(uiEvents <-chan ui.Event, iface string) error {
 	}
 }
 
-func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network wifi.Option) error {
+func connectWirelessNetwork(uiEvents <-chan ui.Event, menus chan<- string, worker wifi.WiFi, network wifi.Option) error {
 	var setupParams = []string{network.Essid}
 	authSuite := network.AuthSuite
 
 	if authSuite == wifi.NotSupportedProto {
 		return fmt.Errorf("Security protocol is not supported.")
 	} else if authSuite == wifi.WpaPsk || authSuite == wifi.WpaEap {
-		credentials, err := enterCredentials(uiEvents, authSuite)
+		credentials, err := enterCredentials(uiEvents, menus, authSuite)
 		if err != nil {
 			return err
 		}
@@ -144,9 +144,9 @@ func connectWirelessNetwork(uiEvents <-chan ui.Event, worker wifi.WiFi, network 
 	return nil
 }
 
-func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]string, error) {
+func enterCredentials(uiEvents <-chan ui.Event, menus chan<- string, authSuite wifi.SecProto) ([]string, error) {
 	var credentials []string
-	pass, err := menu.PromptTextInput("Enter password:", menu.AlwaysValid, uiEvents)
+	pass, err := menu.PromptTextInput("Enter password:", menu.AlwaysValid, uiEvents, menus)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func enterCredentials(uiEvents <-chan ui.Event, authSuite wifi.SecProto) ([]stri
 	}
 
 	// If not WpaPsk, the network uses WpaEap and also needs an identity
-	identity, err := menu.PromptTextInput("Enter identity:", menu.AlwaysValid, uiEvents)
+	identity, err := menu.PromptTextInput("Enter identity:", menu.AlwaysValid, uiEvents, menus)
 	if err != nil {
 		return nil, err
 	}

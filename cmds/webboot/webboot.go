@@ -33,7 +33,7 @@ var (
 )
 
 // ISO's exec downloads the iso and boot it.
-func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
+func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) error {
 	verbose("Intent to boot %s", i.path)
 
 	distroName := inferIsoType(path.Base(i.path))
@@ -43,7 +43,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		// Could not infer ISO type based on filename
 		// Prompt user to identify the ISO's type
 		entries := supportedDistroEntries()
-		entry, err := menu.PromptMenuEntry("ISO Type", "Select the closest distribution:", entries, uiEvents)
+		entry, err := menu.PromptMenuEntry("ISO Type", "Select the closest distribution:", entries, uiEvents, menus)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 		entries = append(entries, &BootConfig{config})
 	}
 
-	entry, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents)
+	entry, err := menu.PromptMenuEntry("Configs", "Choose an option", entries, uiEvents, menus)
 	if err != nil {
 		return err
 	}
@@ -124,13 +124,13 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, boot bool) error {
 // DownloadOption's exec lets user input the name of the iso they want
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
-func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir string) (menu.Entry, error) {
+func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, network bool, cacheDir string) (menu.Entry, error) {
 	progress := menu.NewProgress("Testing network connection", true)
 	activeConnection := connected()
 	progress.Close()
 
 	if network && !activeConnection {
-		if err := setupNetwork(uiEvents); err != nil {
+		if err := setupNetwork(uiEvents, menus); err != nil {
 			return nil, err
 		}
 	}
@@ -138,19 +138,19 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 	entries := supportedDistroEntries()
 	customLabel := "Other Distro"
 	entries = append(entries, &Config{customLabel})
-	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents)
+	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents, menus)
 	if err != nil {
 		return nil, err
 	}
 	var link string
 
 	if entry.Label() == customLabel {
-		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents)
+		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents, menus)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		link, _, err = mirrorMenu(entry, uiEvents, link)
+		link, _, err = mirrorMenu(entry, uiEvents, menus, link)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 		}
 	}
 
-	menu, err := displayChecksumPrompt(uiEvents, supportedDistros, entry.Label(), fpath)
+	menu, err := displayChecksumPrompt(uiEvents, menus, supportedDistros, entry.Label(), fpath)
 	if err != nil {
 		return nil, err
 	} else if menu != nil {
@@ -189,7 +189,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, network bool, cacheDir s
 }
 
 // DirOption's exec displays subdirectory or cached isos under the path directory
-func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
+func (d *DirOption) exec(uiEvents <-chan ui.Event, menus chan<- string) (menu.Entry, error) {
 	entries := []menu.Entry{}
 	readerInfos, err := ioutil.ReadDir(d.path)
 	if err != nil {
@@ -213,18 +213,18 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event) (menu.Entry, error) {
 		}
 	}
 
-	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents)
+	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents, menus)
 }
 
 // If the chosen distro has a checksum, verify it.
 // If the checksum is not correct, prompt the user to choose whether they still want to continue.
-func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string]Distro, label string, fpath string) (menu.Entry, error) {
+func displayChecksumPrompt(uiEvents <-chan ui.Event, menus chan<- string, supportedDistros map[string]Distro, label string, fpath string) (menu.Entry, error) {
 	// Check that the distro is supported
 	if _, ok := supportedDistros[label]; ok {
 		distro := supportedDistros[label]
 		// Check that checksum is available
 		if distro.checksum == "" {
-			accept, err := menu.PromptConfirmation("This distro does not have a checksum. Proceed anyway?", uiEvents)
+			accept, err := menu.PromptConfirmation("This distro does not have a checksum. Proceed anyway?", uiEvents, menus)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
 			}
@@ -236,7 +236,7 @@ func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string
 			return nil, fmt.Errorf("Failed to verify checksum: %s", err)
 		} else if !valid {
 			accept, err := menu.PromptConfirmation(fmt.Sprintf("Checksum was not correct. The correct checksum is %s and the downloaded ISO's checksum is %s. Proceed anyway?",
-				distro.checksum, calcChecksum), uiEvents)
+				distro.checksum, calcChecksum), uiEvents, menus)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
 			}
@@ -251,7 +251,7 @@ func displayChecksumPrompt(uiEvents <-chan ui.Event, supportedDistros map[string
 
 // mirrorMenu fetches the mirror options of the distro the user selects and displays them in a new menu. Finally, it gets
 // the download link of the mirror the user selects.
-func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, link string) (url string, mirrorNameForTestPurposes string, err error) {
+func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, menus chan<- string, link string) (url string, mirrorNameForTestPurposes string, err error) {
 	// Code for after the specific distro has been selected.
 	// Looks up the distro.
 	distro := supportedDistros[entry.Label()]
@@ -262,7 +262,7 @@ func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, link string) (url st
 		for i := range entries {
 			entries[i] = &distro.mirrors[i]
 		}
-		entry, err = menu.PromptMenuEntry("Available Mirrors", "Choose an option:", entries, uiEvents)
+		entry, err = menu.PromptMenuEntry("Available Mirrors", "Choose an option:", entries, uiEvents, menus)
 		if err != nil {
 			return "", "", err
 		}
@@ -316,7 +316,7 @@ func (d *LogOption) Label() string {
 	return "Show last log"
 }
 
-func getMainMenu(cacheDir string) menu.Entry {
+func getMainMenu(cacheDir string, menus chan<- string) menu.Entry {
 	entries := []menu.Entry{}
 	if cacheDir != "" {
 		// UseCacheOption is a special DirOption represents the root of cache dir
@@ -328,7 +328,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 	for {
 		// Display the main menu until user makes a valid choice or
 		// they encounter an error that's not menu.BackRequest
-		entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:", entries, ui.PollEvents())
+		entry, err := menu.PromptMenuEntry("Webboot", "Choose an option:", entries, ui.PollEvents(), menus)
 		if err != nil && err != menu.BackRequest {
 			log.Fatal(err)
 		} else if entry != nil {
@@ -337,7 +337,7 @@ func getMainMenu(cacheDir string) menu.Entry {
 	}
 }
 
-func handleError(err error) {
+func handleError(err error, menus chan<- string) {
 	if err == menu.ExitRequest {
 		menu.Close()
 		os.Exit(0)
@@ -347,19 +347,19 @@ func handleError(err error) {
 
 	errorText := err.Error() + "\n" + tmpBuffer.String() + wifiStdout.String() + wifiStderr.String()
 	fmt.Fprintln(&logBuffer, errorText)
-	menu.DisplayResult(strings.Split(errorText, "\n"), ui.PollEvents())
+	menu.DisplayResult(strings.Split(errorText, "\n"), ui.PollEvents(), menus)
 
 	tmpBuffer.Reset()
 	wifiStdout.Reset()
 	wifiStderr.Reset()
 }
 
-func showLog() {
+func showLog(menus chan<- string) {
 	s := logBuffer.String()
 	if len(s) > 1024 {
 		s = s[len(s)-1024:]
 	}
-	menu.DisplayResult(strings.Split(s, "\n"), ui.PollEvents())
+	menu.DisplayResult(strings.Split(s, "\n"), ui.PollEvents(), menus)
 }
 
 func main() {
@@ -386,7 +386,8 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	entry := getMainMenu(cacheDir)
+	menus := make(chan string)
+	entry := getMainMenu(cacheDir, menus)
 
 	// Buffer the log output, else it might overlap with the menu
 	log.SetOutput(&tmpBuffer)
@@ -398,21 +399,21 @@ func main() {
 	for entry != nil {
 		switch entry.(type) {
 		case *LogOption:
-			showLog()
-			entry = getMainMenu(cacheDir)
+			showLog(menus)
+			entry = getMainMenu(cacheDir, menus)
 		case *DownloadOption:
-			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), *network, cacheDir); err != nil {
-				handleError(err)
-				entry = getMainMenu(cacheDir)
+			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), menus, *network, cacheDir); err != nil {
+				handleError(err, menus)
+				entry = getMainMenu(cacheDir, menus)
 			}
 		case *ISO:
-			if err = entry.(*ISO).exec(ui.PollEvents(), !*dryRun); err != nil {
-				handleError(err)
-				entry = getMainMenu(cacheDir)
+			if err = entry.(*ISO).exec(ui.PollEvents(), menus, !*dryRun); err != nil {
+				handleError(err, menus)
+				entry = getMainMenu(cacheDir, menus)
 			}
 		case *DirOption:
 			dirOption := entry.(*DirOption)
-			if entry, err = dirOption.exec(ui.PollEvents()); err != nil {
+			if entry, err = dirOption.exec(ui.PollEvents(), menus); err != nil {
 				// Check if user requested to go back from a cache subdirectory,
 				// so we can send them to a DirOption for the parent directory
 				if err == menu.BackRequest && dirOption.path != cacheDir {
@@ -421,13 +422,13 @@ func main() {
 					// Otherwise they either requested to go back from the
 					// cache root, so we can send them to main menu,
 					// or they encountered an error
-					handleError(err)
-					entry = getMainMenu(cacheDir)
+					handleError(err, menus)
+					entry = getMainMenu(cacheDir, menus)
 				}
 			}
 		default:
-			handleError(fmt.Errorf("Unknown menu type %T!\n", entry))
-			entry = getMainMenu(cacheDir)
+			handleError(fmt.Errorf("Unknown menu type %T!\n", entry), menus)
+			entry = getMainMenu(cacheDir, menus)
 		}
 	}
 }

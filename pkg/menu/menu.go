@@ -154,7 +154,8 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 }
 
 // PromptTextInput opens a new input window with fixed width=100, hight=1.
-func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.Event, menus chan<- string) (string, error) {
+	menus <- introwords
 	defer ui.Clear()
 	input, _, err := processInput(introwords, 0, 80, 1, isValid, uiEvents)
 	return input, err
@@ -162,7 +163,9 @@ func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.E
 
 // DisplayResult opens a new window and displays a message.
 // each item in the message array will be displayed on a single line.
-func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
+func DisplayResult(message []string, uiEvents <-chan ui.Event, menus chan<- string) (string, error) {
+	menus <- message[0]
+
 	defer ui.Clear()
 
 	// if a message is longer then width of the window, split it to shorter lines
@@ -356,7 +359,9 @@ func parsingMenuOption(labels []string, menu *widgets.List, input *widgets.Parag
 // customWarning allow self-defined warnings in the menu
 // for example the wifi menu want to show specific warning when user hit a specific entry,
 // because some wifi's type may not be supported.
-func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
+func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, menus chan<- string, customWarning ...string) (Entry, error) {
+	menus <- menuTitle
+
 	defer ui.Clear()
 
 	// listData contains all choice's labels
@@ -425,8 +430,9 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	return entries[chooseIndex], nil
 }
 
-func PromptConfirmation(message string, uiEvents <-chan ui.Event) (bool, error) {
+func PromptConfirmation(message string, uiEvents <-chan ui.Event, menus chan<- string) (bool, error) {
 	defer ui.Clear()
+	menus <- message
 
 	wid := resultWidth
 	text := ""
