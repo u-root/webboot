@@ -30,6 +30,10 @@ func pressKey(ch chan ui.Event, input []string) {
 	}
 }
 
+func nextMenuReady(menus <-chan string) string {
+	return <-menus
+}
+
 // The following files can be downloaded:
 const (
 	// randomISO is a file containing 1 mebibytes of random data.
@@ -208,37 +212,42 @@ func TestDownloadOption(t *testing.T) {
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
 	tinycoreURL := supportedDistros["FakeTinycore"].mirrors[0].url
-	customCmd := []string{strconv.Itoa(customIndex), "<Enter>"}
-	customCmd = append(customCmd, stringToKeypress(tinycoreURL)...)
-	customCmd = append(customCmd, "<Enter>")
 
 	for _, tt := range []struct {
 		name  string
-		input []string
 		want  *ISO
+		human func(chan ui.Event, <-chan string)
 	}{
 		{
 			name: "test_bookmark",
-			input: []string{
-				// Distros selection menu
-				strconv.Itoa(distroIndex("FakeTinycore")), "<Enter>",
-				// Mirrors selection menu
-				"0", "<Enter>",
-			},
 			want: tinycoreIso,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				// Distros selection menu
+				pressKey(uiEvents, []string{strconv.Itoa(distroIndex("FakeTinycore")), "<Enter>"})
+				nextMenuReady(menus)
+				// Mirrors selection menu
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
-			name:  "test_custom_url",
-			input: customCmd,
-			want:  tinycoreIso,
+			name: "test_custom_url",
+			want: tinycoreIso,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{strconv.Itoa(customIndex), "<Enter>"})
+				nextMenuReady(menus)
+				pressKey(uiEvents, stringToKeypress(tinycoreURL))
+				pressKey(uiEvents, []string{"<Enter>"})
+			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			uiEvents := make(chan ui.Event)
-			go pressKey(uiEvents, tt.input)
-
+			menus := make(chan string)
+			go tt.human(uiEvents, menus)
 			downloadOption := DownloadOption{}
-			entry, err := downloadOption.exec(uiEvents, false, "./testdata")
+			entry, err := downloadOption.exec(uiEvents, menus, false, "./testdata")
 
 			if err != nil {
 				t.Fatalf("Fail to execute downloadOption.exec(): %+v", err)
@@ -262,19 +271,20 @@ func TestDownloadOption(t *testing.T) {
 
 func TestCancelDownload(t *testing.T) {
 	uiEvents := make(chan ui.Event)
+	menus := make(chan string)
+
 	// InfiniteOS will take forever to download and must be cancelled.
-	keyPresses := []string{
+	go func() {
+		nextMenuReady(menus)
 		// Distros selection menu
-		strconv.Itoa(distroIndex("InfiniteOS")), "<Enter>",
+		pressKey(uiEvents, []string{strconv.Itoa(distroIndex("InfiniteOS")), "<Enter>"})
+		nextMenuReady(menus)
 		// Mirrors selection menu
-		"0", "<Enter>",
-		// Quit the download.
-		"<Escape>",
-	}
-	go pressKey(uiEvents, keyPresses)
+		pressKey(uiEvents, []string{"0", "<Enter>", "<Escape>"})
+	}()
 
 	downloadOption := DownloadOption{}
-	_, err := downloadOption.exec(uiEvents, false, "./testdata")
+	_, err := downloadOption.exec(uiEvents, menus, false, "./testdata")
 
 	if err == nil {
 		t.Errorf("Got nil error; expected 'Download was canceled.'")
@@ -296,14 +306,21 @@ func TestDirOption(t *testing.T) {
 	}
 
 	uiEvents := make(chan ui.Event)
-	input := []string{"0", "<Enter>", "0", "<Enter>", "0", "<Enter>"}
-	go pressKey(uiEvents, input)
+	menus := make(chan string)
 
 	var entry menu.Entry = &DirOption{label: "root dir", path: "./testdata"}
 	var err error = nil
 	for {
 		if dirOption, ok := entry.(*DirOption); ok {
-			entry, err = dirOption.exec(uiEvents)
+			go func() {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			}()
+			entry, err = dirOption.exec(uiEvents, menus)
 			if err != nil {
 				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			}
@@ -318,17 +335,30 @@ func TestDirOption(t *testing.T) {
 	}
 }
 
+// TestBackOption tests behavior when the escape key is pressed on a menu.
 func TestBackOption(t *testing.T) {
+
 	uiEvents := make(chan ui.Event)
-	input := []string{"0", "<Enter>", "<Escape>"}
-	go pressKey(uiEvents, input)
+	menus := make(chan string)
 
 	var entry menu.Entry = &DirOption{path: "./testdata"}
 	var err error = nil
+
+	go func() {
+		for i := 0; i < 2; i++ {
+			nextMenuReady(menus)
+			pressKey(uiEvents, []string{"0", "<Enter>"})
+			nextMenuReady(menus)
+			pressKey(uiEvents, []string{"<Escape>"})
+		}
+	}()
+	// The first loop tests ./testdata - a back request should not have any effect
+	// because we are already at the first possible menu.
+	// The second loop tests testdata/dirlevel1 - a back request should return the previous menu.
 	for i := 0; i < 2; i++ {
 		if dirOption, ok := entry.(*DirOption); ok {
 			currentPath := dirOption.path
-			entry, err = dirOption.exec(uiEvents)
+			entry, err = dirOption.exec(uiEvents, menus)
 			if err != nil && err != menu.BackRequest {
 				t.Fatalf("Fail to execute option (%q)'s exec(): %+v", entry.Label(), err)
 			} else if err == menu.BackRequest {
@@ -344,7 +374,7 @@ func TestBackOption(t *testing.T) {
 		t.Fatalf("Incorrect result, want a DirOption, get %T", entry)
 	} else {
 		if dirOption.path != "testdata" {
-			t.Fatalf("Get incorrect dir option, want \"datatest\", get %s", dirOption.path)
+			t.Fatalf("Get incorrect dir option, want \"testdata\", get %s", dirOption.path)
 		}
 	}
 }
@@ -365,51 +395,66 @@ func TestDisplayChecksumPrompt(t *testing.T) {
 
 	type test struct {
 		name       string
-		keyInput   []string
 		distroName string
 		want       string
+		human      func(chan ui.Event, <-chan string)
 	}
 
 	tests := []test{
 		{
 			name:       "Incorrect checksum, don't proceed",
-			keyInput:   []string{"1", "<Enter>"},
 			distroName: "FakeDistro",
 			want:       "*main.DownloadOption",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Enter>"})
+			},
 		},
 		{
 			name:       "Incorrect checksum, proceed",
-			keyInput:   []string{"0", "<Enter>"},
 			distroName: "FakeDistro",
 			want:       "<nil>",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
 			name:       "No checksum, don't proceed",
-			keyInput:   []string{"1", "<Enter>"},
 			distroName: "FakeDistroNoChecksum",
 			want:       "*main.DownloadOption",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Enter>"})
+			},
 		},
 		{
 			name:       "No checksum, proceed",
-			keyInput:   []string{"0", "<Enter>"},
 			distroName: "FakeDistroNoChecksum",
 			want:       "<nil>",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
 			name:       "Correct checksum",
-			keyInput:   []string{},
 			distroName: "FakeDistroGoodChecksum",
 			want:       "<nil>",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{})
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		uiEvents := make(chan ui.Event)
-		input := tc.keyInput
-		go pressKey(uiEvents, input)
+		menus := make(chan string)
 
 		t.Run(tc.name, func(t *testing.T) {
-			menu, err := displayChecksumPrompt(uiEvents, testDistros, tc.distroName, "testdata/dirlevel1/fakeDistro.iso")
+			go tc.human(uiEvents, menus)
+			menu, err := displayChecksumPrompt(uiEvents, menus, testDistros, tc.distroName, "testdata/dirlevel1/fakeDistro.iso")
 			if err != nil {
 				t.Errorf("Error on displayChecksumPrompt: %v", err)
 			} else if got := fmt.Sprintf("%T", menu); got != tc.want {
@@ -444,10 +489,15 @@ func stringToKeypress(str string) []string {
 
 func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
 	uiEvents := make(chan ui.Event)
-	keyPresses := []string{"0", "<Enter>"}
-	go pressKey(uiEvents, keyPresses)
+	menus := make(chan string)
+
+	go func() {
+		nextMenuReady(menus)
+		pressKey(uiEvents, []string{"0", "<Enter>"})
+	}()
+
 	entry := &Config{label: "FakeArch"}
-	u, m, err := mirrorMenu(entry, uiEvents, "")
+	u, m, err := mirrorMenu(entry, uiEvents, menus, "")
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
@@ -462,10 +512,15 @@ func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
 
 func TestMirrorNameAndLinkCheck(t *testing.T) {
 	uiEvents := make(chan ui.Event)
-	keyPresses := []string{"1", "<Enter>"}
-	go pressKey(uiEvents, keyPresses)
+	menus := make(chan string)
+
+	go func() {
+		nextMenuReady(menus)
+		pressKey(uiEvents, []string{"1", "<Enter>"})
+	}()
+
 	entry := &Config{label: "FakeArch"}
-	u, m, err := mirrorMenu(entry, uiEvents, "")
+	u, m, err := mirrorMenu(entry, uiEvents, menus, "")
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
@@ -481,10 +536,15 @@ func TestMirrorNameAndLinkCheck(t *testing.T) {
 func TestMirrorNameAndLinkCheckBad(t *testing.T) {
 	t.Skip("TODO: This test is disabled until the menu package is fixed.")
 	uiEvents := make(chan ui.Event)
-	keyPresses := []string{"9", "<Enter>"}
-	go pressKey(uiEvents, keyPresses)
+	menus := make(chan string)
+
+	go func() {
+		nextMenuReady(menus)
+		pressKey(uiEvents, []string{"9", "<Enter>"})
+	}()
+
 	entry := &Config{label: "FakeArch"}
-	_, _, err := mirrorMenu(entry, uiEvents, "")
+	_, _, err := mirrorMenu(entry, uiEvents, menus, "")
 	if err == nil {
 		t.Fatalf("Bad mirror selection: got nil, want error")
 	}

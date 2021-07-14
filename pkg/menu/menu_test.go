@@ -41,6 +41,10 @@ func pressKey(ch chan ui.Event, input []string) {
 	}
 }
 
+func nextMenuReady(menus <-chan string) string {
+	return <-menus
+}
+
 func TestProcessInputSimple(t *testing.T) {
 	testText := "test"
 	uiEvents := make(chan ui.Event)
@@ -113,36 +117,47 @@ func TestDisplayResult(t *testing.T) {
 	}
 
 	for _, tt := range []struct {
-		name      string
-		msg       []string
-		userInput []string
-		want      string
+		name  string
+		msg   []string
+		want  string
+		human func(chan ui.Event, <-chan string)
 	}{
 		{
-			name:      "short_message",
-			msg:       []string{"short message"},
-			userInput: []string{"q"},
-			want:      "short message",
+			name: "short_message",
+			msg:  []string{"short message"},
+			want: "short message",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"q"})
+			},
 		},
 		{
 			// Display the long message and immediately exit
-			name:      "long_message_press_esc",
-			msg:       longMsg,
-			userInput: []string{"<Escape>"},
-			want:      strings.Join(longMsg[:resultHeight], "\n") + "\n\n(More)",
+			name: "long_message_press_esc",
+			msg:  longMsg,
+			want: strings.Join(longMsg[:resultHeight], "\n") + "\n\n(More)",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Escape>"})
+			},
 		},
 		{
 			// Display the long message, scroll to the bottom, then exit
-			name:      "long message_scroll_to_end",
-			msg:       longMsg,
-			userInput: []string{"<PageDown>", "<PageDown>", "<PageDown>", "<Escape>"},
-			want:      strings.Join(longMsg[len(longMsg)-resultHeight:], "\n") + "\n\n(End of message)",
+			name: "long message_scroll_to_end",
+			msg:  longMsg,
+			want: strings.Join(longMsg[len(longMsg)-resultHeight:], "\n") + "\n\n(End of message)",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<PageDown>", "<PageDown>", "<PageDown>", "<Escape>"})
+			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			uiEvents := make(chan ui.Event)
-			go pressKey(uiEvents, tt.userInput)
-			msg, err := DisplayResult(tt.msg, uiEvents)
+			menus := make(chan string)
+
+			go tt.human(uiEvents, menus)
+			msg, err := DisplayResult(tt.msg, uiEvents, menus)
 
 			if err != nil && err != BackRequest {
 				t.Errorf("Error: %v", err)
@@ -203,53 +218,72 @@ func TestCountNewlines(t *testing.T) {
 
 func TestPromptConfirmation(t *testing.T) {
 	for _, tt := range []struct {
-		name      string
-		userInput []string
-		wantBool  bool
-		wantErr   error
+		name     string
+		wantBool bool
+		wantErr  error
+		human    func(chan ui.Event, <-chan string)
 	}{
 		{
-			name:      "select_yes",
-			userInput: []string{"0", "<Enter>"},
-			wantBool:  true,
-			wantErr:   nil,
+			name:     "select_yes",
+			wantBool: true,
+			wantErr:  nil,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
-			name:      "select_no",
-			userInput: []string{"0", "<Enter>"},
-			wantBool:  true,
-			wantErr:   nil,
+			name:     "select_no",
+			wantBool: true,
+			wantErr:  nil,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
-			name:      "go_back",
-			userInput: []string{"<Escape>", "<Enter>"},
-			wantBool:  false,
-			wantErr:   BackRequest,
+			name:     "go_back",
+			wantBool: false,
+			wantErr:  BackRequest,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Escape>", "<Enter>"})
+			},
 		},
 		{
-			name:      "exit",
-			userInput: []string{"<C-d>", "<Enter>"},
-			wantBool:  false,
-			wantErr:   ExitRequest,
+			name:     "exit",
+			wantBool: false,
+			wantErr:  ExitRequest,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<C-d>", "<Enter>"})
+			},
 		},
 		{
-			name:      "change_response",
-			userInput: []string{"1", "<Backspace>", "0", "<Enter>"},
-			wantBool:  true,
-			wantErr:   nil,
+			name:     "change_response",
+			wantBool: true,
+			wantErr:  nil,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Backspace>", "0", "<Enter>"})
+			},
 		},
 		{
-			name:      "submit_without_value",
-			userInput: []string{"1", "<Backspace>", "<Enter>", "0", "<Enter>"},
-			wantBool:  true,
-			wantErr:   nil,
+			name:     "submit_without_value",
+			wantBool: true,
+			wantErr:  nil,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Backspace>", "0", "<Enter>"})
+			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			uiEvents := make(chan ui.Event)
-			go pressKey(uiEvents, tt.userInput)
+			menus := make(chan string)
 
-			accept, err := PromptConfirmation("Continue?", uiEvents)
+			go tt.human(uiEvents, menus)
+			accept, err := PromptConfirmation("Continue?", uiEvents, menus)
 			if accept != tt.wantBool {
 				t.Errorf("Expected %t, but received %t.\n", tt.wantBool, accept)
 			} else if err != nil && err != tt.wantErr {
@@ -274,95 +308,135 @@ func TestDisplayMenu(t *testing.T) {
 	entry12 := &testEntry{label: "entry 12"}
 
 	for _, tt := range []struct {
-		name      string
-		entries   []Entry
-		userInput []string
-		want      Entry
+		name    string
+		entries []Entry
+		want    Entry
+		human   func(chan ui.Event, <-chan string)
 	}{
 		{
-			name:      "hit_0",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"0", "<Enter>"},
-			want:      entry1,
+			name:    "hit_0",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry1,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
 		},
 		{
-			name:      "hit_1",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"1", "<Enter>"},
-			want:      entry2,
+			name:    "hit_1",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry2,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Enter>"})
+			},
 		},
 		{
-			name:      "hit_2",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"2", "<Enter>"},
-			want:      entry3,
+			name:    "hit_2",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry3,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"2", "<Enter>"})
+			},
 		},
 		{
-			name:      "error_input_then_right_input",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"0", "a", "<Enter>", "1", "<Enter>"},
-			want:      entry2,
+			name:    "error_input_then_right_input",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry2,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "a", "<Enter>", "1", "<Enter>"})
+			},
 		},
 		{
-			name:      "exceed_the_bound_then_right_input",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"4", "<Enter>", "0", "<Enter>"},
-			want:      entry1,
+			name:    "exceed_the_bound_then_right_input",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry1,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"4", "<Enter>", "0", "<Enter>"})
+			},
 		},
 		{
-			name:      "right_input_with_backspace",
-			entries:   []Entry{entry1, entry2, entry3},
-			userInput: []string{"2", "a", "<Backspace>", "<Enter>"},
-			want:      entry3,
+			name:    "right_input_with_backspace",
+			entries: []Entry{entry1, entry2, entry3},
+			want:    entry3,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"2", "a", "<Backspace>", "<Enter>"})
+			},
 		},
 		{
 			name:    "<pageDown>_<pageUp>_<pageDown>_hit_11",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <pageDown> -> <pageUp> -> <pageDown> current page is : 0~9
-			userInput: []string{"<PageDown>", "<pageUp>", "<PageDown>", "1", "1", "<Enter>"},
-			want:      entry12,
+			want: entry12,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<PageDown>", "<pageUp>", "<PageDown>", "1", "1", "<Enter>"})
+			},
 		},
 		{
 			name:    "<Left>_<Right>_exceed_the_bound_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Left> -> <Right> current page is : 10~11 because the first <Left> should do nothing
-			userInput: []string{"<Left>", "<Right>", "-", "1", "<Enter>", "1", "0", "<Enter>"},
-			want:      entry11,
+			want: entry11,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Left>", "<Right>", "-", "1", "<Enter>", "1", "0", "<Enter>"})
+			},
 		},
 		{
 			name:    "<Down>_<Down>_<Up>_exceed_the_bound_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Down> -> <Down> -> <Up> current page is : 1~10
-			userInput: []string{"<Down>", "<Down>", "<Up>", "2", "1", "<Enter>", "1", "<Enter>"},
-			want:      entry2,
+			want: entry2,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Down>", "<Down>", "<Up>", "2", "1", "<Enter>", "1", "<Enter>"})
+			},
 		},
 		{
 			name:    "<Down>_<End>_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Down> -> <End> current page is : 2~11 because the <End> will move to the last page
-			userInput: []string{"<Down>", "<End>", "4", "<Enter>"},
-			want:      entry5,
+			want: entry5,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Down", "<End>", "4", "<Enter>"})
+			},
 		},
 		{
 			name:    "<Down>_<Home>_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// hit <Down> -> <Home> current page is : 0~9 because the <End> will move to the first page
-			userInput: []string{"<Down>", "<Home>", "0", "<Enter>"},
-			want:      entry1,
+			want: entry1,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<Down>", "<Home>", "0", "<Enter>"})
+			},
 		},
 		{
 			name:    "<MouseWheelDown>_<MouseWheelDown>_<MouseWheelUp>_then_right_input",
 			entries: []Entry{entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12},
 			// scroll mouse wheel <MouseWheelDown> -> <MouseWheelDown> -> <MouseWheelUp> current page is : 1~10
-			userInput: []string{"<MouseWheelDown>", "<MouseWheelDown>", "<MouseWheelUp>", "10", "<Enter>"},
-			want:      entry11,
+			want: entry11,
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"<MouseWheelDown>", "<MouseWheelDown>", "<MouseWheelUp>", "10", "<Enter>"})
+			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			uiEvents := make(chan ui.Event)
-			go pressKey(uiEvents, tt.userInput)
 
-			chosen, err := PromptMenuEntry("test menu title", tt.name, tt.entries, uiEvents)
+			uiEvents := make(chan ui.Event)
+			menus := make(chan string)
+
+			//1go pressKey(uiEvents, tt.userInput)
+			go tt.human(uiEvents, menus)
+
+			chosen, err := PromptMenuEntry("test menu title", tt.name, tt.entries, uiEvents, menus)
 
 			if err != nil {
 				t.Errorf("Error: %v", err)
