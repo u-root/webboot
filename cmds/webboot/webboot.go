@@ -387,6 +387,12 @@ func main() {
 	}
 
 	menus := make(chan string)
+	// Continuously throw away values from menus channel so that the channel doesn't block.
+	go func() {
+		for {
+			<-menus
+		}
+	}()
 	entry := getMainMenu(cacheDir, menus)
 
 	// Buffer the log output, else it might overlap with the menu
