@@ -212,7 +212,10 @@ func TestDownloadOption(t *testing.T) {
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
 	tinycoreURL := supportedDistros["FakeTinycore"].mirrors[0].url
-
+	tinycoreIndex, err := distroIndex("FakeTinycore")
+	if err != nil {
+		t.Fatalf("Error on distroIndex: %v", err)
+	}
 	for _, tt := range []struct {
 		name  string
 		want  *ISO
@@ -224,7 +227,7 @@ func TestDownloadOption(t *testing.T) {
 			human: func(uiEvents chan ui.Event, menus <-chan string) {
 				nextMenuReady(menus)
 				// Distros selection menu
-				pressKey(uiEvents, []string{strconv.Itoa(distroIndex("FakeTinycore")), "<Enter>"})
+				pressKey(uiEvents, []string{strconv.Itoa(tinycoreIndex), "<Enter>"})
 				nextMenuReady(menus)
 				// Mirrors selection menu
 				pressKey(uiEvents, []string{"0", "<Enter>"})
@@ -272,19 +275,23 @@ func TestDownloadOption(t *testing.T) {
 func TestCancelDownload(t *testing.T) {
 	uiEvents := make(chan ui.Event)
 	menus := make(chan string)
+	index, err := distroIndex("InfiniteOS")
+	if err != nil {
+		t.Fatalf("Error on distroIndex: %v", err)
+	}
 
 	// InfiniteOS will take forever to download and must be cancelled.
 	go func() {
 		nextMenuReady(menus)
 		// Distros selection menu
-		pressKey(uiEvents, []string{strconv.Itoa(distroIndex("InfiniteOS")), "<Enter>"})
+		pressKey(uiEvents, []string{strconv.Itoa(index), "<Enter>"})
 		nextMenuReady(menus)
 		// Mirrors selection menu
 		pressKey(uiEvents, []string{"0", "<Enter>", "<Escape>"})
 	}()
 
 	downloadOption := DownloadOption{}
-	_, err := downloadOption.exec(uiEvents, menus, false, "./testdata")
+	_, err = downloadOption.exec(uiEvents, menus, false, "./testdata")
 
 	if err == nil {
 		t.Errorf("Got nil error; expected 'Download was canceled.'")
@@ -464,19 +471,23 @@ func TestDisplayChecksumPrompt(t *testing.T) {
 	}
 }
 
-func distroIndex(searchName string) int {
+func distroIndex(searchName string) (int, error) {
 	var downloadOptions []string
 	for distroName := range supportedDistros {
 		downloadOptions = append(downloadOptions, distroName)
 	}
 	sort.Strings(downloadOptions)
 
+	var distroList string
+
 	for index, distroName := range downloadOptions {
+		distroList += fmt.Sprintf("%s ", distroName)
 		if distroName == searchName {
-			return index
+			return index, nil
 		}
 	}
-	return -1
+
+	return -1, fmt.Errorf("could not find distro %s. Here are the available distros: %s", searchName, distroList)
 }
 
 func stringToKeypress(str string) []string {
