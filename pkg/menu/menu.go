@@ -18,8 +18,6 @@ import (
 const resultHeight = 20
 const resultWidth = 70
 
-var counter = 0
-
 type validCheck func(string) (string, string, bool)
 
 // Entry contains all the information needed for a boot entry.
@@ -391,7 +389,6 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	logBox.Title = "Logs:"
 	logBox.WrapText = false
 	logBox.SetRect(0, location, windowWidth, location+height)
-	logBox.Rows = make([]string, 1000)
 
 	location += height
 	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, windowWidth, height)
@@ -404,8 +401,7 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		logBox.Rows[counter] += scanner.Text()
-		counter++
+		logBox.Rows = append(logBox.Rows, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
