@@ -17,3 +17,7 @@
 linux
 linux-firmware
 
+# Ignore wpa_supplicant builds.
+wpa_supplicant-*.tar.gz
+wpa_supplicant-*.tar.gz.asc
+wpa_supplicant-*/
