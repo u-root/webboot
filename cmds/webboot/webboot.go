@@ -209,7 +209,7 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event, menus chan<- string) (menu.En
 }
 
 // distroData downloads and parses the data in distros.json to a map[string]Distro.
-func distroData(uiEvents <-chan ui.Event, cacheDir string, jsonLink string) (map[string]Distro, error) {
+func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string, jsonLink string) (map[string]Distro, error) {
 	// Download the json file.
 	var jsonPath string
 
@@ -227,7 +227,12 @@ func distroData(uiEvents <-chan ui.Event, cacheDir string, jsonLink string) (map
 		if err == context.Canceled {
 			return nil, fmt.Errorf("JSON file download was canceled.")
 		} else {
-			return nil, err
+			entries := []menu.Entry{&Config{label: "Ok"}}
+			_, err := menu.PromptMenuEntry("Failed to download JSON file.", "Choose \"Ok\" to proceed using default JSON file.", entries, uiEvents, menus)
+			if err != nil {
+				return nil, fmt.Errorf("Could not display PromptMenuEntry: %v", err)
+			}
+			jsonPath = "./distros.json"
 		}
 	}
 
@@ -451,7 +456,7 @@ func main() {
 					verbose("error on setupNetwork: %+v", err)
 				}
 			}
-			supportedDistros, err = distroData(ui.PollEvents(), cacheDir, "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
+			supportedDistros, err = distroData(ui.PollEvents(), menus, cacheDir, "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
 
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), menus, *network, cacheDir); err != nil {
 				handleError(err, menus)
