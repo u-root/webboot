@@ -81,6 +81,7 @@ func main() {
 			"-files", extraBinMust("wpa_passphrase"),
 			"-files", filepath.Join(currentDir, "cmds", "webboot", "webboot")+":bbin/webboot",
 			"-files", extraBinMust("strace"),
+			"-files", "cmds/webboot/distros.json:/distros.json",
 		)
 	}
 	if *bzImage != "" {

@@ -205,30 +205,45 @@ func TestDownload(t *testing.T) {
 
 func TestDistroData(t *testing.T) {
 	uiEvents := make(chan ui.Event)
+	menus := make(chan string)
 
-	supportedDistros, err := distroData(uiEvents, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
+	supportedDistros, err := distroData(uiEvents, menus, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
 	if err != nil {
 		t.Fatalf("Error on distroData: %v", err)
 	}
 
 	if len(supportedDistros) == 0 {
-		t.Fatalf("Empty distro list")
+		t.Fatalf("Got empty distro list, want provided JSON file to be unmarshaled into supportedDistros.")
 	}
 
 	for distroName := range supportedDistros {
 		if len(supportedDistros[distroName].Mirrors) == 0 {
-			t.Fatalf("Empty mirror list in %s", distroName)
+			t.Fatalf("Got empty mirror list in %s, want provided JSON file to be unmarshaled into supportedDistros.", distroName)
 		}
 	}
 }
 
 func TestDistroDataBad(t *testing.T) {
 	uiEvents := make(chan ui.Event)
+	menus := make(chan string)
 
-	_, err := distroData(uiEvents, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/invalid_link.json")
-	if err.Error() != "Received http status code 404 Not Found" {
-		fmt.Println(err.Error())
-		t.Fatalf("Got \"%v\", want \"Received http status code 404 Not Found\"", err)
+	go func() {
+		nextMenuReady(menus)
+		pressKey(uiEvents, []string{"0", "<Enter>"})
+	}()
+	_, err := distroData(uiEvents, menus, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/invalid_link.json")
+	if err != nil {
+		t.Fatalf("Error on distroData: %v", err)
+	}
+
+	if len(supportedDistros) == 0 {
+		t.Fatalf("Got empty distro list, want default JSON file to be unmarshaled into supportedDistros.")
+	}
+
+	for distroName := range supportedDistros {
+		if len(supportedDistros[distroName].Mirrors) == 0 {
+			t.Fatalf("Got empty mirror list in %s, want default JSON file to be unmarshaled into supportedDistros.", distroName)
+		}
 	}
 }
 
