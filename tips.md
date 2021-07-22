@@ -67,3 +67,9 @@ echo "let g:go_debug_log_output = 0" >> ~/.vimrc
     * `:GoDebugPrint {expr}`: Print the result of the expression.
     * `<F6>`: Print the value of word under the cursor.
 6. Stop the debugger with `:GoDebugStop`.
+
+## Dumping Stack Trace of Go Program
+
+1. Use CTRL-Z to move the process to background.
+2. Send the ABRT signal `kill -ABRT %1`
+3. Resume the job with `fg`.
