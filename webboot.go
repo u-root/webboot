@@ -236,11 +236,14 @@ func main() {
 		args = append(args,
 			"-files", extraBinMust("iwconfig"),
 			"-files", extraBinMust("iwlist"),
+			"-files", extraBinMust("strace"),
 			"-files", extraBinMust("wpa_supplicant")+":/bin/wpa_supplicant",
 			"-files", extraBinMust("wpa_cli")+":/bin/wpa_cli",
 			"-files", extraBinMust("wpa_passphrase")+":/bin/wpa_passphrase",
 			"-files", filepath.Join(currentDir, "cmds", "webboot", "webboot")+":bbin/webboot",
-			"-files", filepath.Join(currentDir, "cmds", "reproducer", "reproducer")+":bbin/reproducer")
+			"-files", filepath.Join(currentDir, "cmds", "reproducer", "reproducer")+":bbin/reproducer",
+			"-files", filepath.Join(currentDir, "cmds", "reproducer"), "-files",
+			"wifi.conf:/tmp/wifi.conf")
 	}
 	if *bzImage != "" {
 		args = append(args, "-files", *bzImage+":bzImage")
@@ -251,7 +254,7 @@ func main() {
 	var commands = []cmd{
 		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "webboot")},
 		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "reproducer")},
-		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds)},
+		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds, "github.com/u-root/u-root/cmds/exp/srvfiles")},
 	}
 
 	for _, cmd := range commands {

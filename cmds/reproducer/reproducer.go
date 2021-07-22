@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package wifi
+package main
 
 import (
 	"context"
 	"fmt"
-	"io"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -17,7 +17,7 @@ type IWLWorker struct {
 	Interface string
 }
 
-func (w *IWLWorker) main(stdout, stderr io.Writer, a ...string) error {
+func main() {
 	//format of a: [essid, pass, id]
 	//conf, err := generateConfig(a...)
 	//if err != nil {
@@ -36,15 +36,22 @@ func (w *IWLWorker) main(stdout, stderr io.Writer, a ...string) error {
 	// There's no telling how long the supplicant will take, but on the other hand,
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
-		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
-		cmd.Stdout, cmd.Stderr = stdout, stderr
-		cmd.Run()
+		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "-o", "/tmp/out", "wpa_supplicant", "-dd", "-iwlan0", "-c/tmp/wifi.conf")
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		fmt.Println("wpa supplicant cmd.Stdout: ", cmd.Stdout)
+		fmt.Println("wpa supplicant cmd.Stderr: ", cmd.Stderr)
+		err := cmd.Run()
+		fmt.Println("wpa supplicant cmd.Run() error: ", err)
 	}()
 
 	// dhclient might never return on incorrect passwords or identity
 	go func() {
-		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
-		cmd.Stdout, cmd.Stderr = stdout, stderr
+		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", "wlan0")
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		fmt.Println("dhclient cmd.Stdout: ", cmd.Stdout)
+		fmt.Println("dhclient cmd.Stderr: ", cmd.Stderr)
+		err := cmd.Run()
+		fmt.Println("dhclient cmd.Run() error: ", err)
 		//      if err := cmd.Run(); err != nil {
 		//              c <- err
 		//      } else {
@@ -52,11 +59,12 @@ func (w *IWLWorker) main(stdout, stderr io.Writer, a ...string) error {
 		//      }
 	}()
 
-	select {
+	//select {
 	//case err := <-c:
 	//      return err
-	case <-ctx.Done():
-		return fmt.Errorf("Connection timeout")
+	//case <-ctx.Done():
+	//	log.Fatalf("Connection timeout")
+	//}
+	for {
 	}
-
 }
