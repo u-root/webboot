@@ -130,11 +130,19 @@ func supportedDistroEntries() []menu.Entry {
 	return entries
 }
 
-func validURL(url string) (string, string, bool) {
-	match, _ := regexp.MatchString("^https*://.+\\.iso$", url)
+func validURL(url string, ext string) (string, string, bool) {
+	match, _ := regexp.MatchString(fmt.Sprintf("^https*://.+\\.%s$", ext), url)
 	if match {
 		return url, "", true
 	} else {
 		return url, "Invalid URL.", false
 	}
+}
+
+func validIso(url string) (string, string, bool) {
+	return validURL(url, "iso")
+}
+
+func validJson(url string) (string, string, bool) {
+	return validURL(url, "json")
 }

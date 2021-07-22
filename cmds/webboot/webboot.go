@@ -33,6 +33,8 @@ var (
 	tmpBuffer bytes.Buffer
 )
 
+const jsonURL = "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json"
+
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) error {
 	verbose("Intent to boot %s", i.path)
@@ -137,7 +139,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, net
 	var link string
 
 	if entry.Label() == customLabel {
-		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents, menus)
+		link, err = menu.PromptTextInput("Enter URL:", validIso, uiEvents, menus)
 		if err != nil {
 			return nil, err
 		}
@@ -208,31 +210,70 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event, menus chan<- string) (menu.En
 	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents, menus)
 }
 
-// distroData downloads and parses the data in distros.json to a map[string]Distro.
-func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string, jsonLink string) (map[string]Distro, error) {
-	// Download the json file.
-	var jsonPath string
-
-	if cacheDir == "" {
-		jsonPath = filepath.Join(os.TempDir(), "distros.json")
-	} else {
-		downloadDir := filepath.Join(cacheDir, "Downloaded")
-		if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
-			return nil, fmt.Errorf("Fail to create the downloaded dir: %v", err)
-		}
-		jsonPath = filepath.Join(downloadDir, "distros.json")
+// getJsonLink prompts users to choose or enter the url for the JSON file that will be used.
+// It returns a string url, a bool telling whether or not the file needs to be downloaded, and an error.
+func getJsonLink(uiEvents <-chan ui.Event, menus chan<- string) (string, bool, error) {
+	entries := []menu.Entry{
+		&Config{label: "Downloaded (recommended)"},
+		&Config{label: "Local"},
+		&Config{label: "Enter a custom URL"},
 	}
 
-	if err := download(jsonLink, jsonPath, uiEvents); err != nil {
-		if err == context.Canceled {
-			return nil, fmt.Errorf("JSON file download was canceled.")
+	entry, err := menu.PromptMenuEntry("Which list of distros would you like to choose from?", "Select an option.", entries, uiEvents, menus)
+	if err != nil {
+		return "", false, fmt.Errorf("Failed to display PromptMenuEntry: %v", err)
+	}
+
+	switch entry.Label() {
+	case "Downloaded (recommended)":
+		return jsonURL, true, nil
+	case "Local":
+		return "./distros.json", false, nil
+	case "Enter a custom URL":
+		// get user input
+		customUrl, err := menu.PromptTextInput("Enter URL:", validJson, uiEvents, menus)
+		if err != nil {
+			return "", false, fmt.Errorf("Failed to display PromptMenuEntry: %v", err)
+		}
+		return customUrl, true, nil
+	default:
+		return "", false, fmt.Errorf("No valid option chosen.")
+	}
+}
+
+// distroData downloads and parses the data in distros.json to a map[string]Distro.
+func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) (map[string]Distro, error) {
+	jsonPath := "./distros.json"
+
+	// Get the download link.
+	jsonLink, needDownload, err := getJsonLink(uiEvents, menus)
+	if err != nil {
+		return nil, fmt.Errorf("Error in getJsonLink: %v", err)
+	}
+
+	if needDownload {
+		if cacheDir == "" {
+			jsonPath = filepath.Join(os.TempDir(), "distros.json")
 		} else {
-			entries := []menu.Entry{&Config{label: "Ok"}}
-			_, err := menu.PromptMenuEntry("Failed to download JSON file.", "Choose \"Ok\" to proceed using default JSON file.", entries, uiEvents, menus)
-			if err != nil {
-				return nil, fmt.Errorf("Could not display PromptMenuEntry: %v", err)
+			downloadDir := filepath.Join(cacheDir, "Downloaded")
+			if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
+				return nil, fmt.Errorf("Fail to create the downloaded dir: %v", err)
 			}
-			jsonPath = "./distros.json"
+			jsonPath = filepath.Join(downloadDir, "distros.json")
+		}
+
+		// Download the json file.
+		if err := download(jsonLink, jsonPath, uiEvents); err != nil {
+			if err == context.Canceled {
+				return nil, fmt.Errorf("JSON file download was canceled.")
+			} else {
+				entries := []menu.Entry{&Config{label: "Ok"}}
+				_, err := menu.PromptMenuEntry("Failed to download JSON file.", "Choose \"Ok\" to proceed using default JSON file.", entries, uiEvents, menus)
+				if err != nil {
+					return nil, fmt.Errorf("Could not display PromptMenuEntry: %v", err)
+				}
+				jsonPath = "./distros.json"
+			}
 		}
 	}
 
@@ -456,7 +497,12 @@ func main() {
 					verbose("error on setupNetwork: %+v", err)
 				}
 			}
-			supportedDistros, err = distroData(ui.PollEvents(), menus, cacheDir, "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
+
+			// get distro data
+			supportedDistros, err = distroData(ui.PollEvents(), menus, cacheDir)
+			if err != nil {
+				log.Fatalf("Error on supportedDistros(): %v", err.Error())
+			}
 
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), menus, *network, cacheDir); err != nil {
 				handleError(err, menus)
