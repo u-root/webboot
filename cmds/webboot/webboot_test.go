@@ -203,47 +203,103 @@ func TestDownload(t *testing.T) {
 	})
 }
 
-func TestDistroData(t *testing.T) {
-	uiEvents := make(chan ui.Event)
-	menus := make(chan string)
+func TestGetJsonLink(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		human func(chan ui.Event, <-chan string)
+		want  string
+	}{
+		{
+			name: "test_downloaded",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+			want: "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json",
+		},
+		{
+			name: "test_local",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Enter>"})
+			},
+			want: "./distros.json",
+		},
+		{
+			name: "test_custom",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"2", "<Enter>"})
+				nextMenuReady(menus)
+				pressKey(uiEvents, stringToKeypress("https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json"))
+				pressKey(uiEvents, []string{"<Enter>"})
+			},
+			want: "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			menus := make(chan string)
+			go tt.human(uiEvents, menus)
+			got, _, err := getJsonLink(uiEvents, menus)
 
-	supportedDistros, err := distroData(uiEvents, menus, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json")
-	if err != nil {
-		t.Fatalf("Error on distroData: %v", err)
+			if err != nil {
+				t.Errorf("Error in getJsonLink(): %v", err)
+			} else if got != tt.want {
+				t.Errorf("%s: Got %s but want %s", tt.name, got, tt.want)
+			}
+		})
 	}
 
-	if len(supportedDistros) == 0 {
-		t.Fatalf("Got empty distro list, want provided JSON file to be unmarshaled into supportedDistros.")
-	}
-
-	for distroName := range supportedDistros {
-		if len(supportedDistros[distroName].Mirrors) == 0 {
-			t.Fatalf("Got empty mirror list in %s, want provided JSON file to be unmarshaled into supportedDistros.", distroName)
-		}
-	}
 }
 
-func TestDistroDataBad(t *testing.T) {
-	uiEvents := make(chan ui.Event)
-	menus := make(chan string)
+func TestDistroData(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		human func(chan ui.Event, <-chan string)
+	}{
+		{
+			name: "test_good_link",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+		},
+		{
+			name: "test_bad_link",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				// User chooses to enter a custom link.
+				pressKey(uiEvents, []string{"2", "<Enter>"})
+				nextMenuReady(menus)
+				// The link is valid but can't be downloaded.
+				pressKey(uiEvents, stringToKeypress("https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/fake_link.json"))
+				pressKey(uiEvents, []string{"<Enter>"})
+				nextMenuReady(menus)
+				// User presses 0 to continue with local json file.
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			menus := make(chan string)
+			go tt.human(uiEvents, menus)
+			supportedDistros, err := distroData(uiEvents, menus, "./testdata")
+			if err != nil {
+				t.Fatalf("Error on distroData: %v", err)
+			}
 
-	go func() {
-		nextMenuReady(menus)
-		pressKey(uiEvents, []string{"0", "<Enter>"})
-	}()
-	_, err := distroData(uiEvents, menus, "./testdata", "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/invalid_link.json")
-	if err != nil {
-		t.Fatalf("Error on distroData: %v", err)
-	}
+			if len(supportedDistros) == 0 {
+				t.Fatalf("Got empty distro list, want provided JSON file to be unmarshaled into supportedDistros.")
+			}
 
-	if len(supportedDistros) == 0 {
-		t.Fatalf("Got empty distro list, want default JSON file to be unmarshaled into supportedDistros.")
-	}
-
-	for distroName := range supportedDistros {
-		if len(supportedDistros[distroName].Mirrors) == 0 {
-			t.Fatalf("Got empty mirror list in %s, want default JSON file to be unmarshaled into supportedDistros.", distroName)
-		}
+			for distroName := range supportedDistros {
+				if len(supportedDistros[distroName].Mirrors) == 0 {
+					t.Fatalf("Got empty mirror list in %s, want provided JSON file to be unmarshaled into supportedDistros.", distroName)
+				}
+			}
+		})
 	}
 }
 
