@@ -43,7 +43,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 	if !ok {
 		// Could not infer ISO type based on filename
 		// Prompt user to identify the ISO's type
-		entries := supportedDistroEntries(supportedDistros)
+		entries := supportedDistroEntries()
 		entry, err := menu.PromptMenuEntry("ISO Type", "Select the closest distribution:", entries, uiEvents, menus)
 		if err != nil {
 			return err
@@ -127,7 +127,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 // elsewise ask for a download link
 func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, network bool, cacheDir string) (menu.Entry, error) {
 
-	entries := supportedDistroEntries(supportedDistros)
+	entries := supportedDistroEntries()
 	customLabel := "Other Distro"
 	entries = append(entries, &Config{customLabel})
 	entry, err := menu.PromptMenuEntry("Linux Distros", "Choose an option:", entries, uiEvents, menus)
