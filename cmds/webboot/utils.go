@@ -117,7 +117,7 @@ func inferIsoType(isoName string, supportedDistros map[string]Distro) string {
 	return ""
 }
 
-func supportedDistroEntries(supportedDistros map[string]Distro) []menu.Entry {
+func supportedDistroEntries() []menu.Entry {
 	entries := []menu.Entry{}
 	for distroName := range supportedDistros {
 		entries = append(entries, &Config{label: distroName})
