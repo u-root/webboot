@@ -1,18 +1,20 @@
 package menu
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/nsf/termbox-go"
 )
 
-const menuWidth = 50
-const menuHeight = 12
 const resultHeight = 20
 const resultWidth = 70
 
@@ -150,7 +152,8 @@ func processInput(introwords string, location int, wid int, ht int, isValid vali
 }
 
 // PromptTextInput opens a new input window with fixed width=100, hight=1.
-func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.Event) (string, error) {
+func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.Event, menus chan<- string) (string, error) {
+	menus <- introwords
 	defer ui.Clear()
 	input, _, err := processInput(introwords, 0, 80, 1, isValid, uiEvents)
 	return input, err
@@ -158,7 +161,9 @@ func PromptTextInput(introwords string, isValid validCheck, uiEvents <-chan ui.E
 
 // DisplayResult opens a new window and displays a message.
 // each item in the message array will be displayed on a single line.
-func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
+func DisplayResult(message []string, uiEvents <-chan ui.Event, menus chan<- string) (string, error) {
+	menus <- message[0]
+
 	defer ui.Clear()
 
 	// if a message is longer then width of the window, split it to shorter lines
@@ -227,7 +232,7 @@ func DisplayResult(message []string, uiEvents <-chan ui.Event) (string, error) {
 }
 
 // parsingMenuOption parses the user's operation in the menu page, such as page up, page down, selection. etc
-func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widgets.Paragraph, uiEvents <-chan ui.Event, customWarning ...string) (int, error) {
+func parsingMenuOption(labels []string, menu *widgets.List, input *widgets.Paragraph, logBox *widgets.List, warning *widgets.Paragraph, uiEvents <-chan ui.Event, customWarning ...string) (int, error) {
 
 	if len(labels) == 0 {
 		return 0, fmt.Errorf("No Entry in the menu")
@@ -275,16 +280,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 				input.Text = input.Text[:len(input.Text)-1]
 				ui.Render(input)
 			}
-		case "<Left>", "<PageUp>":
-			// page up
+		case "<Left>":
 			first = max(0, first-10)
 			last = min(first+10, len(labels))
 			listData := labels[first:last]
 			menu.Rows = listData
 			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
-		case "<Right>", "<PageDown>":
-			// page down
+		case "<Right>":
 			if first+10 >= len(labels) {
 				continue
 			}
@@ -294,6 +297,14 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 			menu.Rows = listData
 			menu.Title = fmt.Sprintf(menuTitle, first, len(labels))
 			ui.Render(menu)
+		case "<PageUp>":
+			// scroll up in the log box
+			logBox.ScrollHalfPageUp()
+			ui.Render(logBox)
+		case "<PageDown>":
+			// scroll down in the log box
+			logBox.ScrollHalfPageDown()
+			ui.Render(logBox)
 		case "<Up>", "<MouseWheelUp>":
 			// move one line up
 			first = max(0, first-1)
@@ -346,7 +357,9 @@ func parsingMenuOption(labels []string, menu *widgets.List, input, warning *widg
 // customWarning allow self-defined warnings in the menu
 // for example the wifi menu want to show specific warning when user hit a specific entry,
 // because some wifi's type may not be supported.
-func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, customWarning ...string) (Entry, error) {
+func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEvents <-chan ui.Event, menus chan<- string, customWarning ...string) (Entry, error) {
+	menus <- menuTitle
+
 	defer ui.Clear()
 
 	// listData contains all choice's labels
@@ -354,26 +367,58 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	for i, e := range entries {
 		listData = append(listData, fmt.Sprintf("[%d] %s", i, e.Label()))
 	}
+	windowWidth, windowHeight := termbox.Size()
 
+	// location will serve as the y1 coordinate in this function.
 	location := 0
 	menu := widgets.NewList()
 	menu.Title = menuTitle
-	// menus's hight always be 12, which could diplay 10 entrys in one page
-	menu.SetRect(0, location, menuWidth, location+menuHeight)
-	location += menuHeight
+	// windowHeight is divided by 5 to make room for the five boxes that will be on the screen.
+	height := windowHeight / 5
+	// menu is the box with the options. It will be at the top of the screen.
+	menu.SetRect(0, location, windowWidth, height)
 	menu.TextStyle.Fg = ui.ColorWhite
 
-	intro := newParagraph(introwords, false, location, len(introwords)+4, 3)
-	location += 2
-	input := newParagraph("", true, location, menuWidth, 3)
-	location += 3
-	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, menuWidth, 3)
+	location += height
+	// A variable to help get rid of the gap between "Choose an option:" and its
+	// corresponding box.
+	alternateHeight := 2
+
+	intro := newParagraph(introwords, false, location, windowWidth, height)
+
+	location += alternateHeight
+	input := newParagraph("", true, location, windowWidth, height)
+
+	location += height
+	logBox := widgets.NewList()
+	logBox.Title = "Logs:"
+	logBox.WrapText = false
+	logBox.SetRect(0, location, windowWidth, location+height)
+
+	location += height
+	warning := newParagraph("<Esc> to go back, <Ctrl+d> to exit", false, location, windowWidth, height)
+
+	// Write the contents of the log output text file to the log box.
+	var file, err = os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		logBox.Rows = append(logBox.Rows, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
 	ui.Render(intro)
 	ui.Render(input)
 	ui.Render(warning)
+	ui.Render(logBox)
 
-	chooseIndex, err := parsingMenuOption(listData, menu, input, warning, uiEvents, customWarning...)
+	chooseIndex, err := parsingMenuOption(listData, menu, input, logBox, warning, uiEvents, customWarning...)
 	if err != nil {
 		return nil, err
 	}
@@ -381,8 +426,9 @@ func PromptMenuEntry(menuTitle string, introwords string, entries []Entry, uiEve
 	return entries[chooseIndex], nil
 }
 
-func PromptConfirmation(message string, uiEvents <-chan ui.Event) (bool, error) {
+func PromptConfirmation(message string, uiEvents <-chan ui.Event, menus chan<- string) (bool, error) {
 	defer ui.Clear()
+	menus <- message
 
 	wid := resultWidth
 	text := ""
