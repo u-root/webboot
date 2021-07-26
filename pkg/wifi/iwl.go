@@ -169,15 +169,14 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 	}
 
 	// Each request has a 30 second window to make a connection
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	c := make(chan error, 1)
 
 	// There's no telling how long the supplicant will take, but on the other hand,
 	// it's been almost instantaneous. But, further, it needs to keep running.
 	go func() {
-		cmd := exec.CommandContext(ctx, "/usr/bin/strace", "-f", "-o", "/tmp/out", "-s", "1024", "-v", "wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf", "-dd")
-
+		cmd := exec.Command("wpa_supplicant", "-i"+w.Interface, "-c/tmp/wifi.conf")
 		outfile, err := os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		cmd.Stdout, cmd.Stderr = outfile, outfile
 		if err != nil {
@@ -185,30 +184,33 @@ func (w *IWLWorker) Connect(stdout, stderr io.Writer, a ...string) error {
 		}
 		defer outfile.Close()
 		if err = cmd.Run(); err != nil {
-			c <- err
-			outfile.WriteString(time.Now().String() + " ")
-			outfile.WriteString(err.Error())
-			outfile.WriteString("\n")
-		} else {
-			c <- nil
+			log.Print(err)
+			fmt.Sprintf("%s %s\n", time.Now().String(), err.Error())
 		}
+		c <- fmt.Errorf("wpa supplicant exited unexpectedly")
 
 	}()
 
-	//	select {
-	//	case err := <-c:
-	//		return err
-	//	case <-ctx.Done():
-	//		return fmt.Errorf("wpa_supplicant error")
-	//	}
-
 	// dhclient might never return on incorrect passwords or identity
-	cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
-	cmd.Stdout, cmd.Stderr = stdout, stderr
-	if err := cmd.Run(); err != nil {
+	go func() {
+		cmd := exec.CommandContext(ctx, "dhclient", "-ipv4=true", "-ipv6=false", "-v", w.Interface)
+
+		outfile, err := os.OpenFile("logOutput.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		cmd.Stdout, cmd.Stderr = outfile, outfile
+		if err != nil {
+			log.Print(err)
+			fmt.Sprintf("%s %s\n", time.Now().String(), err.Error())
+		}
+		defer outfile.Close()
+		c <- cmd.Run()
+	}()
+
+	select {
+	case err := <-c:
 		return err
+	case <-ctx.Done():
+		return fmt.Errorf("dhcp timeout")
 	}
-	return nil
 }
 
 func generateConfig(a ...string) (conf []byte, err error) {
