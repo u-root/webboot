@@ -9,12 +9,14 @@ package integration
 import (
 	"testing"
 
+	"github.com/u-root/u-root/pkg/qemu"
 	"github.com/u-root/u-root/pkg/vmtest"
 )
 
 func TestScript(t *testing.T) {
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
-		Name: "ShellScript",
+		Name:     "ShellScript",
+		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage"},
 		TestCmds: []string{
 			"echo HELLO WORLD",
 			"shutdown -h",
