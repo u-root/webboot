@@ -154,17 +154,20 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, net
 
 	// If the cachedir is not find, downloaded the iso to /tmp, else create a Downloaded dir in the cache dir.
 	var fpath string
+	var downloadDir string
+
 	if cacheDir == "" {
-		fpath = filepath.Join(os.TempDir(), filename)
+		downloadDir = os.TempDir()
+		fpath = filepath.Join(downloadDir, filename)
 	} else {
-		downloadDir := filepath.Join(cacheDir, "Downloaded")
+		downloadDir = filepath.Join(cacheDir, "Downloaded")
 		if err = os.MkdirAll(downloadDir, os.ModePerm); err != nil {
 			return nil, fmt.Errorf("Fail to create the downloaded dir :%v", err)
 		}
 		fpath = filepath.Join(downloadDir, filename)
 	}
 
-	if err = download(link, fpath, uiEvents); err != nil {
+	if err = download(link, fpath, downloadDir, uiEvents); err != nil {
 		if err == context.Canceled {
 			return nil, fmt.Errorf("Download was canceled.")
 		} else {
@@ -252,10 +255,13 @@ func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) 
 	}
 
 	if needDownload {
+		var downloadDir string
+
 		if cacheDir == "" {
-			jsonPath = filepath.Join(os.TempDir(), "distros.json")
+			downloadDir = os.TempDir()
+			jsonPath = filepath.Join(downloadDir, "distros.json")
 		} else {
-			downloadDir := filepath.Join(cacheDir, "Downloaded")
+			downloadDir = filepath.Join(cacheDir, "Downloaded")
 			if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
 				return nil, fmt.Errorf("Fail to create the downloaded dir: %v", err)
 			}
@@ -263,7 +269,7 @@ func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) 
 		}
 
 		// Download the json file.
-		if err := download(jsonLink, jsonPath, uiEvents); err != nil {
+		if err := download(jsonLink, jsonPath, downloadDir, uiEvents); err != nil {
 			if err == context.Canceled {
 				return nil, fmt.Errorf("JSON file download was canceled.")
 			} else {
