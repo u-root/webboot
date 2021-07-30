@@ -174,7 +174,7 @@ func TestDownload(t *testing.T) {
 	t.Run("error_link", func(t *testing.T) {
 		errorLink := "errorlink"
 		expected := fmt.Errorf("Get %q: unsupported protocol scheme \"\"", errorLink)
-		if err := download(errorLink, "/tmp/test.iso", uiEvents); err.Error() != expected.Error() {
+		if err := download(errorLink, "/tmp/test.iso", "/testdata", uiEvents); err.Error() != expected.Error() {
 			t.Errorf("Expected %+v, received %+v", expected, err)
 		}
 	})
@@ -189,7 +189,7 @@ func TestDownload(t *testing.T) {
 
 		// Download the ISO from the fake server.
 		u := supportedDistros["FakeTinycore"].Mirrors[0].Url
-		if err := download(u, fPath, uiEvents); err != nil {
+		if err := download(u, fPath, tmpDir, uiEvents); err != nil {
 			t.Fatalf("Fail to download: %+v", err)
 		}
 		s, err := os.Stat(fPath)
