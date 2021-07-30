@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -32,11 +33,13 @@ var (
 	tmpBuffer bytes.Buffer
 )
 
+const jsonURL = "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json"
+
 // ISO's exec downloads the iso and boot it.
 func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) error {
 	verbose("Intent to boot %s", i.path)
 
-	distroName := inferIsoType(path.Base(i.path))
+	distroName := inferIsoType(path.Base(i.path), supportedDistros)
 	distro, ok := supportedDistros[distroName]
 
 	if !ok {
@@ -51,11 +54,11 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 		distro = supportedDistros[entry.Label()]
 	}
 
-	verbose("Using distro %s with boot config %s", distroName, distro.bootConfig)
+	verbose("Using distro %s with boot config %s", distroName, distro.BootConfig)
 
 	var configs []Boot.OSImage
-	if distro.bootConfig != "" {
-		parsedConfigs, err := bootiso.ParseConfigFromISO(i.path, distro.bootConfig)
+	if distro.BootConfig != "" {
+		parsedConfigs, err := bootiso.ParseConfigFromISO(i.path, distro.BootConfig)
 		if err != nil {
 			return err
 		}
@@ -63,13 +66,13 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 		configs = append(configs, parsedConfigs...)
 	}
 
-	if len(distro.customConfigs) != 0 {
-		customConfigs, err := bootiso.LoadCustomConfigs(i.path, distro.customConfigs)
+	if len(distro.CustomConfigs) != 0 {
+		CustomConfigs, err := bootiso.LoadCustomConfigs(i.path, distro.CustomConfigs)
 		if err != nil {
 			return err
 		}
 
-		configs = append(configs, customConfigs...)
+		configs = append(configs, CustomConfigs...)
 	}
 
 	if len(configs) == 0 {
@@ -95,7 +98,7 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 
 	if err == nil {
 		cacheDev.IsoPath = strings.ReplaceAll(i.path, cacheDev.MountPoint, "")
-		paramTemplate, err := template.New("template").Parse(distro.kernelParams)
+		paramTemplate, err := template.New("template").Parse(distro.KernelParams)
 		if err != nil {
 			return err
 		}
@@ -125,15 +128,6 @@ func (i *ISO) exec(uiEvents <-chan ui.Event, menus chan<- string, boot bool) err
 // if this iso is existed in the bookmark, use it's url
 // elsewise ask for a download link
 func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, network bool, cacheDir string) (menu.Entry, error) {
-	progress := menu.NewProgress("Testing network connection", true)
-	activeConnection := connected()
-	progress.Close()
-
-	if network && !activeConnection {
-		if err := setupNetwork(uiEvents, menus); err != nil {
-			return nil, err
-		}
-	}
 
 	entries := supportedDistroEntries()
 	customLabel := "Other Distro"
@@ -145,7 +139,7 @@ func (d *DownloadOption) exec(uiEvents <-chan ui.Event, menus chan<- string, net
 	var link string
 
 	if entry.Label() == customLabel {
-		link, err = menu.PromptTextInput("Enter URL:", validURL, uiEvents, menus)
+		link, err = menu.PromptTextInput("Enter URL:", validIso, uiEvents, menus)
 		if err != nil {
 			return nil, err
 		}
@@ -216,6 +210,90 @@ func (d *DirOption) exec(uiEvents <-chan ui.Event, menus chan<- string) (menu.En
 	return menu.PromptMenuEntry("Distros", "Choose an option:", entries, uiEvents, menus)
 }
 
+// getJsonLink prompts users to choose or enter the url for the JSON file that will be used.
+// It returns a string url, a bool telling whether or not the file needs to be downloaded, and an error.
+func getJsonLink(uiEvents <-chan ui.Event, menus chan<- string) (string, bool, error) {
+	entries := []menu.Entry{
+		&Config{label: "Downloaded (recommended)"},
+		&Config{label: "Local"},
+		&Config{label: "Enter a custom URL"},
+	}
+
+	entry, err := menu.PromptMenuEntry("Which list of distros would you like to choose from?", "Select an option.", entries, uiEvents, menus)
+	if err != nil {
+		return "", false, fmt.Errorf("Failed to display PromptMenuEntry: %v", err)
+	}
+
+	switch entry.Label() {
+	case "Downloaded (recommended)":
+		return jsonURL, true, nil
+	case "Local":
+		return "./distros.json", false, nil
+	case "Enter a custom URL":
+		// get user input
+		customUrl, err := menu.PromptTextInput("Enter URL:", validJson, uiEvents, menus)
+		if err != nil {
+			return "", false, fmt.Errorf("Failed to display PromptMenuEntry: %v", err)
+		}
+		return customUrl, true, nil
+	default:
+		return "", false, fmt.Errorf("No valid option chosen.")
+	}
+}
+
+// distroData downloads and parses the data in distros.json to a map[string]Distro.
+func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) (map[string]Distro, error) {
+	jsonPath := "./distros.json"
+
+	// Get the download link.
+	jsonLink, needDownload, err := getJsonLink(uiEvents, menus)
+	if err != nil {
+		return nil, fmt.Errorf("Error in getJsonLink: %v", err)
+	}
+
+	if needDownload {
+		if cacheDir == "" {
+			jsonPath = filepath.Join(os.TempDir(), "distros.json")
+		} else {
+			downloadDir := filepath.Join(cacheDir, "Downloaded")
+			if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
+				return nil, fmt.Errorf("Fail to create the downloaded dir: %v", err)
+			}
+			jsonPath = filepath.Join(downloadDir, "distros.json")
+		}
+
+		// Download the json file.
+		if err := download(jsonLink, jsonPath, uiEvents); err != nil {
+			if err == context.Canceled {
+				return nil, fmt.Errorf("JSON file download was canceled.")
+			} else {
+				entries := []menu.Entry{&Config{label: "Ok"}}
+				_, err := menu.PromptMenuEntry("Failed to download JSON file.", "Choose \"Ok\" to proceed using default JSON file.", entries, uiEvents, menus)
+				if err != nil {
+					return nil, fmt.Errorf("Could not display PromptMenuEntry: %v", err)
+				}
+				jsonPath = "./distros.json"
+			}
+		}
+	}
+
+	// Parse the json file.
+	data, err := ioutil.ReadFile(jsonPath)
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not read JSON file: %v\n", err)
+	}
+
+	supportedDistros := map[string]Distro{}
+
+	err = json.Unmarshal([]byte(data), &supportedDistros)
+	if err != nil {
+		return nil, fmt.Errorf("Could not unmarshal JSON file: %v\n", err)
+	}
+
+	return supportedDistros, nil
+}
+
 // If the chosen distro has a checksum, verify it.
 // If the checksum is not correct, prompt the user to choose whether they still want to continue.
 func displayChecksumPrompt(uiEvents <-chan ui.Event, menus chan<- string, supportedDistros map[string]Distro, label string, fpath string) (menu.Entry, error) {
@@ -223,7 +301,7 @@ func displayChecksumPrompt(uiEvents <-chan ui.Event, menus chan<- string, suppor
 	if _, ok := supportedDistros[label]; ok {
 		distro := supportedDistros[label]
 		// Check that checksum is available
-		if distro.checksum == "" {
+		if distro.Checksum == "" {
 			accept, err := menu.PromptConfirmation("This distro does not have a checksum. Proceed anyway?", uiEvents, menus)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
@@ -232,11 +310,11 @@ func displayChecksumPrompt(uiEvents <-chan ui.Event, menus chan<- string, suppor
 				// Go back to download menu
 				return &DownloadOption{}, nil
 			}
-		} else if valid, calcChecksum, err := bootiso.VerifyChecksum(fpath, distro.checksum, distro.checksumType); err != nil {
+		} else if valid, calcChecksum, err := bootiso.VerifyChecksum(fpath, distro.Checksum, distro.ChecksumType); err != nil {
 			return nil, fmt.Errorf("Failed to verify checksum: %s", err)
 		} else if !valid {
 			accept, err := menu.PromptConfirmation(fmt.Sprintf("Checksum was not correct. The correct checksum is %s and the downloaded ISO's checksum is %s. Proceed anyway?",
-				distro.checksum, calcChecksum), uiEvents, menus)
+				distro.Checksum, calcChecksum), uiEvents, menus)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to prompt confirmation: %s", err)
 			}
@@ -255,12 +333,12 @@ func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, menus chan<- string,
 	// Code for after the specific distro has been selected.
 	// Looks up the distro.
 	distro := supportedDistros[entry.Label()]
-	if len(distro.mirrors) > 0 {
+	if len(distro.Mirrors) > 0 {
 		// Make an array of type menu.Entry to store the mirrors of the
 		// particular distro selected. Then, display the mirror options.
-		entries := make([]menu.Entry, len(distro.mirrors))
+		entries := make([]menu.Entry, len(distro.Mirrors))
 		for i := range entries {
-			entries[i] = &distro.mirrors[i]
+			entries[i] = &distro.Mirrors[i]
 		}
 		entry, err = menu.PromptMenuEntry("Available Mirrors", "Choose an option:", entries, uiEvents, menus)
 		if err != nil {
@@ -268,10 +346,10 @@ func mirrorMenu(entry menu.Entry, uiEvents <-chan ui.Event, menus chan<- string,
 		}
 	}
 	// Iterate through the mirrors of the distro to select the appropriate link.
-	for i := range distro.mirrors {
-		if distro.mirrors[i].name == entry.Label() {
-			link = distro.mirrors[i].url
-			return link, distro.mirrors[i].name, err
+	for i := range distro.Mirrors {
+		if distro.Mirrors[i].Name == entry.Label() {
+			link = distro.Mirrors[i].Url
+			return link, distro.Mirrors[i].Name, err
 		}
 	}
 	return "", "", fmt.Errorf("Mirror not found: %v", entry.Label())
@@ -402,12 +480,30 @@ func main() {
 	// and call it's exec() to get the next level's chosen entry.
 	// repeat this process until there is no next level
 	var err error
+
 	for entry != nil {
 		switch entry.(type) {
 		case *LogOption:
 			showLog(menus)
 			entry = getMainMenu(cacheDir, menus)
 		case *DownloadOption:
+			// set up network
+			progress := menu.NewProgress("Testing network connection", true)
+			activeConnection := connected()
+			progress.Close()
+
+			if *network && !activeConnection {
+				if err := setupNetwork(ui.PollEvents(), menus); err != nil {
+					verbose("error on setupNetwork: %+v", err)
+				}
+			}
+
+			// get distro data
+			supportedDistros, err = distroData(ui.PollEvents(), menus, cacheDir)
+			if err != nil {
+				log.Fatalf("Error on supportedDistros(): %v", err.Error())
+			}
+
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), menus, *network, cacheDir); err != nil {
 				handleError(err, menus)
 				entry = getMainMenu(cacheDir, menus)

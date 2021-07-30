@@ -59,33 +59,33 @@ func TestMain(m *testing.M) {
 	supportedDistros = map[string]Distro{
 		"FakeArch": {
 			// This checksum corresponds to the random data for random1MiB.iso.
-			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
-			checksumType: "sha256",
-			mirrors: []Mirror{
+			Checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			ChecksumType: "sha256",
+			Mirrors: []Mirror{
 				{
-					name: "Default",
-					url:  server.url(randomISO),
+					Name: "Default",
+					Url:  server.url(randomISO),
 				},
 				{
-					name: "Arizona",
-					url:  server.url(randomISO),
+					Name: "Arizona",
+					Url:  server.url(randomISO),
 				},
 			},
 		},
 		"FakeTinycore": {
 			// This checksum corresponds to the random data for random1MiB.iso.
-			checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
-			checksumType: "sha256",
-			mirrors: []Mirror{
+			Checksum:     "d6e467cd833bfabaefd652cdea1c7bd8318392f703ddf73160c324f515b965a3",
+			ChecksumType: "sha256",
+			Mirrors: []Mirror{
 				{
-					name: "Default",
-					url:  server.url(randomISO),
+					Name: "Default",
+					Url:  server.url(randomISO),
 				},
 			},
 		},
 		"InfiniteOS": {
-			mirrors: []Mirror{
-				{url: server.url(infiniteISO)},
+			Mirrors: []Mirror{
+				{Url: server.url(infiniteISO)},
 			},
 		},
 	}
@@ -188,7 +188,7 @@ func TestDownload(t *testing.T) {
 		fPath := filepath.Join(tmpDir, "test_download.iso")
 
 		// Download the ISO from the fake server.
-		u := supportedDistros["FakeTinycore"].mirrors[0].url
+		u := supportedDistros["FakeTinycore"].Mirrors[0].Url
 		if err := download(u, fPath, uiEvents); err != nil {
 			t.Fatalf("Fail to download: %+v", err)
 		}
@@ -203,6 +203,106 @@ func TestDownload(t *testing.T) {
 	})
 }
 
+func TestGetJsonLink(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		human func(chan ui.Event, <-chan string)
+		want  string
+	}{
+		{
+			name: "test_downloaded",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+			want: "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json",
+		},
+		{
+			name: "test_local",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"1", "<Enter>"})
+			},
+			want: "./distros.json",
+		},
+		{
+			name: "test_custom",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"2", "<Enter>"})
+				nextMenuReady(menus)
+				pressKey(uiEvents, stringToKeypress("https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json"))
+				pressKey(uiEvents, []string{"<Enter>"})
+			},
+			want: "https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/distros.json",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			menus := make(chan string)
+			go tt.human(uiEvents, menus)
+			got, _, err := getJsonLink(uiEvents, menus)
+
+			if err != nil {
+				t.Errorf("Error in getJsonLink(): %v", err)
+			} else if got != tt.want {
+				t.Errorf("%s: Got %s but want %s", tt.name, got, tt.want)
+			}
+		})
+	}
+
+}
+
+func TestDistroData(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		human func(chan ui.Event, <-chan string)
+	}{
+		{
+			name: "test_good_link",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+		},
+		{
+			name: "test_bad_link",
+			human: func(uiEvents chan ui.Event, menus <-chan string) {
+				nextMenuReady(menus)
+				// User chooses to enter a custom link.
+				pressKey(uiEvents, []string{"2", "<Enter>"})
+				nextMenuReady(menus)
+				// The link is valid but can't be downloaded.
+				pressKey(uiEvents, stringToKeypress("https://raw.githubusercontent.com/u-root/webboot/main/cmds/webboot/fake_link.json"))
+				pressKey(uiEvents, []string{"<Enter>"})
+				nextMenuReady(menus)
+				// User presses 0 to continue with local json file.
+				pressKey(uiEvents, []string{"0", "<Enter>"})
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			uiEvents := make(chan ui.Event)
+			menus := make(chan string)
+			go tt.human(uiEvents, menus)
+			supportedDistros, err := distroData(uiEvents, menus, "./testdata")
+			if err != nil {
+				t.Fatalf("Error on distroData: %v", err)
+			}
+
+			if len(supportedDistros) == 0 {
+				t.Fatalf("Got empty distro list, want provided JSON file to be unmarshaled into supportedDistros.")
+			}
+
+			for distroName := range supportedDistros {
+				if len(supportedDistros[distroName].Mirrors) == 0 {
+					t.Fatalf("Got empty mirror list in %s, want provided JSON file to be unmarshaled into supportedDistros.", distroName)
+				}
+			}
+		})
+	}
+}
+
 func TestDownloadOption(t *testing.T) {
 	tinycoreIso := &ISO{
 		label: randomISO,
@@ -211,7 +311,7 @@ func TestDownloadOption(t *testing.T) {
 
 	// Select custom distro, then type Tinycore URL manually
 	customIndex := len(supportedDistros)
-	tinycoreURL := supportedDistros["FakeTinycore"].mirrors[0].url
+	tinycoreURL := supportedDistros["FakeTinycore"].Mirrors[0].Url
 	tinycoreIndex, err := distroIndex("FakeTinycore")
 	if err != nil {
 		t.Fatalf("Error on distroIndex: %v", err)
@@ -390,13 +490,13 @@ func TestDisplayChecksumPrompt(t *testing.T) {
 	// test data
 	var testDistros = map[string]Distro{
 		"FakeDistro": {
-			checksum:     "1234567",
-			checksumType: "sha256",
+			Checksum:     "1234567",
+			ChecksumType: "sha256",
 		},
 		"FakeDistroNoChecksum": {},
 		"FakeDistroGoodChecksum": {
-			checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
-			checksumType: "sha256",
+			Checksum:     "407dc87b95afbe268e760313971041860f36e953a2116db03418a98ce46d61bc",
+			ChecksumType: "sha256",
 		},
 	}
 
@@ -512,7 +612,7 @@ func TestDefaultMirrorNameAndLinkCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
-	tl := supportedDistros["FakeArch"].mirrors[0].url
+	tl := supportedDistros["FakeArch"].Mirrors[0].Url
 	if u != tl {
 		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
 	}
@@ -535,7 +635,7 @@ func TestMirrorNameAndLinkCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
-	tl := supportedDistros["FakeArch"].mirrors[0].url
+	tl := supportedDistros["FakeArch"].Mirrors[0].Url
 	if u != tl {
 		t.Fatalf("Wrong mirror link. Got %q, want %q", u, tl)
 	}

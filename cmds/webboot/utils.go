@@ -51,6 +51,9 @@ func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Received http status code %s", resp.Status)
+	}
 	defer resp.Body.Close()
 
 	tempFile, err := ioutil.TempFile("", "iso-download-")
@@ -104,9 +107,9 @@ func listenForCancel(ctx context.Context, cancel context.CancelFunc, uiEvents <-
 	}
 }
 
-func inferIsoType(isoName string) string {
+func inferIsoType(isoName string, supportedDistros map[string]Distro) string {
 	for distroName, distroInfo := range supportedDistros {
-		match, _ := regexp.MatchString(distroInfo.isoPattern, isoName)
+		match, _ := regexp.MatchString(distroInfo.IsoPattern, isoName)
 		if match {
 			return distroName
 		}
@@ -127,11 +130,19 @@ func supportedDistroEntries() []menu.Entry {
 	return entries
 }
 
-func validURL(url string) (string, string, bool) {
-	match, _ := regexp.MatchString("^https*://.+\\.iso$", url)
+func validURL(url string, ext string) (string, string, bool) {
+	match, _ := regexp.MatchString(fmt.Sprintf("^https*://.+\\.%s$", ext), url)
 	if match {
 		return url, "", true
 	} else {
 		return url, "Invalid URL.", false
 	}
+}
+
+func validIso(url string) (string, string, bool) {
+	return validURL(url, "iso")
+}
+
+func validJson(url string) (string, string, bool) {
+	return validURL(url, "json")
 }
