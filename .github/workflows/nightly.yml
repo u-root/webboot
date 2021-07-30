@@ -1,0 +1,57 @@
+name: nightly
+on:
+  # Triggers the workflow on push or pull request events but only for the
+  # main branch
+  schedule:
+    - cron: '0 23 * * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in
+# parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Environment variables
+    env:
+      # GOPATH is the current directory.
+      GOPATH: ${{ github.workspace }}
+      # Turn off modules because they are broken.
+      GO111MODULE: off
+
+    # Set the working directory to the correct place in $GOPATH.
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the
+    # job
+    steps:
+      - task: TestScript test
+        inputs:
+                command: "go test"
+                arguments: '-v' '-run'
+                workingDirectory:
+
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+      - name: Checkout dependencies
+        run: |
+          ./firsttime.sh
+      - name: Build and test webboot
+        run: |
+          ./ci.sh
+      - name: Test TestScript
+        run: |
+          ./nightly.sh
