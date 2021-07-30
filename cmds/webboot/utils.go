@@ -38,7 +38,7 @@ func (wc *WriteCounter) Close() {
 
 // download() will download a file from URL and save it to a temp file
 // If the download succeeds, the temp file will be copied to fPath
-func download(URL, fPath string, uiEvents <-chan ui.Event) error {
+func download(URL, fPath, downloadDir string, uiEvents <-chan ui.Event) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -56,7 +56,7 @@ func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 	}
 	defer resp.Body.Close()
 
-	tempFile, err := ioutil.TempFile("", "iso-download-")
+	tempFile, err := ioutil.TempFile(downloadDir, "iso-download-")
 	if err != nil {
 		return err
 	}
@@ -78,15 +78,9 @@ func download(URL, fPath string, uiEvents <-chan ui.Event) error {
 		return err
 	}
 
-	cacheFile, err := os.Create(fPath)
+	err = os.Rename(tempFile.Name(), fPath)
 	if err != nil {
-		return err
-	}
-	defer cacheFile.Close()
-
-	if _, err := io.Copy(cacheFile, tempFile); err != nil {
-		os.RemoveAll(cacheFile.Name())
-		return err
+		return fmt.Errorf("Error on os.Rename: %v", err)
 	}
 
 	verbose("%q is downloaded at %q\n", URL, fPath)
