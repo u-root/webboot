@@ -285,7 +285,7 @@ func TestDistroData(t *testing.T) {
 			uiEvents := make(chan ui.Event)
 			menus := make(chan string)
 			go tt.human(uiEvents, menus)
-			supportedDistros, err := distroData(uiEvents, menus, "./testdata")
+			err := distroData(uiEvents, menus, "./testdata")
 			if err != nil {
 				t.Fatalf("Error on distroData: %v", err)
 			}

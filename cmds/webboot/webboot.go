@@ -245,13 +245,13 @@ func getJsonLink(uiEvents <-chan ui.Event, menus chan<- string) (string, bool, e
 }
 
 // distroData downloads and parses the data in distros.json to a map[string]Distro.
-func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) (map[string]Distro, error) {
+func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) error {
 	jsonPath := "./distros.json"
 
 	// Get the download link.
 	jsonLink, needDownload, err := getJsonLink(uiEvents, menus)
 	if err != nil {
-		return nil, fmt.Errorf("Error in getJsonLink: %v", err)
+		return fmt.Errorf("Error in getJsonLink: %v", err)
 	}
 
 	if needDownload {
@@ -263,7 +263,7 @@ func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) 
 		} else {
 			downloadDir = filepath.Join(cacheDir, "Downloaded")
 			if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
-				return nil, fmt.Errorf("Fail to create the downloaded dir: %v", err)
+				return fmt.Errorf("Fail to create the downloaded dir: %v", err)
 			}
 			jsonPath = filepath.Join(downloadDir, "distros.json")
 		}
@@ -271,12 +271,12 @@ func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) 
 		// Download the json file.
 		if err := download(jsonLink, jsonPath, downloadDir, uiEvents); err != nil {
 			if err == context.Canceled {
-				return nil, fmt.Errorf("JSON file download was canceled.")
+				return fmt.Errorf("JSON file download was canceled.")
 			} else {
 				entries := []menu.Entry{&Config{label: "Ok"}}
 				_, err := menu.PromptMenuEntry("Failed to download JSON file.", "Choose \"Ok\" to proceed using default JSON file.", entries, uiEvents, menus)
 				if err != nil {
-					return nil, fmt.Errorf("Could not display PromptMenuEntry: %v", err)
+					return fmt.Errorf("Could not display PromptMenuEntry: %v", err)
 				}
 				jsonPath = "./distros.json"
 			}
@@ -287,17 +287,15 @@ func distroData(uiEvents <-chan ui.Event, menus chan<- string, cacheDir string) 
 	data, err := ioutil.ReadFile(jsonPath)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not read JSON file: %v\n", err)
+		return fmt.Errorf("Could not read JSON file: %v\n", err)
 	}
-
-	supportedDistros := map[string]Distro{}
 
 	err = json.Unmarshal([]byte(data), &supportedDistros)
 	if err != nil {
-		return nil, fmt.Errorf("Could not unmarshal JSON file: %v\n", err)
+		return fmt.Errorf("Could not unmarshal JSON file: %v\n", err)
 	}
 
-	return supportedDistros, nil
+	return nil
 }
 
 // If the chosen distro has a checksum, verify it.
@@ -505,9 +503,9 @@ func main() {
 			}
 
 			// get distro data
-			supportedDistros, err = distroData(ui.PollEvents(), menus, cacheDir)
+			err = distroData(ui.PollEvents(), menus, cacheDir)
 			if err != nil {
-				log.Fatalf("Error on supportedDistros(): %v", err.Error())
+				log.Fatalf("Error on distroData(): %v", err.Error())
 			}
 
 			if entry, err = entry.(*DownloadOption).exec(ui.PollEvents(), menus, *network, cacheDir); err != nil {
