@@ -26,7 +26,21 @@ jobs:
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
-
+    strategy:
+      matrix:
+        distros:
+          - Arch
+          - CentOS 7
+          - CentOS 8
+          - Debian
+          - Fedora
+          - Kali
+          - Linux Mint
+          - Manjaro
+          - Tinycore
+          - LHSCowboys
+          - DHSGaels
+          - Ubuntu
     # Steps represent a sequence of tasks that will be executed as part of the
     # job
     steps:

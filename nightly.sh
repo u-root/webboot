@@ -5,4 +5,3 @@ cp config-5.6.14 linux/.config
 (cd linux && make bzImage)
 GO111MODULE=off go run .
 go test ./integration
-

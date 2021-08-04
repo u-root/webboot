@@ -10,12 +10,18 @@ import (
 	"testing"
 
 	"github.com/u-root/u-root/pkg/qemu"
+	"github.com/u-root/u-root/pkg/uroot"
 	"github.com/u-root/u-root/pkg/vmtest"
 )
 
 func TestScript(t *testing.T) {
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
-		Name:     "ShellScript",
+		Name: "ShellScript",
+		BuildOpts: uroot.Opts{
+			ExtraFiles: []string{
+				"./testdata/distros.json",
+			},
+		},
 		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage"},
 		TestCmds: []string{
 			"echo HELLO WORLD",
