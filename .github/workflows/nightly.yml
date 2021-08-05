@@ -28,7 +28,7 @@ jobs:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     strategy:
       matrix:
-        distros:
+        distro:
           - Arch
           - CentOS 7
           - CentOS 8
