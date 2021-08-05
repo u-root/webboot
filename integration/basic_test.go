@@ -16,6 +16,7 @@ import (
 )
 
 func TestScript(t *testing.T) {
+	webbootDistro := os.GetEnv("WEBBOOT_DISTRO")
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
 		BuildOpts: uroot.Opts{
@@ -37,7 +38,7 @@ func TestScript(t *testing.T) {
 		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage", Timeout: 120 * time.Second},
 		TestCmds: []string{
 			"dhclient -v",
-			"cli -distroName=TinyCore",
+			"cli -distroName=" + webbootDistro,
 			"shutdown -h",
 		},
 	})
