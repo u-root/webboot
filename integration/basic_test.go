@@ -8,6 +8,7 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/u-root/u-root/pkg/qemu"
 	"github.com/u-root/u-root/pkg/uroot"
@@ -18,19 +19,31 @@ func TestScript(t *testing.T) {
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
 		BuildOpts: uroot.Opts{
+			Commands: uroot.BusyBoxCmds(
+				"github.com/u-root/u-root/cmds/core/init",
+				"github.com/u-root/u-root/cmds/core/elvish",
+				"github.com/u-root/u-root/cmds/core/ip",
+				"github.com/u-root/u-root/cmds/core/shutdown",
+				"github.com/u-root/u-root/cmds/core/sleep",
+				"github.com/u-root/u-root/cmds/boot/pxeboot",
+				"github.com/u-root/webboot/cmds/webboot",
+				"github.com/u-root/webboot/cmds/cli",
+				"github.com/u-root/u-root/cmds/core/dhclient",
+			),
 			ExtraFiles: []string{
-				"./testdata/distros.json",
+				"../cmds/webboot/distros.json:/distros.json",
 			},
 		},
-		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage"},
+		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage", Timeout: 120 * time.Second},
 		TestCmds: []string{
-			"echo HELLO WORLD",
+			"dhclient -v",
+			"cli -distroName=TinyCore",
 			"shutdown -h",
 		},
 	})
 	defer cleanup()
 
-	if err := q.Expect("HELLO WORLD"); err != nil {
-		t.Fatal(`expected "HELLO WORLD", got error: `, err)
+	if err := q.Expect("www.tinycorelinux.net"); err != nil {
+		t.Fatal(`expected "www.tinycorelinux.net", got error: `, err)
 	}
 }
