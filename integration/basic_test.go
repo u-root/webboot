@@ -32,7 +32,7 @@ func TestScript(t *testing.T) {
 				"github.com/u-root/u-root/cmds/core/dhclient",
 			),
 			ExtraFiles: []string{
-				"../cmds/webboot/distros.json:/distros.json",
+				"../cmds/cli/ci.json:/ci.json",
 			},
 		},
 		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage", Timeout: 120 * time.Second},

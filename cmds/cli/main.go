@@ -131,7 +131,7 @@ func (d *DownloadOption) exec() (menu.Entry, error) {
 
 // distroData downloads and parses the data in distros.json to a map[string]Distro.
 func distroData() error {
-	jsonPath := "/distros.json"
+	jsonPath := "/ci.json"
 
 	// Parse the json file.
 	data, err := ioutil.ReadFile(jsonPath)
