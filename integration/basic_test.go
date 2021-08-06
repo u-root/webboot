@@ -22,7 +22,6 @@ func TestScript(t *testing.T) {
 		BuildOpts: uroot.Opts{
 			Commands: uroot.BusyBoxCmds(
 				"github.com/u-root/u-root/cmds/core/init",
-				"github.com/u-root/u-root/cmds/core/elvish",
 				"github.com/u-root/u-root/cmds/core/ip",
 				"github.com/u-root/u-root/cmds/core/shutdown",
 				"github.com/u-root/u-root/cmds/core/sleep",
@@ -33,9 +32,22 @@ func TestScript(t *testing.T) {
 			),
 			ExtraFiles: []string{
 				"../cmds/cli/ci.json:/ci.json",
+				"/sbin/kexec",
 			},
 		},
-		QEMUOpts: qemu.Options{Kernel: "../linux/arch/x86/boot/bzImage", Timeout: 120 * time.Second},
+		QEMUOpts: qemu.Options{
+			Kernel:  "../linux/arch/x86/boot/bzImage",
+			Timeout: 180 * time.Second,
+			Devices: []qemu.Device{
+				qemu.ArbitraryArgs{
+					"-machine", "q35",
+					"-device", "rtl8139,netdev=u1",
+					"-netdev", "user,id=u1",
+					"-m", "4G",
+				},
+			},
+			KernelArgs: "UROOT_NOHWRNG=1",
+		},
 		TestCmds: []string{
 			"dhclient -v",
 			"cli -distroName=" + webbootDistro,
