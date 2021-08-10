@@ -39,29 +39,29 @@
 	"kernelParams": "iso-scan/filename={{.IsoPath}}",
 	"mirrors":[{
 		"name":"Default",
-		"url":"https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-LiveGNOME-2003.iso"
+		"url":"https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso"
 	}]
 },
 "CentOS 8":{
 	"isoPattern":"^CentOS-8.+",
-	"checksum":"http://centos.mirror.lstn.net/8.4.2105/isos/x86_64",
+	"checksum":"c79921e24d472144d8f36a0d5f409b12bd016d9d7d022fd703563973ca9c375c",
 	"checksumType":"sha256",
 	"bootConfig":"grub",
 	"kernelParams":"iso-scan/filename={{.IsoPath}}",
 	"mirrors":[{
 		"name":"Default",
-		"url":"https://sjc.edge.kernel.org/centos/8.2.2004/isos/x86_64/CentOS-8.2.2004-x86_64-minimal.iso"
+		"url":"https://sjc.edge.kernel.org/centos/8/isos/x86_64/CentOS-8.4.2105-x86_64-boot.iso"
 	}]
 },
 "Debian":{
 	"isoPattern":"^debian-.+",
-	"checksum":"44e98dfc974e5ade72ebf3cbb9ff06df3aa2c0c0cdc0f30913dbd93983179ff5",
+	"checksum":"9b199cb94dab3906d4a414b084572e1ce10f6449b1b20d136cee7e561e19c3ea",
 	"checksumType":"sha256",
 	"bootConfig":"syslinux",
 	"kernelParams":"findiso={{.IsoPath}}",
 	"mirrors":[{
 		"name":"Default",
-		"url":"https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.9.0-amd64-xfce.iso"
+		"url":"https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.10.0-amd64-xfce.iso"
 	}]
 },
 "Fedora":{
