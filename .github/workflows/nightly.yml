@@ -8,13 +8,24 @@ on:
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in
-# parallel
+# parallel.
 jobs:
-  # This workflow contains a single job called "build"
-  build:
+  # This job will build the linux kernel.
+  buildKernel:
+    steps:
+      - name: Kernel Build
+        run: |
+          ./nightly.sh
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
+  
+  # This job will run the matrix of distros.
+  runDistros:
+    needs: buildKernel
+    # Set the working directory to the correct place in $GOPATH.
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     # Environment variables
     env:
       # GOPATH is the current directory.
@@ -22,11 +33,6 @@ jobs:
       # Turn off modules because they are broken.
       GO111MODULE: off
       WEBBOOT_DISTRO: ${{ matrix.distro }}
-
-    # Set the working directory to the correct place in $GOPATH.
-    defaults:
-      run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
     strategy:
       matrix:
         distro:
@@ -56,9 +62,6 @@ jobs:
       - name: Checkout dependencies
         run: |
           ./firsttime.sh
-      - name: Build and test webboot
-        run: |
-          ./ci.sh
       - name: Test TestScript
         run: |
-          ./nightly.sh
+          go test ./integration
