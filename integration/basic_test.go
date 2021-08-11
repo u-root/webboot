@@ -7,6 +7,7 @@
 package integration
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 )
 
 func TestScript(t *testing.T) {
-	webbootDistro := os.GetEnv("WEBBOOT_DISTRO")
+	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
 		BuildOpts: uroot.Opts{
@@ -29,6 +30,7 @@ func TestScript(t *testing.T) {
 				"github.com/u-root/webboot/cmds/webboot",
 				"github.com/u-root/webboot/cmds/cli",
 				"github.com/u-root/u-root/cmds/core/dhclient",
+				"github.com/u-root/u-root/cmds/core/elvish",
 			),
 			ExtraFiles: []string{
 				"../cmds/cli/ci.json:/ci.json",
@@ -37,7 +39,7 @@ func TestScript(t *testing.T) {
 		},
 		QEMUOpts: qemu.Options{
 			Kernel:  "../linux/arch/x86/boot/bzImage",
-			Timeout: 180 * time.Second,
+			Timeout: 300 * time.Second,
 			Devices: []qemu.Device{
 				qemu.ArbitraryArgs{
 					"-machine", "q35",
@@ -49,14 +51,14 @@ func TestScript(t *testing.T) {
 			KernelArgs: "UROOT_NOHWRNG=1",
 		},
 		TestCmds: []string{
-			"dhclient -v",
+			"dhclient -ipv6=f -v eth0",
 			"cli -distroName=" + webbootDistro,
 			"shutdown -h",
 		},
 	})
 	defer cleanup()
 
-	if err := q.Expect("www.tinycorelinux.net"); err != nil {
-		t.Fatal(`expected "www.tinycorelinux.net", got error: `, err)
+	if err := q.Expect("5.4.3-tinycore64"); err != nil {
+		t.Fatal(`expected "5.4.3-tinycore64", got error: `, err)
 	}
 }
