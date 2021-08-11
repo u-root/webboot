@@ -13,6 +13,10 @@ jobs:
   # This job will build the linux kernel.
   buildKernel:
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Kernel Build
         run: |
           ./nightly.sh
