@@ -34,6 +34,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+      - uses: actions/upload-artifact@master
+        with:
+          name: nightly-kernel-build
+          path: linux/arch/x86/boot/bzImage
+  with:
+    name: my-artifact
+    path: path/to/artifact
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
   
@@ -70,6 +77,10 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the
     # job
     steps:
+      - uses: actions/download-artifact@master
+        with:
+          name: nightly-kernel-build
+          path: linux/arch/x86/boot/bzImage
       - name: Install Go
         uses: actions/setup-go@v2
         with:
