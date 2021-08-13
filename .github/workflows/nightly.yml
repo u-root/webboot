@@ -94,4 +94,4 @@ jobs:
           ./firsttime.sh
       - name: Test TestScript
         run: |
-          go test ./integration
+          go test -v ./integration
