@@ -12,6 +12,16 @@ on:
 jobs:
   # This job will build the linux kernel.
   buildKernel:
+    # Set the working directory to the correct place in $GOPATH.
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    # Environment variables
+    env:
+      # GOPATH is the current directory.
+      GOPATH: ${{ github.workspace }}
+      # Turn off modules because they are broken.
+      GO111MODULE: off
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
