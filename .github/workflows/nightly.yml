@@ -12,6 +12,7 @@ on:
 jobs:
   # This job will build the linux kernel.
   buildKernel:
+    runs-on: ubuntu-latest 
     # Set the working directory to the correct place in $GOPATH.
     defaults:
       run:
