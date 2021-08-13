@@ -12,6 +12,7 @@ on:
 jobs:
   # This job will build the linux kernel.
   buildKernel:
+    runs-on: ubuntu-latest
     # Set the working directory to the correct place in $GOPATH.
     defaults:
       run:
@@ -37,12 +38,7 @@ jobs:
       - uses: actions/upload-artifact@master
         with:
           name: nightly-kernel-build
-          path: linux/arch/x86/boot/bzImage
-  with:
-    name: my-artifact
-    path: path/to/artifact
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/linux/arch/x86/boot/bzImage
   
   # This job will run the matrix of distros.
   runDistros:
@@ -80,7 +76,7 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: nightly-kernel-build
-          path: linux/arch/x86/boot/bzImage
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/linux/arch/x86/boot/bzImage
       - name: Install Go
         uses: actions/setup-go@v2
         with:
