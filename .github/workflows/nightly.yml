@@ -54,8 +54,9 @@ jobs:
       WEBBOOT_DISTRO: ${{ matrix.distro }}
       # WEBBOOT is the where the code is checked out.
       WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
-      # qemu binary for integration test
+      # qemu binary and kernel for integration test
       UROOT_QEMU: qemu-system-x86_64
+      UROOT_KERNEL: ${{ github.workspace }}/src/github.com/${{ github.repository }}/linux/arch/x86/boot/bzImage
     # Set the working directory to the correct place in $GOPATH.
     defaults:
       run:
@@ -68,6 +69,7 @@ jobs:
       # List of distros
       matrix:
         distro:
+          - Tinycore
           - Arch
           - CentOS 7
           - CentOS 8
@@ -76,7 +78,6 @@ jobs:
           - Kali
           - Linux Mint
           - Manjaro
-          - Tinycore
           - Ubuntu
     # Steps represent a sequence of tasks that will be executed as part of the
     # job
@@ -95,7 +96,10 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: nightly-kernel-build
-          path: ${{ env.WEBBOOT }}/linux/arch/x86/boot/bzImage
+          # Note that the ../ is required; otherwise, github creates a
+          # directory called bzImage containing bzImage.
+          path: ${{ env.UROOT_KERNEL }}/../
       - name: Test TestScript
         run: |
+          ls -l ${{ env.UROOT_KERNEL }}
           go test -v ./integration

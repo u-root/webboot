@@ -38,7 +38,6 @@ func TestScript(t *testing.T) {
 			},
 		},
 		QEMUOpts: qemu.Options{
-			Kernel:  "../linux/arch/x86/boot/bzImage",
 			Timeout: 300 * time.Second,
 			Devices: []qemu.Device{
 				qemu.ArbitraryArgs{
