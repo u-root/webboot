@@ -55,6 +55,7 @@ func TestScript(t *testing.T) {
 			ExtraFiles: []string{
 				"../cmds/cli/ci.json:ci.json",
 				"/sbin/kexec",
+				"/etc/ssl",
 			},
 		},
 		QEMUOpts: qemu.Options{
