@@ -51,7 +51,6 @@ jobs:
       GOPATH: ${{ github.workspace }}
       # Turn off modules because they are broken.
       GO111MODULE: off
-      WEBBOOT_DISTRO: ${{ matrix.distro }}
       # WEBBOOT is the where the code is checked out.
       WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       # qemu binary and kernel for integration test
@@ -69,7 +68,7 @@ jobs:
       # List of distros
       matrix:
         distro:
-          - Tinycore
+          - TinyCore
           - Arch
           - CentOS 7
           - CentOS 8
@@ -102,4 +101,4 @@ jobs:
       - name: Test TestScript
         run: |
           ls -l ${{ env.UROOT_KERNEL }}
-          go test -v ./integration
+          WEBBOOT_DISTRO="${{ matrix.distro }}" go test -v ./integration
