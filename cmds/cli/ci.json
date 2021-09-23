@@ -124,24 +124,6 @@
 		"url":"http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso"
 	}]
 },
-"LHSCowboys":{
-	"isoPattern":".*CorePure64-.+",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso=UUID={{.UUID}}{{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
-	}]
-},
-"DHSGaels":{
-	"isoPattern":".*CorePure64-.+",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso=UUID={{.UUID}}{{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
-	}]
-},
 "Ubuntu":{
 	"isoPattern":"^ubuntu-.+",
 	"checksum":"b45165ed3cd437b9ffad02a2aad22a4ddc69162470e2622982889ce5826f6e3d",

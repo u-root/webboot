@@ -16,8 +16,28 @@ import (
 	"github.com/u-root/u-root/pkg/vmtest"
 )
 
+var expectString = map[string]string{
+	"Arch":       "TODO_PLEASE_SET_EXPECT_STRING",
+	"CentOS 7":   "TODO_PLEASE_SET_EXPECT_STRING",
+	"CentOS 8":   "TODO_PLEASE_SET_EXPECT_STRING",
+	"Debian":     "TODO_PLEASE_SET_EXPECT_STRING",
+	"Fedora":     "TODO_PLEASE_SET_EXPECT_STRING",
+	"Kali":       "TODO_PLEASE_SET_EXPECT_STRING",
+	"Linux Mint": "TODO_PLEASE_SET_EXPECT_STRING",
+	"Manjaro":    "TODO_PLEASE_SET_EXPECT_STRING",
+	"TinyCore":   "5.4.3-tinycore64",
+	"Ubuntu":     "TODO_PLEASE_SET_EXPECT_STRING",
+}
+
 func TestScript(t *testing.T) {
 	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
+	if _, ok := expectString[webbootDistro]; !ok {
+		if webbootDistro == "" {
+			t.Fatal("WEBBOOT_DISTRO is not set")
+		}
+		t.Fatalf("Unknown distro: %q", webbootDistro)
+	}
+
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
 		BuildOpts: uroot.Opts{
@@ -33,7 +53,7 @@ func TestScript(t *testing.T) {
 				"github.com/u-root/u-root/cmds/core/elvish",
 			),
 			ExtraFiles: []string{
-				"../cmds/cli/ci.json:/ci.json",
+				"../cmds/cli/ci.json:ci.json",
 				"/sbin/kexec",
 			},
 		},
@@ -57,7 +77,7 @@ func TestScript(t *testing.T) {
 	})
 	defer cleanup()
 
-	if err := q.Expect("5.4.3-tinycore64"); err != nil {
-		t.Fatal(`expected "5.4.3-tinycore64", got error: `, err)
+	if err := q.Expect(expectString[webbootDistro]); err != nil {
+		t.Fatalf("expected %q, got error: %v", expectString[webbootDistro], err)
 	}
 }
