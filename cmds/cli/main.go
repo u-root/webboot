@@ -14,7 +14,7 @@ import (
 	"path"
 	"path/filepath"
 
-	Boot "github.com/u-root/u-root/pkg/boot"
+	"github.com/u-root/u-root/pkg/boot"
 	"github.com/u-root/webboot/pkg/bootiso"
 	"github.com/u-root/webboot/pkg/menu"
 )
@@ -31,7 +31,7 @@ var (
 )
 
 // ISO's exec downloads the iso and boot it.
-func (i *ISO) exec(boot bool) error {
+func (i *ISO) exec(enableBoot bool) error {
 	verbose("Intent to boot %s", i.path)
 
 	distro, ok := supportedDistros[*distroName]
@@ -41,7 +41,7 @@ func (i *ISO) exec(boot bool) error {
 
 	verbose("Using distro %s with boot config %s", *distroName, distro.BootConfig)
 
-	var configs []Boot.OSImage
+	var configs []boot.OSImage
 	if distro.BootConfig != "" {
 		parsedConfigs, err := bootiso.ParseConfigFromISO(i.path, distro.BootConfig)
 		if err != nil {
@@ -86,7 +86,7 @@ func (i *ISO) exec(boot bool) error {
 		return err
 	}
 
-	if !boot {
+	if !enableBoot {
 		s := fmt.Sprintf("config.image %s, kernelparams.String() %s", config.image, kernelParams.String())
 		return fmt.Errorf("Booting is disabled (see --dryrun flag), but otherwise would be [%s].", s)
 	}
@@ -149,6 +149,9 @@ func distroData() error {
 
 func main() {
 	flag.Parse()
+	if flag.NArg() != 0 {
+		fmt.Errorf("Unexpected positional arguments: %v", flag.Args())
+	}
 	if *v {
 		verbose = log.Printf
 	}

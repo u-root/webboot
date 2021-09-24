@@ -7,6 +7,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -72,7 +73,8 @@ func TestScript(t *testing.T) {
 		},
 		TestCmds: []string{
 			"dhclient -ipv6=f -v eth0",
-			"cli -distroName=" + webbootDistro,
+			// The webbootDistro may contain spaces.
+			fmt.Sprintf("cli -distroName=%q", webbootDistro),
 			"shutdown -h",
 		},
 	})
