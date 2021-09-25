@@ -43,6 +43,7 @@ jobs:
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Checkout dependencies
         run: |
+          sudo apt-get update
           ./firsttime.sh
       - name: Build and test webboot
         run: |
