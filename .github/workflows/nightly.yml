@@ -91,6 +91,7 @@ jobs:
           path: ${{ env.WEBBOOT }}
       - name: Checkout dependencies
         run: |
+          sudo apt-get update
           ./firsttime.sh
       - uses: actions/download-artifact@v2
         with:
