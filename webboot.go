@@ -3,10 +3,9 @@
 // license that can be found in the LICENSE file.
 package main
 
-// This program depends on the present of the u-root and NiChrome projects.
+// This program depends on the presence of the u-root project.
 // First time use requires that you run
 // go get -u github.com/u-root/u-root
-// go get -u github.com/u-root/NiChrome/...
 import (
 	"bufio"
 	"flag"
