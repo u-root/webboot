@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/u-root/NiChrome/pkg/wpa/passphrase"
+	"github.com/u-root/webboot/pkg/wpa/passphrase"
 )
 
 type GenerateConfigTestCase struct {
