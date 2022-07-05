@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/nsf/termbox-go v1.0.0
-	github.com/u-root/NiChrome v0.0.0-20220507220703-d00d4b8cdf86
 	github.com/u-root/u-root v0.8.0
 	github.com/vishvananda/netlink v1.1.1-0.20211118161826-650dca95af54
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519

@@ -79,8 +79,6 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.3 h1:dAm0YRdRQlWojc3CrCRgPBzG5f941d0zvAKu7qY4e+I=
 github.com/stretchr/testify v1.7.3/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-github.com/u-root/NiChrome v0.0.0-20220507220703-d00d4b8cdf86 h1:3YNPIj01CZZrlG80OtXBTPA7cu6rJYgWa1CXDccxMKw=
-github.com/u-root/NiChrome v0.0.0-20220507220703-d00d4b8cdf86/go.mod h1:kFmahkS+FOHOugE02wto+sMvTYE/zZNq1r7iTDHPifU=
 github.com/u-root/u-root v0.8.0 h1:jqP7uPC2+0eRszYTrmdZ6UDyO1Dbuy0rpMo+BnPZ9cY=
 github.com/u-root/u-root v0.8.0/go.mod h1:But1FHzS4Ua4ywx6kZOaRzZTucUKIDKOPOLEKOckQ68=
 github.com/u-root/uio v0.0.0-20210528114334-82958018845c h1:BFvcl34IGnw8yvJi8hlqLFo9EshRInwWBs2M5fGWzQA=
