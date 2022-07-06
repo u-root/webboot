@@ -22,8 +22,6 @@ jobs:
     env:
       # GOPATH is the current directory.
       GOPATH: ${{ github.workspace }}
-      # Turn off modules because they are broken.
-      GO111MODULE: off
 
     # Set the working directory to the correct place in $GOPATH.
     defaults:
