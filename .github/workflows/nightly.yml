@@ -17,8 +17,6 @@ jobs:
     env:
       # GOPATH is the current directory.
       GOPATH: ${{ github.workspace }}
-      # Turn off modules because they are broken.
-      GO111MODULE: off
       # WEBBOOT is the where the code is checked out.
       WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
     # Set the working directory to the correct place in $GOPATH.
@@ -49,8 +47,6 @@ jobs:
     env:
       # GOPATH is the current directory.
       GOPATH: ${{ github.workspace }}
-      # Turn off modules because they are broken.
-      GO111MODULE: off
       # WEBBOOT is the where the code is checked out.
       WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
       # qemu binary and kernel for integration test

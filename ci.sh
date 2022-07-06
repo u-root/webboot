@@ -10,8 +10,9 @@ if [[ -n "${GOFMT_DIFF}" ]]; then
 	exit 1
 fi
 
+go mod tidy
 go build .
-go run webboot.go --wpa-version=2.9
+./webboot
 if [ ! -f "/tmp/initramfs.linux_amd64.cpio" ]; then
     echo "Initrd was not created."
     exit 1

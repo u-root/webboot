@@ -220,7 +220,7 @@ func main() {
 	}
 
 	var args = []string{
-		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=../u-root/", "core", "cmds/*",
+		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=../u-root/",
 	}
 
 	// Try to find the system kexec. We can not use LookPath as people
@@ -247,6 +247,7 @@ func main() {
 	if *iso != "" {
 		args = append(args, "-files", *iso+":iso")
 	}
+	args = append(args, "core", "cmds/*")
 	var commands = []cmd{
 		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "webboot")},
 		{args: append(append(args, strings.Fields(*uroot)...), *cmds)},
