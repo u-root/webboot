@@ -221,7 +221,7 @@ func main() {
 	}
 
 	var args = []string{
-		"u-root", "-files", "/etc/ssl/certs", os.Getenv("WEBBOOT"),
+		"u-root", "-files", "/etc/ssl/certs", "-uroot-source", "../u-root/cmds/core/*",
 	}
 
 	// Try to find the system kexec. We can not use LookPath as people
