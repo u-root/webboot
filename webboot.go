@@ -31,11 +31,10 @@ var (
 
 	verbose    = flag.Bool("v", true, "verbose debugging output")
 	uroot      = flag.String("u", "", "options for u-root")
-	cmds       = flag.String("c", "all", "u-root commands to build into the image")
-	ncmds      = flag.String("n", "github.com/u-root/NiChrome/cmds/wifi", "NiChrome commands to build into the image")
+	cmds       = flag.String("c", "", "u-root commands to build into the image")
 	bzImage    = flag.String("bzImage", "", "Optional bzImage to embed in the initramfs")
 	iso        = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
-	wifi       = flag.Bool("wifi", true, "include wifi tools")
+	wifi       = flag.Bool("wifi", false, "include wifi tools")
 	wpaVersion = flag.String("wpa-version", "system", "if set, download and build the wpa_supplicant (ex: 2.9)")
 )
 
@@ -221,7 +220,7 @@ func main() {
 	}
 
 	var args = []string{
-		"u-root", "-files", "/etc/ssl/certs", "-uroot-source", "../u-root/cmds/core/*",
+		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=../u-root/", "core", "cmds/*",
 	}
 
 	// Try to find the system kexec. We can not use LookPath as people
@@ -250,12 +249,13 @@ func main() {
 	}
 	var commands = []cmd{
 		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "webboot")},
-		{args: append(append(args, strings.Fields(*uroot)...), *cmds, *ncmds)},
+		{args: append(append(args, strings.Fields(*uroot)...), *cmds)},
 	}
 
 	for _, cmd := range commands {
 		debug("Run %v", cmd)
 		c := exec.Command(cmd.args[0], cmd.args[1:]...)
+		c.Env = append(os.Environ(), "GOOS=linux", "GOARCH=amd64")
 		c.Stdout, c.Stderr = os.Stdout, os.Stderr
 		c.Dir = cmd.dir
 		if err := c.Run(); err != nil {
