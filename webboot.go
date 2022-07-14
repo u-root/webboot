@@ -233,9 +233,9 @@ func main() {
 		args = append(args,
 			"-files", extraBinMust("iwconfig"),
 			"-files", extraBinMust("iwlist"),
-			"-files", extraBinMust("wpa_supplicant")+":/bin/wpa_supplicant",
-			"-files", extraBinMust("wpa_cli")+":/bin/wpa_cli",
-			"-files", extraBinMust("wpa_passphrase")+":/bin/wpa_passphrase",
+			"-files", extraBinMust("wpa_supplicant")+":bin/wpa_supplicant",
+			"-files", extraBinMust("wpa_cli")+":bin/wpa_cli",
+			"-files", extraBinMust("wpa_passphrase")+":bin/wpa_passphrase",
 			"-files", extraBinMust("strace"),
 			"-files", "cmds/webboot/distros.json:distros.json",
 		)
