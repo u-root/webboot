@@ -236,7 +236,6 @@ func main() {
 			"-files", extraBinMust("wpa_supplicant")+":/bin/wpa_supplicant",
 			"-files", extraBinMust("wpa_cli")+":/bin/wpa_cli",
 			"-files", extraBinMust("wpa_passphrase")+":/bin/wpa_passphrase",
-			"-files", filepath.Join(currentDir, "cmds", "webboot", "webboot")+":bbin/webboot",
 			"-files", extraBinMust("strace"),
 			"-files", "cmds/webboot/distros.json:distros.json",
 		)
