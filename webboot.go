@@ -34,7 +34,7 @@ var (
 	cmds       = flag.String("c", "", "u-root commands to build into the image")
 	bzImage    = flag.String("bzImage", "", "Optional bzImage to embed in the initramfs")
 	iso        = flag.String("iso", "", "Optional iso (e.g. tinycore.iso) to embed in the initramfs")
-	wifi       = flag.Bool("wifi", false, "include wifi tools")
+	wifi       = flag.Bool("wifi", true, "include wifi tools")
 	wpaVersion = flag.String("wpa-version", "system", "if set, download and build the wpa_supplicant (ex: 2.9)")
 )
 
