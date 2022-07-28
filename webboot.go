@@ -207,6 +207,14 @@ func main() {
 		log.Fatalf("error getting current directory %v", err)
 	}
 
+	if _, err := os.Stat("u-root"); err != nil {
+		c := exec.Command("git", "clone", "--single-branch", "https://github.com/u-root/u-root")
+		c.Stdout, c.Stderr = os.Stdout, os.Stderr
+		if err := c.Run(); err != nil {
+			log.Fatalf("cloning u-root: %v", err)
+		}
+	}
+
 	// Use the system wpa_supplicant or download them.
 	if *wpaVersion != "system" {
 		wpaSupplicantPath, err := buildWPASupplicant(*wpaVersion)
@@ -220,7 +228,7 @@ func main() {
 	}
 
 	var args = []string{
-		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=../u-root/",
+		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=./u-root/",
 	}
 
 	// Try to find the system kexec. We can not use LookPath as people
