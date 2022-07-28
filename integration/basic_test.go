@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build !race
 // +build !race
 
 package integration
@@ -9,11 +10,11 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/u-root/u-root/pkg/qemu"
-	"github.com/u-root/u-root/pkg/uroot"
 	"github.com/u-root/u-root/pkg/vmtest"
 )
 
@@ -31,16 +32,62 @@ var expectString = map[string]string{
 }
 
 func TestScript(t *testing.T) {
-	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
-	if _, ok := expectString[webbootDistro]; !ok {
-		if webbootDistro == "" {
-			t.Fatal("WEBBOOT_DISTRO is not set")
+	// The vmtest packages do not work any more and I'm a bit tired
+	// of trying to figure out why. Damn modules.
+
+	if _, err := os.Stat("u-root"); err != nil {
+		c := exec.Command("git", "clone", "--single-branch", "https://github.com/u-root/u-root")
+		c.Stdout, c.Stderr = os.Stdout, os.Stderr
+		if err := c.Run(); err != nil {
+			t.Fatalf("cloning u-root: %v", err)
 		}
-		t.Fatalf("Unknown distro: %q", webbootDistro)
 	}
 
+	var fail bool
+
+	k, err := exec.LookPath("kexec")
+	if err != nil {
+		fail = true
+		t.Error(err)
+	}
+
+	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
+	if _, ok := expectString[webbootDistro]; !ok {
+		fail = true
+		if webbootDistro == "" {
+			t.Errorf("WEBBOOT_DISTRO is not set")
+		}
+		t.Errorf("Unknown distro: %q", webbootDistro)
+	}
+	if _, ok := os.LookupEnv("UROOT_INITRAMFS"); !ok {
+		fail = true
+		t.Errorf("UROOT_INITRAMFS needs to be set")
+	}
+	if fail {
+		t.Fatalf("can not continue due to errors")
+	}
+
+	c := exec.Command("u-root",
+		"-files", "../cmds/cli/ci.json:ci.json",
+		"-files", k,
+		"-files", "/etc/ssl/certs",
+		"../cmds/webboot",
+		"../cmds/cli",
+
+		"./u-root/cmds/core/init",
+		"./u-root/cmds/core/ip",
+		"./u-root/cmds/core/shutdown",
+		"./u-root/cmds/core/sleep",
+		"./u-root/cmds/boot/pxeboot",
+		"./u-root/cmds/core/dhclient",
+		"./u-root/cmds/core/elvish")
+	c.Stdout, c.Stderr = os.Stdout, os.Stderr
+	if err := c.Run(); err != nil {
+		t.Fatalf("Running u-root: %v", err)
+	}
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
+		/* it would be so nice if this actually worked.
 		BuildOpts: uroot.Opts{
 			Commands: uroot.BusyBoxCmds(
 				"github.com/u-root/u-root/cmds/core/init",
@@ -59,6 +106,7 @@ func TestScript(t *testing.T) {
 				"/etc/ssl/certs",
 			},
 		},
+		*/
 		QEMUOpts: qemu.Options{
 			Timeout: 300 * time.Second,
 			Devices: []qemu.Device{
