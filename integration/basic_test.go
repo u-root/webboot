@@ -41,15 +41,17 @@ func TestScript(t *testing.T) {
 		if err := c.Run(); err != nil {
 			t.Fatalf("cloning u-root: %v", err)
 		}
+		c = exec.Command("go", "build", ".")
+		c.Stdout, c.Stderr = os.Stdout, os.Stderr
+		c.Dir = "u-root"
+		if err := c.Run(); err != nil {
+			t.Fatalf("cloning u-root: %v", err)
+		}
 	}
 
 	var fail bool
 
-	k, err := exec.LookPath("kexec")
-	if err != nil {
-		fail = true
-		t.Error(err)
-	}
+	var k string
 
 	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
 	if _, ok := expectString[webbootDistro]; !ok {
@@ -67,7 +69,7 @@ func TestScript(t *testing.T) {
 		t.Fatalf("can not continue due to errors")
 	}
 
-	c := exec.Command("u-root",
+	c := exec.Command("./u-root/u-root",
 		"-files", "../cmds/cli/ci.json:ci.json",
 		"-files", k,
 		"-files", "/etc/ssl/certs",
@@ -78,10 +80,12 @@ func TestScript(t *testing.T) {
 		"./u-root/cmds/core/ip",
 		"./u-root/cmds/core/shutdown",
 		"./u-root/cmds/core/sleep",
-		"./u-root/cmds/boot/pxeboot",
 		"./u-root/cmds/core/dhclient",
-		"./u-root/cmds/core/elvish")
+		"./u-root/cmds/core/elvish",
+		"./u-root/cmds/boot/pxeboot")
 	c.Stdout, c.Stderr = os.Stdout, os.Stderr
+	c.Env = append(os.Environ(), "GOARCH=amd64", "GOOS=linux")
+	t.Logf("Args %v cmd %v", c.Args, c)
 	if err := c.Run(); err != nil {
 		t.Fatalf("Running u-root: %v", err)
 	}
