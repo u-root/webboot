@@ -24,3 +24,5 @@ linux-firmware
 wpa_supplicant-*.tar.gz
 wpa_supplicant-*.tar.gz.asc
 wpa_supplicant-*/
+
+u-root

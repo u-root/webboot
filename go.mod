@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/nsf/termbox-go v1.0.0
+	github.com/spf13/pflag v1.0.5
 	github.com/u-root/u-root v0.8.0
 	github.com/vishvananda/netlink v1.1.1-0.20211118161826-650dca95af54
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
@@ -24,7 +25,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.11 // indirect
 	github.com/rekby/gpt v0.0.0-20200614112001-7da10aec5566 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.3 // indirect
 	github.com/u-root/uio v0.0.0-20210528114334-82958018845c // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
