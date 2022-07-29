@@ -51,7 +51,10 @@ func TestScript(t *testing.T) {
 
 	var fail bool
 
-	var k string
+	k, err := exec.LookPath("kexec")
+	if err != nil {
+		t.Fatalf("exec.LookPath(\"kexec\"): %v != nil", err)
+	}
 
 	webbootDistro := os.Getenv("WEBBOOT_DISTRO")
 	if _, ok := expectString[webbootDistro]; !ok {
@@ -71,11 +74,13 @@ func TestScript(t *testing.T) {
 
 	c := exec.Command("./u-root/u-root",
 		"-files", "../cmds/cli/ci.json:ci.json",
-		"-files", k,
+		"-files", k+":/sbin/kexec",
 		"-files", "/etc/ssl/certs",
+		"-uinitcmd=uinit",
 		"../cmds/webboot",
 		"../cmds/cli",
 
+		"./u-root/integration/testcmd/generic/uinit",
 		"./u-root/cmds/core/init",
 		"./u-root/cmds/core/ip",
 		"./u-root/cmds/core/shutdown",
@@ -124,6 +129,7 @@ func TestScript(t *testing.T) {
 			KernelArgs: "UROOT_NOHWRNG=1",
 		},
 		TestCmds: []string{
+			"echo HIHIHIHIHIHIHIHIHIHIHIHIHIHIHIHIHI",
 			"dhclient -ipv6=f -v eth0",
 			// The webbootDistro may contain spaces.
 			fmt.Sprintf("cli -distroName=%q", webbootDistro),
