@@ -202,17 +202,19 @@ func filterFile(origin, destination string, filterOut *regexp.Regexp) error {
 }
 
 func main() {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("error getting current directory %v", err)
-	}
-
 	if _, err := os.Stat("u-root"); err != nil {
 		c := exec.Command("git", "clone", "--single-branch", "https://github.com/u-root/u-root")
 		c.Stdout, c.Stderr = os.Stdout, os.Stderr
 		if err := c.Run(); err != nil {
 			log.Fatalf("cloning u-root: %v", err)
 		}
+		c = exec.Command("go", "build", ".")
+		c.Stdout, c.Stderr = os.Stdout, os.Stderr
+		c.Dir = "u-root"
+		if err := c.Run(); err != nil {
+			log.Fatalf("building u-root/.: %v", err)
+		}
+
 	}
 
 	// Use the system wpa_supplicant or download them.
@@ -228,13 +230,17 @@ func main() {
 	}
 
 	var args = []string{
-		"u-root", "-files", "/etc/ssl/certs", "-uroot-source=./u-root/",
+		"./u-root/u-root", "-files", "/etc/ssl/certs", "-uroot-source=./u-root/",
 	}
 
 	// Try to find the system kexec. We can not use LookPath as people
 	// building this might have the u-root kexec in their path.
 	if _, err := os.Stat("/sbin/kexec"); err == nil {
 		args = append(args, "-files=/sbin/kexec")
+	}
+
+	if _, err := os.Stat("/usr/sbin/kexec"); err == nil {
+		args = append(args, "-files=/usr/sbin/kexec")
 	}
 
 	if *wifi {
@@ -254,9 +260,8 @@ func main() {
 	if *iso != "" {
 		args = append(args, "-files", *iso+":iso")
 	}
-	args = append(args, "core", "cmds/*")
+	args = append(args, "core", "./cmds/*")
 	var commands = []cmd{
-		{args: []string{"go", "build"}, dir: filepath.Join(currentDir, "cmds", "webboot")},
 		{args: append(append(args, strings.Fields(*uroot)...), *cmds)},
 	}
 
