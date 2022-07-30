@@ -13,8 +13,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in
 # parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
+  format_and_unit_testing:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -46,3 +45,52 @@ jobs:
       - name: Build and test webboot
         run: |
           ./ci.sh
+
+  integration_testing:
+    runs-on: ubuntu-latest
+    # Environment variables
+    env:
+      # GOPATH is the current directory.
+      GOPATH: ${{ github.workspace }}
+      # WEBBOOT is the where the code is checked out.
+      WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+    # Set the working directory to the correct place in $GOPATH.
+    defaults:
+      run:
+        working-directory: ${{ env.WEBBOOT }}
+    strategy:
+      # Run at most 2 distros at a time.
+      max-parallel: 2
+      # Continue testing other distros on failure.
+      fail-fast: false
+      # List of distros
+      matrix:
+        distro:
+          - TinyCore
+          - Arch
+          - CentOS 7
+          - CentOS 8
+          - Debian
+          - Fedora
+          - Kali
+          - Linux Mint
+          - Manjaro
+          - Ubuntu
+    # Steps represent a sequence of tasks that will be executed as part of the
+    # job
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18.x
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WEBBOOT }}
+      - name: Checkout dependencies
+        run: |
+          sudo apt-get update
+          ./firsttime.sh
+      - name: Integration testing
+        run: |
+          ./integration.sh ${{ matrix.distro }}
