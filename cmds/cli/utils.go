@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -23,10 +24,26 @@ func NewWriteCounter(expectedSize int64) WriteCounter {
 	return WriteCounter{0, float64(expectedSize), menu.NewProgress("", false)}
 }
 
+// QEMU testing uses serial output, so termui cannot be used. Instead,
+// download percentage is logged when it's roughly a whole number
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
 	wc.received += float64(n)
-	wc.progress.Update(fmt.Sprintf("Downloading... %.2f%% (%.3f MB)\n\nPress <Esc> to cancel.", 100*(wc.received/wc.expected), wc.received/1000000))
+	percentage := 100 * (wc.received / wc.expected)
+
+	// `percentage` is logged when "close enough" to a whole number, which depends
+	// on how big the written chunk is (to account for different download
+	// conditions causing chunks to vary in size)
+	threshold := float64(n) / wc.expected * 100
+	const megabyte = 1_000_000
+	const gigabyte = 1_000_000_000
+	if math.Abs(percentage-math.Trunc(percentage)) < threshold {
+		verbose("Downloading... %.2f%% (%.3f MB / %.3f GB)",
+			100*(wc.received/wc.expected),
+			wc.received/megabyte,
+			wc.expected/gigabyte)
+	}
+
 	return n, nil
 }
 
