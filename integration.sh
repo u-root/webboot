@@ -33,5 +33,5 @@ fi
   UROOT_QEMU="qemu-system-x86_64" \
   UROOT_KERNEL="$PWD/bzImage" \
   UROOT_INITRAMFS="/tmp/initramfs.linux_amd64.cpio" \
-  go test -v
+  go test -v -timeout 60m # Matches behavior of `vmtest.QEMUTest` in basic_test.go
 )

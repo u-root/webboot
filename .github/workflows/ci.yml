@@ -59,8 +59,8 @@ jobs:
       run:
         working-directory: ${{ env.WEBBOOT }}
     strategy:
-      # Run at most 2 distros at a time.
-      max-parallel: 2
+      # Run all distros at the same time.
+      max-parallel: 10
       # Continue testing other distros on failure.
       fail-fast: false
       # List of distros
@@ -69,7 +69,6 @@ jobs:
           - TinyCore
           - Arch
           - CentOS 7
-          - CentOS 8
           - Debian
           - Fedora
           - Kali
@@ -93,4 +92,4 @@ jobs:
           ./firsttime.sh
       - name: Integration testing
         run: |
-          ./integration.sh ${{ matrix.distro }}
+          ./integration.sh "${{ matrix.distro }}"

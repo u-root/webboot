@@ -1,176 +1,155 @@
 {
-"Arch":{
-	"isoPattern":"^archlinux-.+",
-	"checksum":"a0862c8189290e037ff156b93c60d6150b9363b3",
-	"checksumType":"sha1",
-	"kernelParams":"img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
-	"customConfigs":[{
-		"Label":"Default Config",
-		"KernelPath":"/arch/boot/x86_64/vmlinuz-linux",
-		"InitrdPath":"/arch/boot/x86_64/archiso.img",
-		"Cmdline":""
-	}],
-	"mirrors":[{
-		"name":"Default",
-		"url":"http://mirrors.acm.wpi.edu/archlinux/iso/2021.09.01/archlinux-2021.09.01-x86_64.iso"
+	"Arch": {
+		"isoPattern": "^archlinux-.+",
+		"checksum": "41c5d5c181faebcff9a6cdd9e270d87dd9d766507687e4555c7852d198d0ad48",
+		"checksumType": "sha256",
+		"kernelParams": "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
+		"customConfigs": [
+			{
+				"Label": "Default Config",
+				"KernelPath": "/arch/boot/x86_64/vmlinuz-linux",
+				"InitrdPath": "/arch/boot/x86_64/archiso.img",
+				"Cmdline": ""
+			}
+		],
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://mirrors.acm.wpi.edu/archlinux/iso/2022.09.03/archlinux-2022.09.03-x86_64.iso"
+			}
+		]
 	},
-	{
-		"name":"Arizona",
-		"url":"http://mirror.arizona.edu/archlinux/iso/2021.09.01/archlinux-2021.09.01-x86_64.iso"
+	"CentOS 7": {
+		"isoPattern": "^CentOS-7.+",
+		"checksum": "689531cce9cf484378481ae762fae362791a9be078fda10e4f6977bf8fa71350",
+		"checksumType": "sha256",
+		"bootConfig": "grub",
+		"kernelParams": "iso-scan/filename={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://mirrors.ocf.berkeley.edu/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso"
+			}
+		]
 	},
-	{
-		"name": "Purdue University",
-		"url":  "https://plug-mirror.rcac.purdue.edu/archlinux/iso/2021.09.01/archlinux-2021.09.01-x86_64.iso"
+	"Debian": {
+		"isoPattern": "^debian-.+",
+		"checksum": "99a532675ec9733c277a3f4661638b5471dc5bce989b3a2dbc3ac694c964a7f7",
+		"checksumType": "sha256",
+		"bootConfig": "syslinux",
+		"kernelParams": "findiso={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://cdimage.debian.org/debian-cd/11.5.0/amd64/iso-dvd/debian-11.5.0-amd64-DVD-1.iso"
+			}
+		]
 	},
-	{
-		"name": "Constant.com",
-		"url":  "http://arch.mirror.constant.com/iso/2021.09.01/archlinux-2021.09.01-x86_64.iso"
+	"Fedora": {
+		"isoPattern": "^Fedora-.+",
+		"checksum": "4d0f6653e2e0860c99ffe0ef274a46d875fb85bd2a40cb896dce1ed013566924",
+		"checksumType": "sha256",
+		"bootConfig": "grub",
+		"kernelParams": "iso-scan/filename={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso"
+			}
+		]
 	},
-	{
-		"name": "Georgia Institute of Technology",
-		"url":  "http://www.gtlib.gatech.edu/pub/archlinux/iso/2021.09.01/archlinux-2021.09.01-x86_64.iso"
-	}]
-},
-"CentOS 7":{
-	"isoPattern":"^CentOS-7.+",
-	"checksum":"689531cce9cf484378481ae762fae362791a9be078fda10e4f6977bf8fa71350",
-	"checksumType":"sha256",
-	"bootConfig":"grub",
-	"kernelParams": "iso-scan/filename={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://sjc.edge.kernel.org/centos/7/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso"
-	}]
-},
-"CentOS 8":{
-	"isoPattern":"^CentOS-8.+",
-	"checksum":"c79921e24d472144d8f36a0d5f409b12bd016d9d7d022fd703563973ca9c375c",
-	"checksumType":"sha256",
-	"bootConfig":"grub",
-	"kernelParams":"iso-scan/filename={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://sjc.edge.kernel.org/centos/8/isos/x86_64/CentOS-8.4.2105-x86_64-boot.iso"
-	}]
-},
-"Debian":{
-	"isoPattern":"^debian-.+",
-	"checksum":"9b199cb94dab3906d4a414b084572e1ce10f6449b1b20d136cee7e561e19c3ea",
-	"checksumType":"sha256",
-	"bootConfig":"syslinux",
-	"kernelParams":"findiso={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-10.10.0-amd64-xfce.iso"
-	}]
-},
-"Fedora":{
-	"isoPattern":"^Fedora-.+",
-	"checksum":"4d0f6653e2e0860c99ffe0ef274a46d875fb85bd2a40cb896dce1ed013566924",
-	"checksumType":"sha256",
-	"bootConfig":"grub",
-	"kernelParams":"iso-scan/filename={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://download.fedoraproject.org/pub/fedora/linux/releases/32/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-32-1.6.iso"
-	}]
-},
-"Kali":{
-	"isoPattern":"^kali-linux-.+",
-	"checksum":"1a0b2ea83f48861dd3f3babd5a2892a14b30a7234c8c9b5013a6507d1401874f",
-	"checksumType":"sha256",
-	"bootConfig":"grub",
-	"kernelParams":"findiso={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://cdimage.kali.org/kali-2020.3/kali-linux-2020.3-live-amd64.iso"
-	}]
-},
-"Linux Mint":{
-	"isoPattern":"^linuxmint-.+",
-	"checksum":"2f6ae466ec9b7c6255e997b82f162ae88bfe640a8df16d3e2f495b6281120af9",
-	"checksumType":"sha256",
-	"bootConfig":"grub",
-	"kernelParams":"iso-scan/filename={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"http://mirrors.kernel.org/linuxmint/stable/20/linuxmint-20-cinnamon-64bit.iso"
-	}]
-},
-"Manjaro":{
-	"isoPattern":"^manjaro-.+",
-	"checksum":"fab9d1bdd03a7e5daab226ccc8e16ba96a5b07e9",
-	"checksumType":"sha1",
-	"kernelParams":"img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
-	"customConfigs":[{
-		"Label":"Default Config",
-		"KernelPath":"/boot/vmlinuz-x86_64",
-		"InitrdPath":"/boot/initramfs-x86_64.img",
-		"Cmdline":"driver=free tz=utc lang=en_US keytable=en"
-	}],
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://download.manjaro.org/xfce/21.0.6/manjaro-xfce-21.0.6-210607-linux510.iso"
-	}]
-},
-"TinyCore":{
-	"isoPattern":".*CorePure64-.+",
-	"checksum":"58bc33523ce10e64f56b9a9ec8a77531",
-	"checksumType":"md5",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso=UUID={{.UUID}}{{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"http://tinycorelinux.net/11.x/x86_64/release/TinyCorePure64-11.1.iso"
-	}]
-},
-"LHSCowboys":{
-	"isoPattern":".*CorePure64-.+",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso=UUID={{.UUID}}{{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
-	}]
-},
-"DHSGaels":{
-	"isoPattern":".*CorePure64-.+",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso=UUID={{.UUID}}{{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
-	}]
-},
-"Ubuntu":{
-	"isoPattern":"^ubuntu-.+",
-	"checksum":"b45165ed3cd437b9ffad02a2aad22a4ddc69162470e2622982889ce5826f6e3d",
-	"checksumType":"sha256",
-	"bootConfig":"syslinux",
-	"kernelParams":"iso-scan/filename={{.IsoPath}}",
-	"mirrors":[{
-		"name":"Default",
-		"url":"https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso"
+	"Kali": {
+		"isoPattern": "^kali-linux-.+",
+		"checksum": "f87618a6df20b6fdf4edebee1c6f1d808dee075a431229b3f75a5208e3c9c0e8",
+		"checksumType": "sha256",
+		"bootConfig": "grub",
+		"kernelParams": "findiso={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://cdimage.kali.org/kali-2022.3/kali-linux-2022.3-live-amd64.iso"
+			}
+		]
 	},
-	{
-		"name":"Constant.com",
-		"url":"http://isos.ubuntu.mirror.constant.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso"
+	"Linux Mint": {
+		"isoPattern": "^linuxmint-.+",
+		"checksum": "f524114e4a10fb04ec428af5e8faf7998b18271ea72fbb4b63efe0338957c0f3",
+		"checksumType": "sha256",
+		"bootConfig": "grub",
+		"kernelParams": "iso-scan/filename={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://mirrors.edge.kernel.org/linuxmint/stable/21/linuxmint-21-cinnamon-64bit.iso"
+			}
+		]
 	},
-	{
-		"name":"Rochester Institute of Technology",
-		"url":"http://mirrors.rit.edu/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso"
+	"Manjaro": {
+		"isoPattern": "^manjaro-.+",
+		"checksum": "63b76319e4ca91d626e2bd30d34e841e134baec9",
+		"checksumType": "sha1",
+		"kernelParams": "img_dev=/dev/disk/by-uuid/{{.UUID}} img_loop={{.IsoPath}}",
+		"customConfigs": [
+			{
+				"Label": "Default Config",
+				"KernelPath": "/boot/vmlinuz-x86_64",
+				"InitrdPath": "/boot/initramfs-x86_64.img",
+				"Cmdline": "driver=free tz=utc lang=en_US keytable=en"
+			}
+		],
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://download.manjaro.org/xfce/21.3.7/manjaro-xfce-21.3.7-220816-linux515.iso"
+			}
+		]
 	},
-	{
-		"name":"Purdue University",
-		"url":"http://osmirrors.cerias.purdue.edu/pub/ubuntu-releases/20.04/ubuntu-20.04.2.0-desktop-amd64.iso"
+	"TinyCore": {
+		"isoPattern": ".*CorePure64-.+",
+		"checksum": "df0dc3e39d2b7748a2839bab1ffbd220",
+		"checksumType": "md5",
+		"bootConfig": "syslinux",
+		"kernelParams": "iso=UUID={{.UUID}}{{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "http://tinycorelinux.net/13.x/x86/release/TinyCore-13.1.iso"
+			}
+		]
 	},
-	{
-		"name":"University of Utah",
-		"url":"http://ubuntu.cs.utah.edu/releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso"
+	"LHSCowboys": {
+		"isoPattern": ".*CorePure64-.+",
+		"bootConfig": "syslinux",
+		"kernelParams": "iso=UUID={{.UUID}}{{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
+			}
+		]
 	},
-	{
-		"name":"Washington State University",
-		"url":"http://mirrors.vcea.wsu.edu/ubuntu-releases/focal/ubuntu-20.04.2.0-desktop-amd64.iso"
-	}]
-}
+	"DHSGaels": {
+		"isoPattern": ".*CorePure64-.+",
+		"bootConfig": "syslinux",
+		"kernelParams": "iso=UUID={{.UUID}}{{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://github.com/u-root/webboot-distro/raw/master/iso/tinycore/10.x/x86_64/release/LHSCowboys.iso"
+			}
+		]
+	},
+	"Ubuntu": {
+		"isoPattern": "^ubuntu-.+",
+		"checksum": "c396e956a9f52c418397867d1ea5c0cf1a99a49dcf648b086d2fb762330cc88d",
+		"checksumType": "sha256",
+		"bootConfig": "syslinux",
+		"kernelParams": "iso-scan/filename={{.IsoPath}}",
+		"mirrors": [
+			{
+				"name": "Default",
+				"url": "https://releases.ubuntu.com/jammy/ubuntu-22.04.1-desktop-amd64.iso"
+			}
+		]
+	}
 }

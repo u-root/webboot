@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 	"path/filepath"
 
@@ -115,7 +114,13 @@ func (d *DownloadOption) exec() (menu.Entry, error) {
 	var downloadDir string
 	var err error
 
-	downloadDir = os.TempDir()
+	// "/testdata" directly accesses the host filesystem (which is presumably on a
+	// hard drive). Because initramfs is mounted on RAM, which has limited space,
+	// downloading an ISO to the hard drive is often necessary. Note that this is
+	// a hacky workaround; ideally, when testing, initramfs would be mounted on
+	// the hard drive instead of RAM so there's enough space in `os.TempDir()` for
+	// an entire ISO.
+	downloadDir = "/testdata"
 	fpath = filepath.Join(downloadDir, filename)
 
 	if err = download(link, fpath, downloadDir); err != nil {

@@ -1,5 +1,3 @@
-// Copyright 2018 the u-root Authors. All rights reserved
-// Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 //go:build !race
@@ -21,9 +19,8 @@ import (
 var expectString = map[string]string{
 	"Arch":       "TODO_PLEASE_SET_EXPECT_STRING",
 	"CentOS 7":   "TODO_PLEASE_SET_EXPECT_STRING",
-	"CentOS 8":   "TODO_PLEASE_SET_EXPECT_STRING",
 	"Debian":     "TODO_PLEASE_SET_EXPECT_STRING",
-	"Fedora":     "TODO_PLEASE_SET_EXPECT_STRING",
+	"Fedora":     "Fedora-WS-Live-32-1-6",
 	"Kali":       "TODO_PLEASE_SET_EXPECT_STRING",
 	"Linux Mint": "TODO_PLEASE_SET_EXPECT_STRING",
 	"Manjaro":    "TODO_PLEASE_SET_EXPECT_STRING",
@@ -74,8 +71,12 @@ func TestScript(t *testing.T) {
 
 	c := exec.Command("./u-root/u-root",
 		"-files", "../cmds/cli/ci.json:ci.json",
-		"-files", k+":/sbin/kexec",
+		"-files", k+":sbin/kexec",
+		// /etc/ssl/certs contains symlinks to the certificate files in
+		// /usr/share/certificates, so both are required
 		"-files", "/etc/ssl/certs",
+		"-files", "/usr/share/ca-certificates",
+
 		"-uinitcmd=uinit",
 		"../cmds/webboot",
 		"../cmds/cli",
@@ -94,6 +95,9 @@ func TestScript(t *testing.T) {
 	if err := c.Run(); err != nil {
 		t.Fatalf("Running u-root: %v", err)
 	}
+
+	// Host machine should have at least 4 GB of RAM to comfortably download an
+	// ISO, which can be large
 	q, cleanup := vmtest.QEMUTest(t, &vmtest.Options{
 		Name: "ShellScript",
 		/* it would be so nice if this actually worked.
@@ -117,7 +121,8 @@ func TestScript(t *testing.T) {
 		},
 		*/
 		QEMUOpts: qemu.Options{
-			Timeout: 300 * time.Second,
+			// Downloading an ISO may take a while
+			Timeout: 60 * time.Minute,
 			Devices: []qemu.Device{
 				qemu.ArbitraryArgs{
 					"-machine", "q35",
@@ -132,7 +137,8 @@ func TestScript(t *testing.T) {
 			"echo HIHIHIHIHIHIHIHIHIHIHIHIHIHIHIHIHI",
 			"dhclient -ipv6=f -v eth0",
 			// The webbootDistro may contain spaces.
-			fmt.Sprintf("cli -distroName=%q", webbootDistro),
+			// `cli` is a webboot command, see cmds/cli
+			fmt.Sprintf("cli -verbose -distroName=%q", webbootDistro),
 			"shutdown -h",
 		},
 	})
