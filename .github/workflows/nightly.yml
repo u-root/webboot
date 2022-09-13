@@ -1,0 +1,64 @@
+# Nightly runs integration testing to check for stale distro metadata (hardcoded
+# in cmds/cli/ci.json and cmds/webboot/distros.json).
+#
+# Distros regularly update to new versions, but webboot's distro metadata is
+# hardcoded. Although integration testing is triggered on push and pull
+# requests, webboot development is not always active. Testing distro metadata
+# regularly helps catch out-of-date info sooner.
+name: nightly
+on:
+  # Triggers the workflow every day at 23:00
+  schedule:
+    - cron: "0 23 * * *"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  integration_testing:
+    runs-on: ubuntu-latest
+    # Environment variables
+    env:
+      # GOPATH is the current directory.
+      GOPATH: ${{ github.workspace }}
+      # WEBBOOT is the where the code is checked out.
+      WEBBOOT: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+    # Set the working directory to the correct place in $GOPATH.
+    defaults:
+      run:
+        working-directory: ${{ env.WEBBOOT }}
+    strategy:
+      # Run all distros at the same time.
+      max-parallel: 10
+      # Continue testing other distros on failure.
+      fail-fast: false
+      # List of distros
+      matrix:
+        distro:
+          - TinyCore
+          - Arch
+          - CentOS 7
+          - Debian
+          - Fedora
+          - Kali
+          - Linux Mint
+          - Manjaro
+          - Ubuntu
+    # Steps represent a sequence of tasks that will be executed as part of the
+    # job
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18.x
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WEBBOOT }}
+      - name: Checkout dependencies
+        run: |
+          sudo apt-get update
+          ./firsttime.sh
+      - name: Integration testing
+        run: |
+          ./integration.sh "${{ matrix.distro }}"
