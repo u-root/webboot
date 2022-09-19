@@ -24,7 +24,7 @@ var expectString = map[string]string{
 	"Kali":       "TODO_PLEASE_SET_EXPECT_STRING",
 	"Linux Mint": "TODO_PLEASE_SET_EXPECT_STRING",
 	"Manjaro":    "TODO_PLEASE_SET_EXPECT_STRING",
-	"TinyCore":   "5.4.3-tinycore64",
+	"TinyCore":   "5.15.10-tinycore64",
 	"Ubuntu":     "TODO_PLEASE_SET_EXPECT_STRING",
 }
 
